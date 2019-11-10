@@ -184,6 +184,96 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/05/10/3sum/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2013/05/10/3sum/" class="post-title-link" itemprop="url">从3 sum问题说起</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2013-05-10 17:51:20" itemprop="dateCreated datePublished" datetime="2013-05-10T17:51:20+08:00">2013-05-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index">
+                    <span itemprop="name">算法设计</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>3sum问题就是3数求和问题，可以简单描述如下：给定数据集S找出数据集中的三个元素a,b,c，满足a+b+c=k。直接可能没什么思路，其实3数求和问题可以看成是下面这个问题的扩展：给定数据集S，找出所有数据对a,b，满足a+b=k。</p>
+<p>其实对于原始问题的求解时间复杂度可以达到O(n)，如果数据集是已排好序的。分别在头部和尾部设置两个指针，求其和，如果大于K，则尾部的指针向头部移动，否则头部的指针向后移动。用C语言简单实现如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">find2sum</span><span class="params">(<span class="keyword">int</span> dataSet[], <span class="keyword">int</span> itemNum, <span class="keyword">int</span> key)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> left=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> right = itemNum<span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(left&lt;right)&#123;</span><br><span class="line">        <span class="keyword">if</span>(dataSet[left]+dataSet[right] == key)</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"The pair (%d %d) bingo!"</span>, left, right);</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(dataSet[left]+dataSet[right] &lt; key)</span><br><span class="line">            left ++;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            right --;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对上面的方法进行扩展就可以得到3数求和问题的解答了。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">find3sum</span><span class="params">(<span class="keyword">int</span> dataSet[], <span class="keyword">int</span> itemNum, <span class="keyword">int</span> key)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, left, right;</span><br><span class="line">    sort(dataSet);</span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>; i&lt;itemNum<span class="number">-2</span>; i++)&#123;</span><br><span class="line">        left    = i+<span class="number">1</span>;</span><br><span class="line">        right   = itemNum<span class="number">-1</span>;</span><br><span class="line">        <span class="keyword">while</span>(left&lt;right)&#123;</span><br><span class="line">            <span class="keyword">if</span>(sum(i, left, right) == key)</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"triplet %d %d %d bingo!\n"</span>, i, left, right);</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span>(sum(i, left, right) &lt; key)</span><br><span class="line">                left ++;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                right ++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果文章从这儿就结束了，那也没有写的必要了。</p>
+<p>前面求解两数求和问题的时候提到了数组是排好序的，利用这一特性我们可是可以大做文章了。例如：如何求解两个已排序数组的公共子序列？</p>
+<p>首先说明下，公共子序列和公共子串是不同的。公共子串是连续的，而公共子序列则没有这一限制。比如{1，2，3，4，5，6｝的子序列可以是｛1，3，6｝。</p>
+<p>我们不妨设置两个数组分别为<span style="font-family: 'Times New Roman';">A</span><span style="font-family: 宋体;">，</span><span style="font-family: 'Times New Roman';">B</span><span style="font-family: 宋体;">，长度分别为</span><span style="font-family: 'Times New Roman';">m</span><span style="font-family: 宋体;">，</span><span style="font-family: 'Times New Roman';">n</span><span style="font-family: 宋体;">。结合上文，很容易可以得到时间复杂度为</span><span style="font-family: 'Times New Roman';">O(m+n)</span><span style="font-family: 宋体;">的解法。分别设置两个指针指向两个数组，然后比较，将较小的指针往前移动即可。</span></p>
+<p>另外说到排序好的数组，一个自然反应应该就是二分查找了。对于数组<span style="font-family: 'Times New Roman';">A</span><span style="font-family: 宋体;">中的每个元素，对数组</span><span style="font-family: 'Times New Roman';">B</span><span style="font-family: 宋体;">进行二分查找，时间复杂度为</span><span style="font-family: 'Times New Roman';">O(mlgn)</span><span style="font-family: 宋体;">。其实这个讨论是有必要的，当</span><span style="font-family: 'Times New Roman';">m&lt;&lt;n</span><span style="font-family: 宋体;">时，这种方法明显优于上面的。</span></p>
+<p>其实个人觉得效率还可以更高，只要将上面两种方法结合起来，定性描述如下。第一种方法的思想，当找到<span style="font-family: 'Times New Roman';">A[i]=B[j]</span><span style="font-family: 宋体;">的时候，下一次对</span><span style="font-family: 'Times New Roman';">B</span><span style="font-family: 宋体;">进行二分查找的时候，只需要查找</span><span style="font-family: 'Times New Roman';">B[j+1, n-1]</span><span style="font-family: 宋体;">。</span></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">commonSeq</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> B[], <span class="keyword">int</span> m, <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> index_A, index_B, result;</span><br><span class="line"></span><br><span class="line">    index_A = index_B = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(index_A&lt;m &amp;&amp; index_B&lt;n)&#123;</span><br><span class="line">        result = bisearch(B, index_B, n, A[index_A]);</span><br><span class="line">        <span class="keyword">if</span>(<span class="number">-1</span> == result)    <span class="comment">/*使没查找到时返回-1*/</span></span><br><span class="line">            index_A ++;</span><br><span class="line">        <span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"%d\t"</span>, A[index_A]);</span><br><span class="line">            index_A ++;</span><br><span class="line">            index_B = result+<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还有一些，以后再说吧！<br>see you!</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/04/14/your-time-will-come/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -655,7 +745,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-count">106</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>

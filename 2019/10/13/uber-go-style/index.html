@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="相信很多人前两天都看到 Uber 在 github 上面开源的 Go 语言编程规范了，原文在这里：https:&#x2F;&#x2F;github.com&#x2F;uber-go&#x2F;guide&#x2F;blob&#x2F;master&#x2F;style.md 。我们今天就来简单了解一下国外大厂都是如何来写代码的。行文仓促，错误之处，多多指正。另外如果觉得还不错，也欢迎分享给更多的人。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Uber Go 语言编程规范">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;10&#x2F;13&#x2F;uber-go-style&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="相信很多人前两天都看到 Uber 在 github 上面开源的 Go 语言编程规范了，原文在这里：https:&#x2F;&#x2F;github.com&#x2F;uber-go&#x2F;guide&#x2F;blob&#x2F;master&#x2F;style.md 。我们今天就来简单了解一下国外大厂都是如何来写代码的。行文仓促，错误之处，多多指正。另外如果觉得还不错，也欢迎分享给更多的人。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-10T04:11:19.393Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/10/13/uber-go-style/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Uber Go 语言编程规范 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/13/uber-go-style/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Uber Go 语言编程规范
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-10-13 12:07:36" itemprop="dateCreated datePublished" datetime="2019-10-13T12:07:36+08:00">2019-10-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-10 12:11:19" itemprop="dateModified" datetime="2019-11-10T12:11:19+08:00">2019-11-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>相信很多人前两天都看到 Uber 在 github 上面开源的 Go 语言编程规范了，原文在这里：<a href="https://github.com/uber-go/guide/blob/master/style.md" target="_blank" rel="noopener">https://github.com/uber-go/guide/blob/master/style.md</a> 。我们今天就来简单了解一下国外大厂都是如何来写代码的。行文仓促，错误之处，多多指正。另外如果觉得还不错，也欢迎分享给更多的人。</p>
+<a id="more"></a>
+
+<h3 id="1-介绍"><a href="#1-介绍" class="headerlink" title="1. 介绍"></a>1. 介绍</h3><p>英文原文标题是 <strong><em>Uber Go Style Guide</em></strong>，这里的 Style 是指在管理我们代码的时候可以遵从的一些约定。</p>
+<p>这篇编程指南的初衷是更好的管理我们的代码，包括去编写什么样的代码，以及不要编写什么样的代码。我们希望通过这份编程指南，代码可以具有更好的维护性，同时能够让我们的开发同学更高效地编写 Go 语言代码。</p>
+<p>这份编程指南最初由  <a href="https://github.com/prashantv" target="_blank" rel="noopener">Prashant Varanasi</a> 和 <a href="https://github.com/nomis52" target="_blank" rel="noopener">Simon Newton</a> 编写，旨在让其他同事快速地熟悉和编写 Go 程序。经过多年发展，现在的版本经过了多番修改和改进了。这是我们在 Uber 遵从的编程范式，但是很多都是可以通用的，如下是其他可以参考的链接：</p>
+<ul>
+<li><a href="https://golang.org/doc/effective_go.html" target="_blank" rel="noopener">Effective Go</a></li>
+<li><a href="https://github.com/golang/go/wiki/CodeReviewComments" target="_blank" rel="noopener">The Go common mistakes guide</a></li>
+</ul>
+<p>所有的提交代码都应该通过 <code>golint</code> 和 <code>go vet</code> 检测，建议在代码编辑器上面做如下设置：</p>
+<ul>
+<li>保存的时候运行 <code>goimports</code></li>
+<li>使用 <code>golint</code> 和 <code>go vet</code> 去做错误检测。</li>
+</ul>
+<p>你可以通过下面链接发现更多的 Go 编辑器的插件: <a href="https://github.com/golang/go/wiki/IDEsAndTextEditorPlugins" target="_blank" rel="noopener">https://github.com/golang/go/wiki/IDEsAndTextEditorPlugins</a></p>
+<h3 id="2-编程指南"><a href="#2-编程指南" class="headerlink" title="2. 编程指南"></a>2. 编程指南</h3><h4 id="2-1-指向-Interface-的指针"><a href="#2-1-指向-Interface-的指针" class="headerlink" title="2.1 指向 Interface 的指针"></a>2.1 指向 Interface 的指针</h4><p>在我们日常使用中，基本上不会需要使用指向 interface 的指针。当我们将 interface 作为值传递的时候，底层数据就是指针。Interface 包括两方面：</p>
+<ul>
+<li>一个包含 type 信息的指针</li>
+<li>一个指向数据的指针</li>
+</ul>
+<p>如果你想要修改底层的数据，那么你只能使用 pointer。</p>
+<h4 id="2-2-Receiver-和-Interface"><a href="#2-2-Receiver-和-Interface" class="headerlink" title="2.2 Receiver 和 Interface"></a>2.2 Receiver 和 Interface</h4><p>使用值作为 receiver 的时候 method 可以通过指针调用，也可以通过值来调用。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> S <span class="keyword">struct</span> &#123;</span><br><span class="line">  data <span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s S)</span> <span class="title">Read</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> s.data</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *S)</span> <span class="title">Write</span><span class="params">(str <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">  s.data = str</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">sVals := <span class="keyword">map</span>[<span class="keyword">int</span>]S&#123;<span class="number">1</span>: &#123;<span class="string">"A"</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// You can only call Read using a value</span></span><br><span class="line">sVals[<span class="number">1</span>].Read()</span><br><span class="line"></span><br><span class="line"><span class="comment">// This will not compile:</span></span><br><span class="line"><span class="comment">//  sVals[1].Write("test")</span></span><br><span class="line"></span><br><span class="line">sPtrs := <span class="keyword">map</span>[<span class="keyword">int</span>]*S&#123;<span class="number">1</span>: &#123;<span class="string">"A"</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// You can call both Read and Write using a pointer</span></span><br><span class="line">sPtrs[<span class="number">1</span>].Read()</span><br><span class="line">sPtrs[<span class="number">1</span>].Write(<span class="string">"test"</span>)</span><br></pre></td></tr></table></figure>
+
+<p>相似的，pointer 也可以满足 interface 的要求，尽管 method 使用 value 作为 receiver。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> F <span class="keyword">interface</span> &#123;</span><br><span class="line">  f()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> S1 <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s S1)</span> <span class="title">f</span><span class="params">()</span></span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> S2 <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *S2)</span> <span class="title">f</span><span class="params">()</span></span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">s1Val := S1&#123;&#125;</span><br><span class="line">s1Ptr := &amp;S1&#123;&#125;</span><br><span class="line">s2Val := S2&#123;&#125;</span><br><span class="line">s2Ptr := &amp;S2&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> i F</span><br><span class="line">i = s1Val</span><br><span class="line">i = s1Ptr</span><br><span class="line">i = s2Ptr</span><br><span class="line"></span><br><span class="line"><span class="comment">// The following doesn't compile, since s2Val is a value, and there is no value receiver for f.</span></span><br><span class="line"><span class="comment">//   i = s2Val</span></span><br></pre></td></tr></table></figure>
+
+<p>Effective Go 关于如何使用指针和值也有一些不错的 practice： <a href="https://golang.org/doc/effective_go.html#pointers_vs_values" target="_blank" rel="noopener">Pointers vs. Values</a>.</p>
+<h4 id="2-3-mutex-默认-0-值是合法的"><a href="#2-3-mutex-默认-0-值是合法的" class="headerlink" title="2.3 mutex 默认 0 值是合法的"></a>2.3 mutex 默认 0 值是合法的</h4><p><code>sync.Mutex</code> 和 <code>sync.RWMutex</code> 的 0 值也是合法的，所以我们基本不需要声明一个指针指向 mutex。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mu := <span class="built_in">new</span>(sync.Mutex)</span><br><span class="line">mu.Lock()</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> mu sync.Mutex</span><br><span class="line">mu.Lock()</span><br></pre></td></tr></table></figure>
+
+<p>如果 struct 内部使用 mutex，在我们使用 struct 的指针类型时候，mutex 也可以是一个非指针类型的 field，或者直接嵌套在 struct 中。</p>
+<p>Mutex 直接嵌套在 struct 中。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> smap <span class="keyword">struct</span> &#123;</span><br><span class="line">  sync.Mutex</span><br><span class="line"></span><br><span class="line">  data <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newSMap</span><span class="params">()</span> *<span class="title">smap</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;smap&#123;</span><br><span class="line">    data: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span>),</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *smap)</span> <span class="title">Get</span><span class="params">(k <span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">  m.Lock()</span><br><span class="line">  <span class="keyword">defer</span> m.Unlock()</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> m.data[k]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将 Mutex 作为一个 struct 内部一个非指针类型 Field 使用。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> SMap <span class="keyword">struct</span> &#123;</span><br><span class="line">  mu sync.Mutex</span><br><span class="line"></span><br><span class="line">  data <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewSMap</span><span class="params">()</span> *<span class="title">SMap</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;SMap&#123;</span><br><span class="line">    data: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span>),</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *SMap)</span> <span class="title">Get</span><span class="params">(k <span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">  m.mu.Lock()</span><br><span class="line">  <span class="keyword">defer</span> m.mu.Unlock()</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> m.data[k]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-4-拷贝-Slice-和-Map"><a href="#2-4-拷贝-Slice-和-Map" class="headerlink" title="2.4 拷贝 Slice 和 Map"></a>2.4 拷贝 Slice 和 Map</h4><p>Slice 和 Map 都包含了对底层存储数据的指针，所以注意在修改 slice 或者 map 数据的场景下，是不是使用了引用。</p>
+<h5 id="slice-和-map-作为参数"><a href="#slice-和-map-作为参数" class="headerlink" title="slice 和 map 作为参数"></a>slice 和 map 作为参数</h5><p>当把 slice 和 map 作为参数的时候，如果我们对 slice 或者 map 的做了引用操作，那么修改会修改掉原始值。如果这种修改不是预期的，那么要先进行 copy。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *Driver)</span> <span class="title">SetTrips</span><span class="params">(trips []Trip)</span></span> &#123;</span><br><span class="line">  d.trips = trips</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">trips := ...</span><br><span class="line">d1.SetTrips(trips)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Did you mean to modify d1.trips?</span></span><br><span class="line">trips[<span class="number">0</span>] = ...</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *Driver)</span> <span class="title">SetTrips</span><span class="params">(trips []Trip)</span></span> &#123;</span><br><span class="line">  d.trips = <span class="built_in">make</span>([]Trip, <span class="built_in">len</span>(trips))</span><br><span class="line">  <span class="built_in">copy</span>(d.trips, trips)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">trips := ...</span><br><span class="line">d1.SetTrips(trips)</span><br><span class="line"></span><br><span class="line"><span class="comment">// We can now modify trips[0] without affecting d1.trips.</span></span><br><span class="line">trips[<span class="number">0</span>] = ...</span><br></pre></td></tr></table></figure>
+
+<h5 id="slice-和-map-作为返回值"><a href="#slice-和-map-作为返回值" class="headerlink" title="slice 和 map 作为返回值"></a>slice 和 map 作为返回值</h5><p>当我们的函数返回 slice 或者 map 的时候，也要注意是不是直接返回了内部数据的引用到外部。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Stats <span class="keyword">struct</span> &#123;</span><br><span class="line">  sync.Mutex</span><br><span class="line"></span><br><span class="line">  counters <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Snapshot returns the current stats.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Stats)</span> <span class="title">Snapshot</span><span class="params">()</span> <span class="title">map</span>[<span class="title">string</span>]<span class="title">int</span></span> &#123;</span><br><span class="line">  s.Lock()</span><br><span class="line">  <span class="keyword">defer</span> s.Unlock()</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> s.counters</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// snapshot is no longer protected by the lock!</span></span><br><span class="line">snapshot := stats.Snapshot()</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Stats <span class="keyword">struct</span> &#123;</span><br><span class="line">  sync.Mutex</span><br><span class="line"></span><br><span class="line">  counters <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Stats)</span> <span class="title">Snapshot</span><span class="params">()</span> <span class="title">map</span>[<span class="title">string</span>]<span class="title">int</span></span> &#123;</span><br><span class="line">  s.Lock()</span><br><span class="line">  <span class="keyword">defer</span> s.Unlock()</span><br><span class="line"></span><br><span class="line">  result := <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">int</span>, <span class="built_in">len</span>(s.counters))</span><br><span class="line">  <span class="keyword">for</span> k, v := <span class="keyword">range</span> s.counters &#123;</span><br><span class="line">    result[k] = v</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Snapshot is now a copy.</span></span><br><span class="line">snapshot := stats.Snapshot()</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-5-使用-defer-做资源清理"><a href="#2-5-使用-defer-做资源清理" class="headerlink" title="2.5 使用 defer 做资源清理"></a>2.5 使用 defer 做资源清理</h4><p>建议使用 defer 去做资源清理工作，比如文件，锁等。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">p.Lock()</span><br><span class="line"><span class="keyword">if</span> p.count &lt; <span class="number">10</span> &#123;</span><br><span class="line">  p.Unlock()</span><br><span class="line">  <span class="keyword">return</span> p.count</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">p.count++</span><br><span class="line">newCount := p.count</span><br><span class="line">p.Unlock()</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> newCount</span><br><span class="line"></span><br><span class="line"><span class="comment">// easy to miss unlocks due to multiple returns</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">p.Lock()</span><br><span class="line"><span class="keyword">defer</span> p.Unlock()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> p.count &lt; <span class="number">10</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> p.count</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">p.count++</span><br><span class="line"><span class="keyword">return</span> p.count</span><br><span class="line"></span><br><span class="line"><span class="comment">// more readable</span></span><br></pre></td></tr></table></figure>
+
+<p>尽管使用 defer 会导致一定的性能开销，但是大部分情况下这个开销在你的整个链路上所占的比重往往是微乎其微，除非说真的是有非常高的性能需求。另外使用 defer 带来的代码可读性的改进以及减少代码发生错误的概率都是值得的。</p>
+<h4 id="2-6-channel-的-size-最好是-1-或者是-unbuffered"><a href="#2-6-channel-的-size-最好是-1-或者是-unbuffered" class="headerlink" title="2.6 channel 的 size 最好是 1 或者是 unbuffered"></a>2.6 channel 的 size 最好是 1 或者是 unbuffered</h4><p>在使用 channel 的时候，最好将 size 设置为 1 或者使用 unbuffered channel。其他 size 的 channel 往往都会引入更多的复杂度，需要更多考虑上下游的设计。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Ought to be enough for anybody!</span></span><br><span class="line">c := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">64</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Size of one</span></span><br><span class="line">c := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">1</span>) <span class="comment">// or</span></span><br><span class="line"><span class="comment">// Unbuffered channel, size of zero</span></span><br><span class="line">c := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-7-枚举变量应该从-1-开始"><a href="#2-7-枚举变量应该从-1-开始" class="headerlink" title="2.7 枚举变量应该从 1 开始"></a>2.7 枚举变量应该从 1 开始</h4><p>在 Go 语言中枚举值的声明典型方式是通过 <code>const</code> 和 <code>iota</code> 来声明。由于 0 是默认值，所以枚举值最好从一个非 0 值开始，比如 1。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Operation <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  Add Operation = <span class="literal">iota</span></span><br><span class="line">  Subtract</span><br><span class="line">  Multiply</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Add=0, Subtract=1, Multiply=2</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Operation <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  Add Operation = <span class="literal">iota</span> + <span class="number">1</span></span><br><span class="line">  Subtract</span><br><span class="line">  Multiply</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Add=1, Subtract=2, Multiply=3</span></span><br></pre></td></tr></table></figure>
+
+<p>有一种例外情况：0 值是预期的默认行为的时候，枚举值可以从 0 开始。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> LogOutput <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  LogToStdout LogOutput = <span class="literal">iota</span></span><br><span class="line">  LogToFile</span><br><span class="line">  LogToRemote</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// LogToStdout=0, LogToFile=1, LogToRemote=2</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-8-Error-类型"><a href="#2-8-Error-类型" class="headerlink" title="2.8 Error 类型"></a>2.8 Error 类型</h4><p>在 Go 语言中声明 error 可以有多种方式：</p>
+<ul>
+<li><code>errors.New</code> 声明包含简单静态字符串的 error</li>
+<li><code>fmt.Errorf</code> 格式化 error string</li>
+<li>其他自定义类型使用了 <code>Error()</code> 方法</li>
+<li>使用 <code>&quot;pkg/errors&quot;.Wrap</code></li>
+</ul>
+<p>当要把 error 作为返回值的时候，可以考虑如下的处理方式</p>
+<ul>
+<li>是不是不需要额外信息，如果是，<code>errors.New</code> 就足够了。</li>
+<li>client 需要检测和处理返回的 error 吗？如果是，最好使用实现了 <code>Error()</code> 方法的自定义类型，这样可以包含更多的信息。</li>
+<li>error 是不是从下游函数传递过来的？如果是，考虑一下 error wrap，参考：<a href="https://github.com/uber-go/guide/blob/master/style.md#error-wrapping" target="_blank" rel="noopener">section on error wrapping</a>.</li>
+<li>其他情况，<code>fmt.Errorf</code> 一般足够了。</li>
+</ul>
+<p>对于 client 需要检测和处理 error 的情况，这里详细说一下。如果你要通过 <code>errors.New</code> 声明一个简单的 error，那么可以使用一个变量声明：<code>var ErrCouldNotOpen = errors.New(&quot;Could not open&quot;)</code></p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> errors.New(<span class="string">"could not open"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">use</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err.Error() == <span class="string">"could not open"</span> &#123;</span><br><span class="line">      <span class="comment">// handle</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">"unknown error"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> ErrCouldNotOpen = errors.New(<span class="string">"could not open"</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> ErrCouldNotOpen</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err == foo.ErrCouldNotOpen &#123;</span><br><span class="line">    <span class="comment">// handle</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">"unknown error"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果需要 error 中包含更多的信息，而不仅仅类型原生 error 的这种简单字符串，那么最好使用一个自定义类型。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">open</span><span class="params">(file <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> fmt.Errorf(<span class="string">"file %q not found"</span>, file)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">use</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> strings.Contains(err.Error(), <span class="string">"not found"</span>) &#123;</span><br><span class="line">      <span class="comment">// handle</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">"unknown error"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> errNotFound <span class="keyword">struct</span> &#123;</span><br><span class="line">  file <span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e errNotFound)</span> <span class="title">Error</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> fmt.Sprintf(<span class="string">"file %q not found"</span>, e.file)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">open</span><span class="params">(file <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> errNotFound&#123;file: file&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">use</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> _, ok := err.(errNotFound); ok &#123;</span><br><span class="line">      <span class="comment">// handle</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">"unknown error"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在直接暴露自定义的 error 类型的时候，最好 export 配套的检测自定义 error 类型的函数。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> errNotFound <span class="keyword">struct</span> &#123;</span><br><span class="line">  file <span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e errNotFound)</span> <span class="title">Error</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> fmt.Sprintf(<span class="string">"file %q not found"</span>, e.file)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IsNotFoundError</span><span class="params">(err error)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">  _, ok := err.(errNotFound)</span><br><span class="line">  <span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">(file <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> errNotFound&#123;file: file&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> err := foo.Open(<span class="string">"foo"</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> foo.IsNotFoundError(err) &#123;</span><br><span class="line">    <span class="comment">// handle</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">"unknown error"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-9-Error-Wrapping"><a href="#2-9-Error-Wrapping" class="headerlink" title="2.9 Error Wrapping"></a>2.9 Error Wrapping</h4><p>在函数调用失败的时候，有三种方式可以将下游的 error 传递出去：</p>
+<ul>
+<li>直接返回失败函数返回的 error。</li>
+<li>使用 <code>&quot;pkg/errors&quot;.Wrap</code> 增加更多的上下文信息，这种情况下可以使用 <code>&quot;pkg/errors&quot;.Cause</code> 去提取原始的 error 信息。</li>
+<li>如果调用者不需要检测和处理返回的 error 信息的话，可以直接使用 <code>fmt.Errorf</code> 将需要附加的信息进行格式化添加进去。</li>
+</ul>
+<p>如果条件允许，最好增加上下文信息。比如  “connection refused” 和 “call service foo: connection refused” 这两种错误信息在可读性上比较也是高下立判。当增加上下文信息的时候，尽量保持简洁。比如像 “failed to” 这种极其明显的信息就没有必要写上去了。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">"failed to create new store: %s"</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">"new store: %s"</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>另外对于需要传播到其他系统的 error，也要有明显的标识信息，比如在 log 的最前面增加 <code>err</code> 等字样。</p>
+<p>更多参考：<a href="https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully" target="_blank" rel="noopener">Don’t just check errors, handle them gracefully</a>.</p>
+<h4 id="2-10-类型转换失败处理"><a href="#2-10-类型转换失败处理" class="headerlink" title="2.10 类型转换失败处理"></a>2.10 类型转换失败处理</h4><p>类型转换失败会导致进程 panic，所以对于类型转换，一定要使用 “comma ok” 的范式来处理。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">t := i.(<span class="keyword">string</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">t, ok := i.(<span class="keyword">string</span>)</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">  <span class="comment">// handle the error gracefully</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-11-不要-panic"><a href="#2-11-不要-panic" class="headerlink" title="2.11 不要 panic"></a>2.11 不要 panic</h4><p>对于线上环境要尽量避免 panic。在很多情况下，panic 都是引起雪崩效应的罪魁祸首。一旦 error 发生，我们应该向上游调用者返回 error，并且容许调用者对 error 进行检测和处理。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">foo</span><span class="params">(bar <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(bar) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">"bar must not be empty"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(os.Args) != <span class="number">2</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"USAGE: foo &lt;bar&gt;"</span>)</span><br><span class="line">    os.Exit(<span class="number">1</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  foo(os.Args[<span class="number">1</span>])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">foo</span><span class="params">(bar <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(bar) == <span class="number">0</span></span><br><span class="line">    <span class="keyword">return</span> errors.New(<span class="string">"bar must not be empty"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(os.Args) != <span class="number">2</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"USAGE: foo &lt;bar&gt;"</span>)</span><br><span class="line">    os.Exit(<span class="number">1</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> err := foo(os.Args[<span class="number">1</span>]); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(err)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Panic/Recover 并不是一种 error 处理策略。进程只有在某些不可恢复的错误发生的时候才需要 panic。</p>
+<p>在跑 test case 的时候，使用 <code>t.Fatal</code> 或者 <code>t.FailNow</code> ，而不是 panic 来保证这个 test case 会被标记为失败的。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// func TestFoo(t *testing.T)</span></span><br><span class="line"></span><br><span class="line">f, err := ioutil.TempFile(<span class="string">""</span>, <span class="string">"test"</span>)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="built_in">panic</span>(<span class="string">"failed to set up test"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// func TestFoo(t *testing.T)</span></span><br><span class="line"></span><br><span class="line">f, err := ioutil.TempFile(<span class="string">""</span>, <span class="string">"test"</span>)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">  t.Fatal(<span class="string">"failed to set up test"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-12-使用-go-uber-org-atomic"><a href="#2-12-使用-go-uber-org-atomic" class="headerlink" title="2.12 使用 go.uber.org/atomic"></a>2.12 使用 go.uber.org/atomic</h4><p>这个是 Uber 内部对原生包 <code>sync/atomic</code> 的一种封装，隐藏了底层数据类型。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> foo <span class="keyword">struct</span> &#123;</span><br><span class="line">  running <span class="keyword">int32</span>  <span class="comment">// atomic</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f* foo)</span> <span class="title">start</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> atomic.SwapInt32(&amp;f.running, <span class="number">1</span>) == <span class="number">1</span> &#123;</span><br><span class="line">     <span class="comment">// already running…</span></span><br><span class="line">     <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// start the Foo</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *foo)</span> <span class="title">isRunning</span><span class="params">()</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> f.running == <span class="number">1</span>  <span class="comment">// race!</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> foo <span class="keyword">struct</span> &#123;</span><br><span class="line">  running atomic.Bool</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *foo)</span> <span class="title">start</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> f.running.Swap(<span class="literal">true</span>) &#123;</span><br><span class="line">     <span class="comment">// already running…</span></span><br><span class="line">     <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// start the Foo</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *foo)</span> <span class="title">isRunning</span><span class="params">()</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> f.running.Load()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="3-性能相关"><a href="#3-性能相关" class="headerlink" title="3. 性能相关"></a>3. 性能相关</h3><h4 id="3-1-类型转换时，使用-strconv-替换-fmt"><a href="#3-1-类型转换时，使用-strconv-替换-fmt" class="headerlink" title="3.1 类型转换时，使用 strconv 替换 fmt"></a>3.1 类型转换时，使用 strconv 替换 fmt</h4><p>当基本类型和 string 互转的时候，<code>strconv</code> 要比 <code>fmt</code> 快。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">  s := fmt.Sprint(rand.Int())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">BenchmarkFmtSprint<span class="number">-4</span>    <span class="number">143</span> ns/op    <span class="number">2</span> allocs/op</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">  s := strconv.Itoa(rand.Int())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">BenchmarkStrconv<span class="number">-4</span>    <span class="number">64.2</span> ns/op    <span class="number">1</span> allocs/op</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-2-避免-string-to-byte-的不必要频繁转换"><a href="#3-2-避免-string-to-byte-的不必要频繁转换" class="headerlink" title="3.2 避免 string to byte 的不必要频繁转换"></a>3.2 避免 string to byte 的不必要频繁转换</h4><p>在通过 string 创建 byte slice 的时候，不要在循环语句中重复的转换，而是要将重复的转换逻辑提到循环外面，做一次即可。(看上去很 general 的建议)</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">  w.Write([]<span class="keyword">byte</span>(<span class="string">"Hello world"</span>))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">BenchmarkBad<span class="number">-4</span>   <span class="number">50000000</span>   <span class="number">22.2</span> ns/op</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">data := []<span class="keyword">byte</span>(<span class="string">"Hello world"</span>)</span><br><span class="line"><span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">  w.Write(data)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">BenchmarkGood<span class="number">-4</span>  <span class="number">500000000</span>   <span class="number">3.25</span> ns/op</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="4-编程风格"><a href="#4-编程风格" class="headerlink" title="4. 编程风格"></a>4. 编程风格</h3><h4 id="4-1-声明语句分组"><a href="#4-1-声明语句分组" class="headerlink" title="4.1 声明语句分组"></a>4.1 声明语句分组</h4><p>import 语句分组</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">"a"</span></span><br><span class="line"><span class="keyword">import</span> <span class="string">"b"</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">"a"</span></span><br><span class="line">  <span class="string">"b"</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>常量、变量以及 type 声明</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> a = <span class="number">1</span></span><br><span class="line"><span class="keyword">const</span> b = <span class="number">2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> a = <span class="number">1</span></span><br><span class="line"><span class="keyword">var</span> b = <span class="number">2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Area <span class="keyword">float64</span></span><br><span class="line"><span class="keyword">type</span> Volume <span class="keyword">float64</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  a = <span class="number">1</span></span><br><span class="line">  b = <span class="number">2</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> (</span><br><span class="line">  a = <span class="number">1</span></span><br><span class="line">  b = <span class="number">2</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> (</span><br><span class="line">  Area <span class="keyword">float64</span></span><br><span class="line">  Volume <span class="keyword">float64</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>import 根据导入的包进行顺序分组。（其他库我们其实可以再细分 private 库和 public 库）</p>
+<ul>
+<li>标准库</li>
+<li>其他库</li>
+</ul>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">"fmt"</span></span><br><span class="line">  <span class="string">"os"</span></span><br><span class="line">  <span class="string">"go.uber.org/atomic"</span></span><br><span class="line">  <span class="string">"golang.org/x/sync/errgroup"</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">"fmt"</span></span><br><span class="line">  <span class="string">"os"</span></span><br><span class="line"></span><br><span class="line">  <span class="string">"go.uber.org/atomic"</span></span><br><span class="line">  <span class="string">"golang.org/x/sync/errgroup"</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-2-package-命名"><a href="#4-2-package-命名" class="headerlink" title="4.2 package 命名"></a>4.2 package 命名</h4><p>package 命名的几条规则：</p>
+<ul>
+<li>全小写。不包含大写字母或者下划线。</li>
+<li>简洁。</li>
+<li>不要使用复数。比如，使用 <code>net/url</code>，而不是 <code>net/urls</code>。</li>
+<li>避免：”common”, “util”, “shared”, “lib”，不解释。</li>
+</ul>
+<p>更多参考：</p>
+<ul>
+<li><a href="https://blog.golang.org/package-names" target="_blank" rel="noopener">Package Names</a>  </li>
+<li><a href="https://rakyll.org/style-packages/" target="_blank" rel="noopener">Style guideline for Go packages</a>.</li>
+</ul>
+<h4 id="4-3-函数命名"><a href="#4-3-函数命名" class="headerlink" title="4.3 函数命名"></a>4.3 函数命名</h4><p>函数命名遵从社区规范： <a href="https://golang.org/doc/effective_go.html#mixed-caps" target="_blank" rel="noopener">MixedCaps for function names</a> 。有一种特例是 TestCase 中为了方便测试做的函数命名，比如：<code>TestMyFunction_WhatIsBeingTested</code>。</p>
+<h4 id="4-4-import-别名"><a href="#4-4-import-别名" class="headerlink" title="4.4 import 别名"></a>4.4 import 别名</h4><p>当 package 的名字和 import 的 path 的最后一个元素不同的时候，必须要起别名。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">"net/http"</span></span><br><span class="line"></span><br><span class="line">  client <span class="string">"example.com/client-go"</span></span><br><span class="line">  trace <span class="string">"example.com/trace/v2"</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>另外，import 别名要尽量避免，只要在不得不起别名的时候再这么做，比如避免冲突。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">"fmt"</span></span><br><span class="line">  <span class="string">"os"</span></span><br><span class="line"></span><br><span class="line">  nettrace <span class="string">"golang.net/x/trace"</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">"fmt"</span></span><br><span class="line">  <span class="string">"os"</span></span><br><span class="line">  <span class="string">"runtime/trace"</span></span><br><span class="line"></span><br><span class="line">  nettrace <span class="string">"golang.net/x/trace"</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-5-函数分组和排序"><a href="#4-5-函数分组和排序" class="headerlink" title="4.5 函数分组和排序"></a>4.5 函数分组和排序</h4><ul>
+<li>函数应该按调用顺序排序</li>
+<li>一个文件中的函数应该按 receiver 排序</li>
+</ul>
+<p><code>newXYZ/NewXYZ</code> 最好紧接着类型声明后面，并在其他的 receiver 函数前面。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *something)</span> <span class="title">Cost</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> calcCost(s.weights)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> something <span class="keyword">struct</span>&#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">calcCost</span><span class="params">(n <span class="keyword">int</span>[])</span> <span class="title">int</span></span> &#123;...&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *something)</span> <span class="title">Stop</span><span class="params">()</span></span> &#123;...&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newSomething</span><span class="params">()</span> *<span class="title">something</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;something&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> something <span class="keyword">struct</span>&#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newSomething</span><span class="params">()</span> *<span class="title">something</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;something&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *something)</span> <span class="title">Cost</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> calcCost(s.weights)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *something)</span> <span class="title">Stop</span><span class="params">()</span></span> &#123;...&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">calcCost</span><span class="params">(n <span class="keyword">int</span>[])</span> <span class="title">int</span></span> &#123;...&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-6-避免代码块嵌套"><a href="#4-6-避免代码块嵌套" class="headerlink" title="4.6 避免代码块嵌套"></a>4.6 避免代码块嵌套</h4><p>优先处理异常情况，快速返回，避免代码块过多嵌套。看下面代码会比较直观。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> _, v := <span class="keyword">range</span> data &#123;</span><br><span class="line">  <span class="keyword">if</span> v.F1 == <span class="number">1</span> &#123;</span><br><span class="line">    v = process(v)</span><br><span class="line">    <span class="keyword">if</span> err := v.Call(); err == <span class="literal">nil</span> &#123;</span><br><span class="line">      v.Send()</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> err</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    log.Printf(<span class="string">"Invalid v: %v"</span>, v)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> _, v := <span class="keyword">range</span> data &#123;</span><br><span class="line">  <span class="keyword">if</span> v.F1 != <span class="number">1</span> &#123;</span><br><span class="line">    log.Printf(<span class="string">"Invalid v: %v"</span>, v)</span><br><span class="line">    <span class="keyword">continue</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  v = process(v)</span><br><span class="line">  <span class="keyword">if</span> err := v.Call(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> err</span><br><span class="line">  &#125;</span><br><span class="line">  v.Send()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-7-避免不必要的-else-语句"><a href="#4-7-避免不必要的-else-语句" class="headerlink" title="4.7 避免不必要的 else 语句"></a>4.7 避免不必要的 else 语句</h4><p>很多情况下，if - else 语句都能通过一个 if 语句表达，比如如下代码。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> a <span class="keyword">int</span></span><br><span class="line"><span class="keyword">if</span> b &#123;</span><br><span class="line">  a = <span class="number">100</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  a = <span class="number">10</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">a := <span class="number">10</span></span><br><span class="line"><span class="keyword">if</span> b &#123;</span><br><span class="line">  a = <span class="number">100</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-8-两级-two-level-变量声明"><a href="#4-8-两级-two-level-变量声明" class="headerlink" title="4.8 两级 (two-level) 变量声明"></a>4.8 两级 (two-level) 变量声明</h4><p>所有两级变量声明就是一个声明的右值来自另一个表达式，这个时候第一级变量声明就不需要指明类型，除非这两个地方的数据类型不同。看代码会更直观一点。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> _s <span class="keyword">string</span> = F()</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">F</span><span class="params">()</span> <span class="title">string</span></span> &#123; <span class="keyword">return</span> <span class="string">"A"</span> &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> _s = F()</span><br><span class="line"><span class="comment">// Since F already states that it returns a string, we don't need to specify</span></span><br><span class="line"><span class="comment">// the type again.</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">F</span><span class="params">()</span> <span class="title">string</span></span> &#123; <span class="keyword">return</span> <span class="string">"A"</span> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面说的第二种两边数据类型不同的情况。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> myError <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(myError)</span> <span class="title">Error</span><span class="params">()</span> <span class="title">string</span></span> &#123; <span class="keyword">return</span> <span class="string">"error"</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">F</span><span class="params">()</span> <span class="title">myError</span></span> &#123; <span class="keyword">return</span> myError&#123;&#125; &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> _e error = F()</span><br><span class="line"><span class="comment">// F returns an object of type myError but we want error.</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="4-9-对于不做-export-的全局变量使用前缀"><a href="#4-9-对于不做-export-的全局变量使用前缀" class="headerlink" title="4.9 对于不做 export 的全局变量使用前缀 _"></a>4.9 对于不做 export 的全局变量使用前缀 _</h4><p>对于同一个 package 下面的多个文件，一个文件中的全局变量可能会被其他文件误用，所以建议使用 _ 来做前缀。（其实这条规则有待商榷）</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// foo.go</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  defaultPort = <span class="number">8080</span></span><br><span class="line">  defaultUser = <span class="string">"user"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// bar.go</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Bar</span><span class="params">()</span></span> &#123;</span><br><span class="line">  defaultPort := <span class="number">9090</span></span><br><span class="line">  ...</span><br><span class="line">  fmt.Println(<span class="string">"Default port"</span>, defaultPort)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// We will not see a compile error if the first line of</span></span><br><span class="line">  <span class="comment">// Bar() is deleted.</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// foo.go</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  _defaultPort = <span class="number">8080</span></span><br><span class="line">  _defaultUser = <span class="string">"user"</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-10-struct-嵌套"><a href="#4-10-struct-嵌套" class="headerlink" title="4.10 struct 嵌套"></a>4.10 struct 嵌套</h4><p>struct 中的嵌套类型在 field 列表排在最前面，并且用空行分隔开。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Client <span class="keyword">struct</span> &#123;</span><br><span class="line">  version <span class="keyword">int</span></span><br><span class="line">  http.Client</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Client <span class="keyword">struct</span> &#123;</span><br><span class="line">  http.Client</span><br><span class="line"></span><br><span class="line">  version <span class="keyword">int</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="4-11-struct-初始化的时候带上-Field"><a href="#4-11-struct-初始化的时候带上-Field" class="headerlink" title="4.11 struct 初始化的时候带上 Field"></a>4.11 struct 初始化的时候带上 Field</h4><p>这样会更清晰，也是 go vet 鼓励的方式</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">k := User&#123;<span class="string">"John"</span>, <span class="string">"Doe"</span>, <span class="literal">true</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">k := User&#123;</span><br><span class="line">    FirstName: <span class="string">"John"</span>,</span><br><span class="line">    LastName: <span class="string">"Doe"</span>,</span><br><span class="line">    Admin: <span class="literal">true</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-12-局部变量声明"><a href="#4-12-局部变量声明" class="headerlink" title="4.12 局部变量声明"></a>4.12 局部变量声明</h4><p>变量声明的时候可以使用 <code>:=</code> 以表示这个变量被显示的设置为某个值。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> s = <span class="string">"foo"</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s := <span class="string">"foo"</span></span><br></pre></td></tr></table></figure>
+
+<p>但是对于某些情况使用 var 反而表示的更清晰，比如声明一个空的 slice:  <a href="https://github.com/golang/go/wiki/CodeReviewComments#declaring-empty-slices" target="_blank" rel="noopener">Declaring Empty Slices</a></p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">f</span><span class="params">(list []<span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">  filtered := []<span class="keyword">int</span>&#123;&#125;</span><br><span class="line">  <span class="keyword">for</span> _, v := <span class="keyword">range</span> list &#123;</span><br><span class="line">    <span class="keyword">if</span> v &gt; <span class="number">10</span> &#123;</span><br><span class="line">      filtered = <span class="built_in">append</span>(filtered, v)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">f</span><span class="params">(list []<span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">var</span> filtered []<span class="keyword">int</span></span><br><span class="line">  <span class="keyword">for</span> _, v := <span class="keyword">range</span> list &#123;</span><br><span class="line">    <span class="keyword">if</span> v &gt; <span class="number">10</span> &#123;</span><br><span class="line">      filtered = <span class="built_in">append</span>(filtered, v)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-13-nil-是合法的-slice"><a href="#4-13-nil-是合法的-slice" class="headerlink" title="4.13 nil 是合法的 slice"></a>4.13 nil 是合法的 slice</h4><p>在返回值是 slice 类型的时候，直接返回 nil 即可，不需要显式地返回长度为 0 的 slice。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> x == <span class="string">""</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> []<span class="keyword">int</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> x == <span class="string">""</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>判断 slice 是不是空的时候，使用 <code>len(s) == 0</code>。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">isEmpty</span><span class="params">(s []<span class="keyword">string</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> s == <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">isEmpty</span><span class="params">(s []<span class="keyword">string</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">len</span>(s) == <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用 var 声明的 slice 空值可以直接使用，不需要 <code>make()</code>。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">nums := []<span class="keyword">int</span>&#123;&#125;</span><br><span class="line"><span class="comment">// or, nums := make([]int)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> add1 &#123;</span><br><span class="line">  nums = <span class="built_in">append</span>(nums, <span class="number">1</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> add2 &#123;</span><br><span class="line">  nums = <span class="built_in">append</span>(nums, <span class="number">2</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> nums []<span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> add1 &#123;</span><br><span class="line">  nums = <span class="built_in">append</span>(nums, <span class="number">1</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> add2 &#123;</span><br><span class="line">  nums = <span class="built_in">append</span>(nums, <span class="number">2</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-14-避免-scope"><a href="#4-14-避免-scope" class="headerlink" title="4.14 避免 scope"></a>4.14 避免 scope</h4><p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">err := ioutil.WriteFile(name, data, <span class="number">0644</span>)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line"> <span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> err := ioutil.WriteFile(name, data, <span class="number">0644</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line"> <span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当然某些情况下，scope 是不可避免的，比如</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> data, err := ioutil.ReadFile(name); err == <span class="literal">nil</span> &#123;</span><br><span class="line">  err = cfg.Decode(data)</span><br><span class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> err</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  fmt.Println(cfg)</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">data, err := ioutil.ReadFile(name)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">   <span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> err := cfg.Decode(data); err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">fmt.Println(cfg)</span><br><span class="line"><span class="keyword">return</span> <span class="literal">nil</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="4-15-避免参数语义不明确（Avoid-Naked-Parameters）"><a href="#4-15-避免参数语义不明确（Avoid-Naked-Parameters）" class="headerlink" title="4.15 避免参数语义不明确（Avoid Naked Parameters）"></a>4.15 避免参数语义不明确（Avoid Naked Parameters）</h4><p>Naked Parameter 指的应该是意义不明确的参数，这种情况会破坏代码的可读性，可以使用 C 分格的注释（<code>/*...*/</code>）进行注释。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// func printInfo(name string, isLocal, done bool)</span></span><br><span class="line"></span><br><span class="line">printInfo(<span class="string">"foo"</span>, <span class="literal">true</span>, <span class="literal">true</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// func printInfo(name string, isLocal, done bool)</span></span><br><span class="line"></span><br><span class="line">printInfo(<span class="string">"foo"</span>, <span class="literal">true</span> <span class="comment">/* isLocal */</span>, <span class="literal">true</span> <span class="comment">/* done */</span>)</span><br></pre></td></tr></table></figure>
+
+<p>对于上面的示例代码，还有一种更好的处理方式是将上面的 bool 类型换成自定义类型。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Region <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  UnknownRegion Region = <span class="literal">iota</span></span><br><span class="line">  Local</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Status <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  StatusReady = <span class="literal">iota</span> + <span class="number">1</span></span><br><span class="line">  StatusDone</span><br><span class="line">  <span class="comment">// Maybe we will have a StatusInProgress in the future.</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printInfo</span><span class="params">(name <span class="keyword">string</span>, region Region, status Status)</span></span></span><br></pre></td></tr></table></figure>
+
+<h4 id="4-16-使用原生字符串，避免转义"><a href="#4-16-使用原生字符串，避免转义" class="headerlink" title="4.16 使用原生字符串，避免转义"></a>4.16 使用原生字符串，避免转义</h4><p>Go 支持使用反引号，也就是 “`” 来表示原生字符串，在需要转义的场景下，我们应该尽量使用这种方案来替换。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wantError := <span class="string">"unknown name:\"test\""</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wantError := <span class="string">`unknown error:"test"`</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="4-17-Struct-引用初始化"><a href="#4-17-Struct-引用初始化" class="headerlink" title="4.17 Struct 引用初始化"></a>4.17 Struct 引用初始化</h4><p>使用 <code>&amp;T{}</code> 而不是 <code>new(T)</code> 来声明对 T 类型的引用，使用 <code>&amp;T{}</code> 的方式我们可以和 struct 声明方式 <code>T{}</code> 保持统一。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sval := T&#123;Name: <span class="string">"foo"</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// inconsistent</span></span><br><span class="line">sptr := <span class="built_in">new</span>(T)</span><br><span class="line">sptr.Name = <span class="string">"bar"</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sval := T&#123;Name: <span class="string">"foo"</span>&#125;</span><br><span class="line"></span><br><span class="line">sptr := &amp;T&#123;Name: <span class="string">"bar"</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-18-字符串-string-format"><a href="#4-18-字符串-string-format" class="headerlink" title="4.18 字符串 string format"></a>4.18 字符串 string format</h4><p>如果我们要在 Printf 外面声明 format 字符串的话，使用 const，而不是变量，这样 go vet 可以对 format 字符串做静态分析。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">msg := <span class="string">"unexpected values %v, %v\n"</span></span><br><span class="line">fmt.Printf(msg, <span class="number">1</span>, <span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> msg = <span class="string">"unexpected values %v, %v\n"</span></span><br><span class="line">fmt.Printf(msg, <span class="number">1</span>, <span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-19-Printf-风格函数命名"><a href="#4-19-Printf-风格函数命名" class="headerlink" title="4.19 Printf 风格函数命名"></a>4.19 Printf 风格函数命名</h4><p>当声明 <code>Printf</code> 风格的函数时，确保 <code>go vet</code> 可以对其进行检测。可以参考：<a href="https://golang.org/cmd/vet/#hdr-Printf_family" target="_blank" rel="noopener">Printf family</a> 。</p>
+<p>另外也可以在函数名字的结尾使用 f 结尾，比如: <code>WrapF</code>，而不是 <code>Wrap</code>。然后使用 <code>go vet</code></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="keyword">go</span> vet -printfuncs=wrapf,statusf</span><br></pre></td></tr></table></figure>
+
+<p>更多参考: <a href="https://kuzminva.wordpress.com/2017/11/07/go-vet-printf-family-check/" target="_blank" rel="noopener">go vet: Printf family check</a>.</p>
+<h3 id="5-编程模式（Patterns）"><a href="#5-编程模式（Patterns）" class="headerlink" title="5. 编程模式（Patterns）"></a>5. 编程模式（Patterns）</h3><h4 id="5-1-Test-Tables"><a href="#5-1-Test-Tables" class="headerlink" title="5.1 Test Tables"></a>5.1 Test Tables</h4><p>当测试逻辑是重复的时候，通过  <a href="https://blog.golang.org/subtests" target="_blank" rel="noopener">subtests</a> 使用 table 驱动的方式编写 case 代码看上去会更简洁。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// func TestSplitHostPort(t *testing.T)</span></span><br><span class="line"></span><br><span class="line">host, port, err := net.SplitHostPort(<span class="string">"192.0.2.0:8000"</span>)</span><br><span class="line">require.NoError(t, err)</span><br><span class="line">assert.Equal(t, <span class="string">"192.0.2.0"</span>, host)</span><br><span class="line">assert.Equal(t, <span class="string">"8000"</span>, port)</span><br><span class="line"></span><br><span class="line">host, port, err = net.SplitHostPort(<span class="string">"192.0.2.0:http"</span>)</span><br><span class="line">require.NoError(t, err)</span><br><span class="line">assert.Equal(t, <span class="string">"192.0.2.0"</span>, host)</span><br><span class="line">assert.Equal(t, <span class="string">"http"</span>, port)</span><br><span class="line"></span><br><span class="line">host, port, err = net.SplitHostPort(<span class="string">":8000"</span>)</span><br><span class="line">require.NoError(t, err)</span><br><span class="line">assert.Equal(t, <span class="string">""</span>, host)</span><br><span class="line">assert.Equal(t, <span class="string">"8000"</span>, port)</span><br><span class="line"></span><br><span class="line">host, port, err = net.SplitHostPort(<span class="string">"1:8"</span>)</span><br><span class="line">require.NoError(t, err)</span><br><span class="line">assert.Equal(t, <span class="string">"1"</span>, host)</span><br><span class="line">assert.Equal(t, <span class="string">"8"</span>, port)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// func TestSplitHostPort(t *testing.T)</span></span><br><span class="line"></span><br><span class="line">tests := []<span class="keyword">struct</span>&#123;</span><br><span class="line">  give     <span class="keyword">string</span></span><br><span class="line">  wantHost <span class="keyword">string</span></span><br><span class="line">  wantPort <span class="keyword">string</span></span><br><span class="line">&#125;&#123;</span><br><span class="line">  &#123;</span><br><span class="line">    give:     <span class="string">"192.0.2.0:8000"</span>,</span><br><span class="line">    wantHost: <span class="string">"192.0.2.0"</span>,</span><br><span class="line">    wantPort: <span class="string">"8000"</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">    give:     <span class="string">"192.0.2.0:http"</span>,</span><br><span class="line">    wantHost: <span class="string">"192.0.2.0"</span>,</span><br><span class="line">    wantPort: <span class="string">"http"</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">    give:     <span class="string">":8000"</span>,</span><br><span class="line">    wantHost: <span class="string">""</span>,</span><br><span class="line">    wantPort: <span class="string">"8000"</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">    give:     <span class="string">"1:8"</span>,</span><br><span class="line">    wantHost: <span class="string">"1"</span>,</span><br><span class="line">    wantPort: <span class="string">"8"</span>,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> _, tt := <span class="keyword">range</span> tests &#123;</span><br><span class="line">  t.Run(tt.give, <span class="function"><span class="keyword">func</span><span class="params">(t *testing.T)</span></span> &#123;</span><br><span class="line">    host, port, err := net.SplitHostPort(tt.give)</span><br><span class="line">    require.NoError(t, err)</span><br><span class="line">    assert.Equal(t, tt.wantHost, host)</span><br><span class="line">    assert.Equal(t, tt.wantPort, port)</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>很明显，使用 test table 的方式在代码逻辑扩展的时候，比如新增 test case，都会显得更加的清晰。</p>
+<p>在命名方面，我们将 struct 的 slice 命名为 <code>tests</code>，同时每一个 test case 命名为 <code>tt</code>。而且，我们强烈建议通过 <code>give</code> 和 <code>want</code> 前缀来表示 test case 的 input 和 output 的值。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tests := []<span class="keyword">struct</span>&#123;</span><br><span class="line">  give     <span class="keyword">string</span></span><br><span class="line">  wantHost <span class="keyword">string</span></span><br><span class="line">  wantPort <span class="keyword">string</span></span><br><span class="line">&#125;&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> _, tt := <span class="keyword">range</span> tests &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="5-2-Functional-Options"><a href="#5-2-Functional-Options" class="headerlink" title="5.2 Functional Options"></a>5.2 Functional Options</h4><p>关于 functional options 简单来说就是通过类似闭包的方式来进行函数传参。</p>
+<p><strong>Bad</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package db</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Connect</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">  addr <span class="keyword">string</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">  timeout time.Duration,</span></span></span><br><span class="line"><span class="function"><span class="params">  caching <span class="keyword">bool</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> <span class="params">(*Connection, error)</span></span> &#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Timeout and caching must always be provided,</span></span><br><span class="line"><span class="comment">// even if the user wants to use the default.</span></span><br><span class="line"></span><br><span class="line">db.Connect(addr, db.DefaultTimeout, db.DefaultCaching)</span><br><span class="line">db.Connect(addr, newTimeout, db.DefaultCaching)</span><br><span class="line">db.Connect(addr, db.DefaultTimeout, <span class="literal">false</span> <span class="comment">/* caching */</span>)</span><br><span class="line">db.Connect(addr, newTimeout, <span class="literal">false</span> <span class="comment">/* caching */</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>Good</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> options <span class="keyword">struct</span> &#123;</span><br><span class="line">  timeout time.Duration</span><br><span class="line">  caching <span class="keyword">bool</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Option overrides behavior of Connect.</span></span><br><span class="line"><span class="keyword">type</span> Option <span class="keyword">interface</span> &#123;</span><br><span class="line">  apply(*options)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> optionFunc <span class="function"><span class="keyword">func</span><span class="params">(*options)</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f optionFunc)</span> <span class="title">apply</span><span class="params">(o *options)</span></span> &#123;</span><br><span class="line">  f(o)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithTimeout</span><span class="params">(t time.Duration)</span> <span class="title">Option</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> optionFunc(<span class="function"><span class="keyword">func</span><span class="params">(o *options)</span></span> &#123;</span><br><span class="line">    o.timeout = t</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithCaching</span><span class="params">(cache <span class="keyword">bool</span>)</span> <span class="title">Option</span></span> &#123;</span><br><span class="line">  <span class="keyword">return</span> optionFunc(<span class="function"><span class="keyword">func</span><span class="params">(o *options)</span></span> &#123;</span><br><span class="line">    o.caching = cache</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Connect creates a connection.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Connect</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">  addr <span class="keyword">string</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">  opts ...Option,</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> <span class="params">(*Connection, error)</span></span> &#123;</span><br><span class="line">  options := options&#123;</span><br><span class="line">    timeout: defaultTimeout,</span><br><span class="line">    caching: defaultCaching,</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> _, o := <span class="keyword">range</span> opts &#123;</span><br><span class="line">    o.apply(&amp;options)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Options must be provided only if needed.</span></span><br><span class="line"></span><br><span class="line">db.Connect(addr)</span><br><span class="line">db.Connect(addr, db.WithTimeout(newTimeout))</span><br><span class="line">db.Connect(addr, db.WithCaching(<span class="literal">false</span>))</span><br><span class="line">db.Connect(</span><br><span class="line">  addr,</span><br><span class="line">  db.WithCaching(<span class="literal">false</span>),</span><br><span class="line">  db.WithTimeout(newTimeout),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>更多参考：</p>
+<ul>
+<li><a href="https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html" target="_blank" rel="noopener">Self-referential functions and the design of options</a></li>
+<li><a href="https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis" target="_blank" rel="noopener">Functional options for friendly APIs</a></li>
+</ul>
+<p>注：关于 functional option 这种方式我本人也强烈推荐，我很久以前也写过一篇类似的文章，感兴趣的可以移步： <a href="http://legendtkl.com/2016/11/05/code-scalability/" target="_blank" rel="noopener">写扩展性好的代码：函数</a></p>
+<h3 id="6-总结"><a href="#6-总结" class="headerlink" title="6. 总结"></a>6. 总结</h3><p>Uber 开源的这个文档，通篇读下来给我印象最深的就是：保持代码简洁，并具有良好可读性。不得不说，相比于国内很多 “代码能跑就完事了” 这种写代码的态度，这篇文章或许可以给我们更多的启示和参考。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/04/18/about-wx/" rel="next" title="合抱之木，生于毫末">
+                  <i class="fa fa-chevron-left"></i> 合抱之木，生于毫末
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-介绍"><span class="nav-number">1.</span> <span class="nav-text">1. 介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-编程指南"><span class="nav-number">2.</span> <span class="nav-text">2. 编程指南</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-指向-Interface-的指针"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 指向 Interface 的指针</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-Receiver-和-Interface"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 Receiver 和 Interface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-mutex-默认-0-值是合法的"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 mutex 默认 0 值是合法的</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-拷贝-Slice-和-Map"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 拷贝 Slice 和 Map</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#slice-和-map-作为参数"><span class="nav-number">2.4.1.</span> <span class="nav-text">slice 和 map 作为参数</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#slice-和-map-作为返回值"><span class="nav-number">2.4.2.</span> <span class="nav-text">slice 和 map 作为返回值</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-5-使用-defer-做资源清理"><span class="nav-number">2.5.</span> <span class="nav-text">2.5 使用 defer 做资源清理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-6-channel-的-size-最好是-1-或者是-unbuffered"><span class="nav-number">2.6.</span> <span class="nav-text">2.6 channel 的 size 最好是 1 或者是 unbuffered</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-7-枚举变量应该从-1-开始"><span class="nav-number">2.7.</span> <span class="nav-text">2.7 枚举变量应该从 1 开始</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-8-Error-类型"><span class="nav-number">2.8.</span> <span class="nav-text">2.8 Error 类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-9-Error-Wrapping"><span class="nav-number">2.9.</span> <span class="nav-text">2.9 Error Wrapping</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-10-类型转换失败处理"><span class="nav-number">2.10.</span> <span class="nav-text">2.10 类型转换失败处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-11-不要-panic"><span class="nav-number">2.11.</span> <span class="nav-text">2.11 不要 panic</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-12-使用-go-uber-org-atomic"><span class="nav-number">2.12.</span> <span class="nav-text">2.12 使用 go.uber.org/atomic</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-性能相关"><span class="nav-number">3.</span> <span class="nav-text">3. 性能相关</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-类型转换时，使用-strconv-替换-fmt"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 类型转换时，使用 strconv 替换 fmt</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-避免-string-to-byte-的不必要频繁转换"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 避免 string to byte 的不必要频繁转换</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-编程风格"><span class="nav-number">4.</span> <span class="nav-text">4. 编程风格</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-声明语句分组"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 声明语句分组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-2-package-命名"><span class="nav-number">4.2.</span> <span class="nav-text">4.2 package 命名</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-函数命名"><span class="nav-number">4.3.</span> <span class="nav-text">4.3 函数命名</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-4-import-别名"><span class="nav-number">4.4.</span> <span class="nav-text">4.4 import 别名</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-5-函数分组和排序"><span class="nav-number">4.5.</span> <span class="nav-text">4.5 函数分组和排序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-6-避免代码块嵌套"><span class="nav-number">4.6.</span> <span class="nav-text">4.6 避免代码块嵌套</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-7-避免不必要的-else-语句"><span class="nav-number">4.7.</span> <span class="nav-text">4.7 避免不必要的 else 语句</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-8-两级-two-level-变量声明"><span class="nav-number">4.8.</span> <span class="nav-text">4.8 两级 (two-level) 变量声明</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-9-对于不做-export-的全局变量使用前缀"><span class="nav-number">4.9.</span> <span class="nav-text">4.9 对于不做 export 的全局变量使用前缀 _</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-10-struct-嵌套"><span class="nav-number">4.10.</span> <span class="nav-text">4.10 struct 嵌套</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-11-struct-初始化的时候带上-Field"><span class="nav-number">4.11.</span> <span class="nav-text">4.11 struct 初始化的时候带上 Field</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-12-局部变量声明"><span class="nav-number">4.12.</span> <span class="nav-text">4.12 局部变量声明</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-13-nil-是合法的-slice"><span class="nav-number">4.13.</span> <span class="nav-text">4.13 nil 是合法的 slice</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-14-避免-scope"><span class="nav-number">4.14.</span> <span class="nav-text">4.14 避免 scope</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-15-避免参数语义不明确（Avoid-Naked-Parameters）"><span class="nav-number">4.15.</span> <span class="nav-text">4.15 避免参数语义不明确（Avoid Naked Parameters）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-16-使用原生字符串，避免转义"><span class="nav-number">4.16.</span> <span class="nav-text">4.16 使用原生字符串，避免转义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-17-Struct-引用初始化"><span class="nav-number">4.17.</span> <span class="nav-text">4.17 Struct 引用初始化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-18-字符串-string-format"><span class="nav-number">4.18.</span> <span class="nav-text">4.18 字符串 string format</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-19-Printf-风格函数命名"><span class="nav-number">4.19.</span> <span class="nav-text">4.19 Printf 风格函数命名</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-编程模式（Patterns）"><span class="nav-number">5.</span> <span class="nav-text">5. 编程模式（Patterns）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-1-Test-Tables"><span class="nav-number">5.1.</span> <span class="nav-text">5.1 Test Tables</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-2-Functional-Options"><span class="nav-number">5.2.</span> <span class="nav-text">5.2 Functional Options</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-总结"><span class="nav-number">6.</span> <span class="nav-text">6. 总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">106</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
