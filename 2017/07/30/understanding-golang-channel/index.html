@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言channel 是 Go 语言中的一个非常重要的特性，这篇文章来深入了解一下 channel。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解 Go Channel">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;07&#x2F;30&#x2F;understanding-golang-channel&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言channel 是 Go 语言中的一个非常重要的特性，这篇文章来深入了解一下 channel。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;unbufferedchannel.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;bufferedchannel.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.909Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;unbufferedchannel.png">
+
+<link rel="canonical" href="http://yoursite.com/2017/07/30/understanding-golang-channel/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>深入理解 Go Channel | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/30/understanding-golang-channel/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入理解 Go Channel
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-07-30 16:19:38" itemprop="dateCreated datePublished" datetime="2017-07-30T16:19:38+08:00">2017-07-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h3><p>channel 是 Go 语言中的一个非常重要的特性，这篇文章来深入了解一下 channel。</p>
+<a id="more"></a>
+<h3 id="1-CSP"><a href="#1-CSP" class="headerlink" title="1. CSP"></a>1. CSP</h3><p>要想理解 channel 要先知道 CSP 模型。CSP 是 Communicating Sequential Process 的简称，中文可以叫做通信顺序进程，是一种并发编程模型，由 <a href="https://en.wikipedia.org/wiki/Tony_Hoare" target="_blank" rel="noopener">Tony Hoare</a> 于 1977 年提出。简单来说，CSP 模型由并发执行的实体（线程或者进程）所组成，实体之间通过发送消息进行通信，这里发送消息时使用的就是通道，或者叫 channel。CSP 模型的关键是关注 channel，而不关注发送消息的实体。Go 语言实现了 CSP 部分理论，goroutine 对应 CSP 中并发执行的实体，channel 也就对应着 CSP 中的 channel。</p>
+<h3 id="2-channel-基础知识"><a href="#2-channel-基础知识" class="headerlink" title="2. channel 基础知识"></a>2. channel 基础知识</h3><h5 id="2-1-创建-channel"><a href="#2-1-创建-channel" class="headerlink" title="2.1 创建 channel"></a>2.1 创建 channel</h5><p>channel 使用之前需要通过 make 创建。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">unBufferChan := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)  <span class="comment">// 1</span></span><br><span class="line">bufferChan := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, N) <span class="comment">// 2</span></span><br></pre></td></tr></table></figure>
+
+<p>上面的方式 1 创建的是无缓冲 channel，方式 2 创建的是缓冲 channel。如果使用 channel 之前没有 make，会出现 dead lock 错误。至于为什么是 dead lock，下文我们从源码里面看看。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">var</span> x <span class="keyword">chan</span> <span class="keyword">int</span></span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        x &lt;- <span class="number">1</span></span><br><span class="line">    &#125;()</span><br><span class="line">    &lt;-x</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="keyword">go</span> run channel1.<span class="keyword">go</span></span><br><span class="line">fatal error: all goroutines are asleep - deadlock!</span><br><span class="line"></span><br><span class="line">goroutine <span class="number">1</span> [<span class="keyword">chan</span> receive (<span class="literal">nil</span> <span class="keyword">chan</span>)]:</span><br><span class="line">main.main()</span><br><span class="line">    /Users/kltao/code/<span class="keyword">go</span>/examples/channl/channel1.<span class="keyword">go</span>:<span class="number">11</span> +<span class="number">0x60</span></span><br><span class="line"></span><br><span class="line">goroutine <span class="number">4</span> [<span class="keyword">chan</span> send (<span class="literal">nil</span> <span class="keyword">chan</span>)]:</span><br><span class="line">main.main.func1(<span class="number">0x0</span>)</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-2-channel-读写操作"><a href="#2-2-channel-读写操作" class="headerlink" title="2.2 channel 读写操作"></a>2.2 channel 读写操作</h5><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">10</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 读操作</span></span><br><span class="line">x &lt;- ch</span><br><span class="line"></span><br><span class="line"><span class="comment">// 写操作</span></span><br><span class="line">ch &lt;- x</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-3-channel-种类"><a href="#2-3-channel-种类" class="headerlink" title="2.3 channel 种类"></a>2.3 channel 种类</h5><p>channel 分为无缓冲 channel 和有缓冲 channel。两者的区别如下：</p>
+<ul>
+<li><p>无缓冲：发送和接收动作是同时发生的。如果没有 goroutine 读取 channel （&lt;- channel），则发送者 (channel &lt;-) 会一直阻塞。</p>
+<p><img src="/img/uploads/unbufferedchannel.png" alt=""></p>
+</li>
+<li><p>缓冲：缓冲 channel 类似一个有容量的队列。当队列满的时候发送者会阻塞；当队列空的时候接收者会阻塞。</p>
+<p><img src="/img/uploads/bufferedchannel.png" alt=""></p>
+</li>
+</ul>
+<h5 id="2-4-关闭-channel"><a href="#2-4-关闭-channel" class="headerlink" title="2.4 关闭 channel"></a>2.4 关闭 channel</h5><p>channel 可以通过 built-in 函数 close() 来关闭。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 关闭</span></span><br><span class="line"><span class="built_in">close</span>(ch)</span><br></pre></td></tr></table></figure>
+
+<p>关于关闭 channel 有几点需要注意的是：</p>
+<ul>
+<li>重复关闭 channel 会导致 panic。</li>
+<li>向关闭的 channel 发送数据会 panic。</li>
+<li>从关闭的 channel 读数据不会 panic，读出 channel 中已有的数据之后再读就是 channel 类似的默认值，比如 chan int 类型的 channel 关闭之后读取到的值为 0。</li>
+</ul>
+<p>对于上面的第三点，我们需要区分一下：channel 中的值是默认值还是 channel 关闭了。可以使用 ok-idiom 方式，这种方式在 map 中比较常用。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">10</span>)</span><br><span class="line">...</span><br><span class="line"><span class="built_in">close</span>(ch)</span><br><span class="line"></span><br><span class="line"><span class="comment">// ok-idiom </span></span><br><span class="line">val, ok := &lt;-ch</span><br><span class="line"><span class="keyword">if</span> ok == <span class="literal">false</span> &#123;</span><br><span class="line">    <span class="comment">// channel closed</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-channel-的典型用法"><a href="#3-channel-的典型用法" class="headerlink" title="3. channel 的典型用法"></a>3. channel 的典型用法</h3><h5 id="1-goroutine-通信"><a href="#1-goroutine-通信" class="headerlink" title="1. goroutine 通信"></a>1. goroutine 通信</h5><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    x := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>)</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        x &lt;- <span class="number">1</span></span><br><span class="line">    &#125;()</span><br><span class="line">    &lt;-x</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-select"><a href="#2-select" class="headerlink" title="2. select"></a>2. select</h5><p>select 一定程度上可以类比于 linux 中的 IO 多路复用中的 select。后者相当于提供了对多个 IO 事件的统一管理，而 Golang 中的 select 相当于提供了对多个 channel 的统一管理。当然这只是 select 在 channel 上的一种使用方法。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> e, ok := &lt;-ch1:</span><br><span class="line">        ...</span><br><span class="line">    <span class="keyword">case</span> e, ok := &lt;-ch2:</span><br><span class="line">        ...</span><br><span class="line">    <span class="keyword">default</span>:  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>值得注意的是 select 中的 break 只能跳到 select 这一层。select 使用的时候一般配合 for 循环使用，像下面这样，因为正常 select 里面的流程也就执行一遍。这么来看 select 中的 break 就稍显鸡肋了。所以使用 break 的时候一般配置 label 使用，label 定义在 for 循环这一层。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="3-range-channel"><a href="#3-range-channel" class="headerlink" title="3. range channel"></a>3. range channel</h5><p>range channel 可以直接取到 channel 中的值。当我们使用 range 来操作 channel 的时候，一旦 channel 关闭，channel 内部数据读完之后循环自动结束。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">consumer</span><span class="params">(ch <span class="keyword">chan</span> <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> x := <span class="keyword">range</span> ch &#123;</span><br><span class="line">        fmt.Println(x)</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">producer</span><span class="params">(ch <span class="keyword">chan</span> <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">for</span> _, v := <span class="keyword">range</span> values &#123;</span><br><span class="line">      ch &lt;- v</span><br><span class="line">  &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="4-超时控制"><a href="#4-超时控制" class="headerlink" title="4. 超时控制"></a>4. 超时控制</h5><p>在很多操作情况下都需要超时控制，利用 select 实现超时控制，下面是一个简单的示例。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> &lt;- ch:</span><br><span class="line">    <span class="comment">// get data from ch</span></span><br><span class="line">  <span class="keyword">case</span> &lt;- time.After(<span class="number">2</span> * time.Second)</span><br><span class="line">    <span class="comment">// read data from ch timeout</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>类似的，上面的 time.After 可以换成其他的任何异常控制流。</p>
+<h5 id="5-生产者-消费者模型"><a href="#5-生产者-消费者模型" class="headerlink" title="5. 生产者-消费者模型"></a>5. 生产者-消费者模型</h5><p>利用缓冲 channel 可以很轻松的实现生产者-消费者模型。上面的 range 示例其实就是一个简单的生产者-消费者模型实现。</p>
+<h3 id="4-单向-channel"><a href="#4-单向-channel" class="headerlink" title="4. 单向 channel"></a>4. 单向 channel</h3><p>单向 channel，顾名思义只能写或读的 channel。但是仔细一想，只能写的 channel，如果不读其中的值有什么用呢？其实单向 channel 主要用在函数声明中。比如。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">foo</span><span class="params">(ch <span class="keyword">chan</span>&lt;- <span class="keyword">int</span>)</span> &lt;-<span class="title">chan</span> <span class="title">int</span></span> &#123;...&#125;</span><br></pre></td></tr></table></figure>
+
+<p>foo 的形参是一个只能写的 channel，那么就表示函数 foo 只会对 ch 进行写，当然你传入的参数可以是个普通 channel。foo 的返回值是一个只能读的 channel，那么表示 foo 的返回值规范用法就是只能读取。这种写法在 Golang 的原生代码库中有非常多的示例，感兴趣的可以去看一下。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Done returns a channel which is closed if and when this pipe is closed</span></span><br><span class="line"><span class="comment">// with CloseWithError.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *http2pipe)</span> <span class="title">Done</span><span class="params">()</span> &lt;-<span class="title">chan</span> <span class="title">struct</span></span>&#123;&#125; &#123;</span><br><span class="line">    p.mu.Lock()</span><br><span class="line">    <span class="keyword">defer</span> p.mu.Unlock()</span><br><span class="line">    <span class="keyword">if</span> p.donec == <span class="literal">nil</span> &#123;</span><br><span class="line">        p.donec = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line">        <span class="keyword">if</span> p.err != <span class="literal">nil</span> || p.breakErr != <span class="literal">nil</span> &#123;</span><br><span class="line"></span><br><span class="line">            p.closeDoneLocked()</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> p.donec</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也许你会说这么写在功能上和使用普通的 channel 并不会有什么差别。确实是这样的。但是使用单向 channel 编程体现了一种非常优秀的编程范式：<strong>convention over configuration</strong>，中文一般叫做 <strong>约定优于配置</strong>。这种编程范式在 Ruby 中体现的尤为明显。</p>
+<h3 id="5-总结"><a href="#5-总结" class="headerlink" title="5. 总结"></a>5. 总结</h3><p>Golang 的 channel 将 goroutine 隔离开，并发编程的时候可以将注意力放在 channel 上。在一定程度上，这个和消息队列的解耦功能还是挺像的。上面主要还是介绍了一些 channel 的常规操作，还有一些奇淫技巧放在参考资料里了。之后的一篇文章还是来看看 channel 的源码吧，对于更深入地理解 channel 还是挺有用的。</p>
+<h3 id="6-参考"><a href="#6-参考" class="headerlink" title="6. 参考"></a>6. 参考</h3><ol>
+<li><a href="https://blog.golang.org/pipelines" target="_blank" rel="noopener">Go Concurrency Patterns: Pipelines and cancellation</a></li>
+<li><a href="http://divan.github.io/posts/go_concurrency_visualize/" target="_blank" rel="noopener">Go Concurrency Visualize</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/07/23/about-hash-table/" rel="next" title="聊一聊哈希表">
+                  <i class="fa fa-chevron-left"></i> 聊一聊哈希表
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/08/06/golang-channel-implement/" rel="prev" title="Go Channel 源码剖析">
+                  Go Channel 源码剖析 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-CSP"><span class="nav-number">2.</span> <span class="nav-text">1. CSP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-channel-基础知识"><span class="nav-number">3.</span> <span class="nav-text">2. channel 基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#2-1-创建-channel"><span class="nav-number">3.0.1.</span> <span class="nav-text">2.1 创建 channel</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-2-channel-读写操作"><span class="nav-number">3.0.2.</span> <span class="nav-text">2.2 channel 读写操作</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-3-channel-种类"><span class="nav-number">3.0.3.</span> <span class="nav-text">2.3 channel 种类</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-4-关闭-channel"><span class="nav-number">3.0.4.</span> <span class="nav-text">2.4 关闭 channel</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-channel-的典型用法"><span class="nav-number">4.</span> <span class="nav-text">3. channel 的典型用法</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-goroutine-通信"><span class="nav-number">4.0.1.</span> <span class="nav-text">1. goroutine 通信</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-select"><span class="nav-number">4.0.2.</span> <span class="nav-text">2. select</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-range-channel"><span class="nav-number">4.0.3.</span> <span class="nav-text">3. range channel</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-超时控制"><span class="nav-number">4.0.4.</span> <span class="nav-text">4. 超时控制</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#5-生产者-消费者模型"><span class="nav-number">4.0.5.</span> <span class="nav-text">5. 生产者-消费者模型</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-单向-channel"><span class="nav-number">5.</span> <span class="nav-text">4. 单向 channel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-总结"><span class="nav-number">6.</span> <span class="nav-text">5. 总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-参考"><span class="nav-number">7.</span> <span class="nav-text">6. 参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

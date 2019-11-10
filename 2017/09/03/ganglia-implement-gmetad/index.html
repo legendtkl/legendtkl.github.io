@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言gmetad 负责汇总 gmond 节点的指标数据，相比 gmond 来说要简单很多。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ganglia 源码剖析之 gmetad">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;09&#x2F;03&#x2F;ganglia-implement-gmetad&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言gmetad 负责汇总 gmond 节点的指标数据，相比 gmond 来说要简单很多。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.919Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/09/03/ganglia-implement-gmetad/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Ganglia 源码剖析之 gmetad | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/09/03/ganglia-implement-gmetad/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ganglia 源码剖析之 gmetad
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-09-03 16:19:38" itemprop="dateCreated datePublished" datetime="2017-09-03T16:19:38+08:00">2017-09-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h2><p>gmetad 负责汇总 gmond 节点的指标数据，相比 gmond 来说要简单很多。</p>
+<a id="more"></a>
+<h2 id="1-主流程"><a href="#1-主流程" class="headerlink" title="1. 主流程"></a>1. 主流程</h2><p>gmetad 的主要工作如下：</p>
+<ul>
+<li>收集 gmond 数据</li>
+<li>指标数据落盘</li>
+<li>提供指标数据查询（xml_port 和 interactive port）</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 命令行参数解析</span></span><br><span class="line">    <span class="keyword">if</span> (cmdline_parser(argc, argv, &amp;args_info) != <span class="number">0</span>)</span><br><span class="line">        err_quit(<span class="string">"command-line parser error"</span>);</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-gmond-数据收集"><a href="#2-gmond-数据收集" class="headerlink" title="2. gmond 数据收集"></a>2. gmond 数据收集</h2><p>在 gmetad 的 conf 会定义 datasource，类似如下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">data_source <span class="string">"my cluster"</span> 10 localhost my.machine.edu:8649 1.2.3.5:8655 </span><br><span class="line">data_source <span class="string">"my grid"</span> 50 1.3.4.7:8655 grid.org:8651 grid-backup.org:8651 </span><br><span class="line">data_source <span class="string">"another source"</span> 1.3.4.8:8655 1.3.4.8</span><br></pre></td></tr></table></figure>
+
+<p>data_source 会指定 gmetad 采集的 gmond 的主机信息：server_ip 或者 server_hostname 和 port。如果 port 不指定则默认为 8649。data_source 后面可以指定多个 server，gmetad 采集的时候顺序采集 server list，指定多个 server list 的好处在于可以避免单点故障。收集 data source 的 metric 的主要代码如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    num_sources = number_of_datasources( args_info.conf_arg );</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">/* Get the real number of data sources later */</span></span><br><span class="line">    sources = hash_create( num_sources + <span class="number">10</span> );</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">for</span>(;;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 随机时间间隔采集</span></span><br><span class="line">        <span class="comment">/* Do at a random interval, between </span></span><br><span class="line"><span class="comment">                 (shortest_step/2) +/- METADATA_SLEEP_RANDOMIZE percent */</span></span><br><span class="line">        random_sleep_factor = (<span class="number">1</span> + (METADATA_SLEEP_RANDOMIZE / <span class="number">50.0</span>) * ((rand_r(&amp;rand_seed) - RAND_MAX/<span class="number">2</span>)/(<span class="keyword">float</span>)RAND_MAX));</span><br><span class="line">        sleep_time = random_sleep_factor * apr_time_from_sec(c-&gt;shortest_step) / <span class="number">2</span>;</span><br><span class="line">        <span class="comment">/* Make sure the sleep time is at least 1 second */</span></span><br><span class="line">        <span class="keyword">if</span>(apr_time_sec(apr_time_now() + sleep_time) &lt; (METADATA_MINIMUM_SLEEP + apr_time_sec(apr_time_now())))</span><br><span class="line">            sleep_time += apr_time_from_sec(METADATA_MINIMUM_SLEEP);</span><br><span class="line">        apr_sleep(sleep_time);</span><br><span class="line">      </span><br><span class="line">        <span class="comment">// 收集数据</span></span><br><span class="line">        <span class="comment">/* Sum the new values */</span></span><br><span class="line">        hash_foreach(root.authority, do_root_summary, <span class="literal">NULL</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 类似 C++ 的 STL 中的 for_each</span></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">hash_foreach (<span class="keyword">hash_t</span> * hash, <span class="keyword">int</span> (*func)(<span class="keyword">datum_t</span> *, <span class="keyword">datum_t</span> *, <span class="keyword">void</span> *), <span class="keyword">void</span> *arg)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; hash-&gt;<span class="built_in">size</span> &amp;&amp; !<span class="built_in">stop</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        apr_thread_rwlock_rdlock(hash-&gt;lock[i]);</span><br><span class="line">        <span class="keyword">for</span> (bucket = &amp;hash-&gt;node[i]; bucket != <span class="literal">NULL</span> &amp;&amp; bucket-&gt;key != <span class="literal">NULL</span>; bucket = bucket-&gt;next)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (bucket-&gt;key == <span class="literal">NULL</span>) <span class="keyword">continue</span>;</span><br><span class="line">            <span class="built_in">stop</span> = func(bucket-&gt;key, bucket-&gt;val, arg);</span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">stop</span>) <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        apr_thread_rwlock_unlock(hash-&gt;lock[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">stop</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Sums the metric summaries from all data sources. */</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span></span><br><span class="line">do_root_summary( <span class="keyword">datum_t</span> *key, <span class="keyword">datum_t</span> *val, <span class="keyword">void</span> *arg ) &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-tcp-server-xml-port"><a href="#3-tcp-server-xml-port" class="headerlink" title="3. tcp server: xml_port"></a>3. tcp server: xml_port</h2><p>gmetad 会根据配置文件新建两种 tcp server，一种是根据配置 xml_port（默认为 8651），一种是根据配置 interactive_port（默认为 8652）。根据 xml_port 创建的 tcp server 会以 xml 格式返回 gmetad 收集的所有集群数据，多层 gmetad 结构的话可以使用这些数据。根据 interactive_port 创建的 tcp server 一般是用来和 gweb 交互的，并且可以指定一些信息。先看 xml_port 的处理逻辑。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    parse_config_file ( args_info.conf_arg );</span><br><span class="line">  </span><br><span class="line">    server_socket = g_tcp_socket_server_new( c-&gt;xml_port );</span><br><span class="line">    ...</span><br><span class="line">    </span><br><span class="line">    interactive_socket = g_tcp_socket_server_new( c-&gt;interactive_port );</span><br><span class="line">    ...</span><br><span class="line">      </span><br><span class="line">    <span class="comment">/* Spin off the non-interactive server threads. (Half as many as interactive). */</span></span><br><span class="line">    <span class="keyword">for</span> (i=<span class="number">0</span>; i &lt; c-&gt;server_threads/<span class="number">2</span>; i++)</span><br><span class="line">        pthread_create(&amp;pid, &amp;attr, server_thread, (<span class="keyword">void</span>*) <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Spin off the interactive server threads. */</span></span><br><span class="line">    <span class="keyword">for</span> (i=<span class="number">0</span>; i &lt; c-&gt;server_threads; i++)</span><br><span class="line">        pthread_create(&amp;pid, &amp;attr, server_thread, (<span class="keyword">void</span>*) <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面代码中可以看出 gmetad 会使用 pthread_create 创建进程负责 tcp server 的请求处理。server_threads 是 配置文件中 server_threads 指定的，默认为4。xml_port server 会使用 server_threads/2 个进程，interactive_port server 会使用 server_threads 个进程。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> *</span><br><span class="line">server_thread (<span class="keyword">void</span> *arg)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> interactive = (arg != <span class="literal">NULL</span>);</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">for</span> (;;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (interactive)</span><br><span class="line">        &#123;</span><br><span class="line">            pthread_mutex_lock(&amp;server_interactive_mutex);</span><br><span class="line">            SYS_CALL( client.fd, accept(interactive_socket-&gt;sockfd, (struct sockaddr *) &amp;(client.addr), &amp;len));</span><br><span class="line">            pthread_mutex_unlock(&amp;server_interactive_mutex);</span><br><span class="line">            ganglia_scoreboard_inc(TCP_REQS_ALL);</span><br><span class="line">            ganglia_scoreboard_inc(TCP_REQS_INTXML);</span><br><span class="line">            now = apr_time_now();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            pthread_mutex_lock  ( &amp;server_socket_mutex );</span><br><span class="line">            SYS_CALL( client.fd, accept(server_socket-&gt;sockfd, (struct sockaddr *) &amp;(client.addr), &amp;len));</span><br><span class="line">            pthread_mutex_unlock( &amp;server_socket_mutex );</span><br><span class="line">            ganglia_scoreboard_inc(TCP_REQS_ALL);</span><br><span class="line">            ganglia_scoreboard_inc(TCP_REQS_XML);</span><br><span class="line">            now = apr_time_now();</span><br><span class="line">        &#125;</span><br><span class="line">      </span><br><span class="line">        <span class="keyword">if</span> (interactive)</span><br><span class="line">        &#123;</span><br><span class="line">            request_len = readline(client.fd, request, REQUESTLEN);</span><br><span class="line">            <span class="comment">// interactive 模式要处理 request</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            ganglia_scoreboard_inc(TCP_REQS_ALL);</span><br><span class="line">            <span class="built_in">strcpy</span>(request, <span class="string">"/"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">      </span><br><span class="line">        <span class="comment">// 输出 xml 数据</span></span><br><span class="line">        <span class="keyword">if</span>(root_report_start(&amp;client))</span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 输出集群的状态信息</span></span><br><span class="line">        <span class="keyword">if</span> (process_path(&amp;client, request, &amp;rootdatum, <span class="literal">NULL</span>)) </span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 输出 xml 数据</span></span><br><span class="line">        <span class="keyword">if</span>(root_report_end(&amp;client)) </span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-tcp-server-interactive-port"><a href="#4-tcp-server-interactive-port" class="headerlink" title="4. tcp server: interactive port"></a>4. tcp server: interactive port</h2><p>类似 xml_port 的 tcp server 处理，不再赘述。</p>
+<h2 id="5-指标数据落盘"><a href="#5-指标数据落盘" class="headerlink" title="5. 指标数据落盘"></a>5. 指标数据落盘</h2><p>我们知道 gmetad 会将机器收集的指标数据存放在 rrd 文件中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(;;)</span><br><span class="line">    &#123;</span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">/* Sum the new values */</span></span><br><span class="line">        hash_foreach(root.authority, do_root_summary, <span class="literal">NULL</span> );</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* summary completed */</span></span><br><span class="line">        pthread_mutex_unlock(root.sum_finished);</span><br><span class="line">	</span><br><span class="line">        <span class="comment">// 落盘  </span></span><br><span class="line">        <span class="comment">/* Save them to RRD */</span></span><br><span class="line">        hash_foreach(root.metric_summary, write_root_summary, <span class="literal">NULL</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="6-总结"><a href="#6-总结" class="headerlink" title="6. 总结"></a>6. 总结</h2><p>gmetad 相比 gmond 要简单很多，从源码结构中也可以看出来。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/08/26/ganglia-implement-gmond/" rel="next" title="Ganglia 源码剖析之 gmond">
+                  <i class="fa fa-chevron-left"></i> Ganglia 源码剖析之 gmond
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/10/17/dr-elephant-overview/" rel="prev" title="Dr. Elephant 介绍">
+                  Dr. Elephant 介绍 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-主流程"><span class="nav-number">2.</span> <span class="nav-text">1. 主流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-gmond-数据收集"><span class="nav-number">3.</span> <span class="nav-text">2. gmond 数据收集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-tcp-server-xml-port"><span class="nav-number">4.</span> <span class="nav-text">3. tcp server: xml_port</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-tcp-server-interactive-port"><span class="nav-number">5.</span> <span class="nav-text">4. tcp server: interactive port</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-指标数据落盘"><span class="nav-number">6.</span> <span class="nav-text">5. 指标数据落盘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-总结"><span class="nav-number">7.</span> <span class="nav-text">6. 总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="log的一个典型应用场景就是实现log分级，比如线上环境不需要记录DEBUG的log信息。今天介绍一下glog。先看一个glog的简单例子。 1234567891011121314151617181920&#x2F;&#x2F;file name: glog.gopackage mainimport (    &quot;flag&quot;    &quot;github.com&#x2F;golang&#x2F;glog&quot;)func main() &amp;#123;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="go语言记log：glog剖析">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;03&#x2F;12&#x2F;go-log-glog&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="log的一个典型应用场景就是实现log分级，比如线上环境不需要记录DEBUG的log信息。今天介绍一下glog。先看一个glog的简单例子。 1234567891011121314151617181920&#x2F;&#x2F;file name: glog.gopackage mainimport (    &quot;flag&quot;    &quot;github.com&#x2F;golang&#x2F;glog&quot;)func main() &amp;#123;">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.998Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/03/12/go-log-glog/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>go语言记log：glog剖析 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/03/12/go-log-glog/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          go语言记log：glog剖析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-03-12 17:09:32" itemprop="dateCreated datePublished" datetime="2016-03-12T17:09:32+08:00">2016-03-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>log的一个典型应用场景就是实现log分级，比如线上环境不需要记录DEBUG的log信息。今天介绍一下glog。先看一个glog的简单例子。</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//file name: glog.go</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"flag"</span></span><br><span class="line">    <span class="string">"github.com/golang/glog"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    flag.Parse()    <span class="comment">// 1</span></span><br><span class="line"></span><br><span class="line">    glog.Info(<span class="string">"This is a Info log"</span>)         <span class="comment">// 2</span></span><br><span class="line">    glog.Warning(<span class="string">"This is a Warning log"</span>)</span><br><span class="line">    glog.Error(<span class="string">"This is a Error log"</span>)</span><br><span class="line"></span><br><span class="line">    glog.V(<span class="number">1</span>).Infoln(<span class="string">"level 1"</span>)     <span class="comment">// 3</span></span><br><span class="line">    glog.V(<span class="number">2</span>).Infoln(<span class="string">"level 2"</span>)</span><br><span class="line"></span><br><span class="line">    glog.Flush()    <span class="comment">// 4</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<a id="more"></a>
+<p>如果你之前没有用过glog，需要使用<code>go get</code>安装一下，你需要像下面这样执行这个go程序。上面标注的几个地方可以先注意一下，等文章读完就理解了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ go get</span><br><span class="line">$ go build glog.go</span><br><span class="line">$ ./glog -log_dir=&quot;./&quot;</span><br></pre></td></tr></table></figure>
+<p>这时候不出意外的话，会在同级目录下生成下面几个类似的log文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">glog.kltao-mac.kltao.log.ERROR.20160312-173205.22052</span><br><span class="line">glog.kltao-mac.kltao.log.INFO.20160312-173205.22052</span><br><span class="line">glog.kltao-mac.kltao.log.WARNING.20160312-173205.22052</span><br></pre></td></tr></table></figure>
+<p>这就是产生的log文件，打开第一个ERROR的log文件，文件内容如下。前面4行是文件响应信息，最后一行就是上面第14行代码记录的log内容。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Log file created at: 2016/03/12 17:32:05</span><br><span class="line">Running on machine: kltao-mac</span><br><span class="line">Binary: Built with gc go1.4.2 for darwin/amd64</span><br><span class="line">Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg</span><br><span class="line">E0312 17:32:05.568597   22052 glog.go:15] This is a Error log</span><br></pre></td></tr></table></figure>
+<p>这个时候如果你打开另外两个INFO和WARNING的log文件，会发现WARNING日志文件中除了WARNING信息还记录了Error信息（<code>This is a Error log</code>），而INFO日志文件中则记录了所有的log信息（<code>This is a Info/Warning/Error log</code>）。很容易理解，这些log是有等级的（ERROR&gt;WARNING&gt;INFO），高等级的日志内容会同时会被记录到低等级的日志文件中去。那么glog提供了一个等级呢？答案是4个，除了上面提出的3个，还有一个FALTAL。<br>这时候又有一个问题来了，为什么第3处的日志信息没有记录下来呢？不急，这个时候如下重新执行一下。就可以在新的INFO日志文件中找到了对应的信息了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./glog -log_dir=&quot;./&quot; -v=3</span><br></pre></td></tr></table></figure>
+<p>对，就是这个<code>-v</code>参数。再说V之前，先说一下glog的命令行解析，对应代码就是标注的第1处。那么glog有多少种参数呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">// By default, all log statements write to files in a temporary directory.</span><br><span class="line">// This package provides several flags that modify this behavior.</span><br><span class="line">// As a result, flag.Parse must be called before any logging is done.</span><br><span class="line">//</span><br><span class="line">//  -logtostderr=false</span><br><span class="line">//      Logs are written to standard error instead of to files.</span><br><span class="line">//  -alsologtostderr=false</span><br><span class="line">//      Logs are written to standard error as well as to files.</span><br><span class="line">//  -stderrthreshold=ERROR</span><br><span class="line">//      Log events at or above this severity are logged to standard</span><br><span class="line">//      error as well as to files.</span><br><span class="line">//  -log_dir=&quot;&quot;</span><br><span class="line">//      Log files will be written to this directory instead of the</span><br><span class="line">//      default temporary directory.</span><br><span class="line">//</span><br><span class="line">//  Other flags provide aids to debugging.</span><br><span class="line">//</span><br><span class="line">//  -log_backtrace_at=&quot;&quot;</span><br><span class="line">//      When set to a file and line number holding a logging statement,</span><br><span class="line">//      such as</span><br><span class="line">//          -log_backtrace_at=gopherflakes.go:234</span><br><span class="line">//      a stack trace will be written to the Info log whenever execution</span><br><span class="line">//      hits that statement. (Unlike with -vmodule, the &quot;.go&quot; must be</span><br><span class="line">//      present.)</span><br><span class="line">//  -v=0</span><br><span class="line">//      Enable V-leveled logging at the specified level.</span><br><span class="line">//  -vmodule=&quot;&quot;</span><br><span class="line">//      The syntax of the argument is a comma-separated list of pattern=N,</span><br><span class="line">//      where pattern is a literal file name (minus the &quot;.go&quot; suffix) or</span><br><span class="line">//      &quot;glob&quot; pattern and N is a V level. For instance,</span><br><span class="line">//          -vmodule=gopher*=3</span><br><span class="line">//      sets the V level to 3 in all Go files whose names begin &quot;gopher&quot;.</span><br></pre></td></tr></table></figure>
+<p><code>glog.V(1).Infoln(&quot;level 1&quot;)</code>这行代码表示设置的-v参数大于V()里面的参数才执行后面的Infoln。如果不加-v参数，默认等级为0，所以第三处的代码没有执行。具体实现不妨看一下源码实现，一目了然。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">type Verbose bool</span><br><span class="line"></span><br><span class="line">func V(level Level) Verbose &#123;</span><br><span class="line">    // This function tries hard to be cheap unless there&apos;s work to do.</span><br><span class="line">    // The fast path is two atomic loads and compares.</span><br><span class="line"></span><br><span class="line">    // Here is a cheap but safe test to see if V logging is enabled globally.</span><br><span class="line">    if logging.verbosity.get() &gt;= level &#123;</span><br><span class="line">        return Verbose(true)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // It&apos;s off globally but it vmodule may still be set.</span><br><span class="line">    // Here is another cheap but safe test to see if vmodule is enabled.</span><br><span class="line">    if atomic.LoadInt32(&amp;logging.filterLength) &gt; 0 &#123;</span><br><span class="line">        // Now we need a proper lock to use the logging structure. The pcs field</span><br><span class="line">        // is shared so we must lock before accessing it. This is fairly expensive,</span><br><span class="line">        // but if V logging is enabled we&apos;re slow anyway.</span><br><span class="line">        logging.mu.Lock()</span><br><span class="line">        defer logging.mu.Unlock()</span><br><span class="line">        if runtime.Callers(2, logging.pcs[:]) == 0 &#123;</span><br><span class="line">            return Verbose(false)</span><br><span class="line">        &#125;</span><br><span class="line">        v, ok := logging.vmap[logging.pcs[0]]</span><br><span class="line">        if !ok &#123;</span><br><span class="line">            v = logging.setV(logging.pcs[0])</span><br><span class="line">        &#125;</span><br><span class="line">        return Verbose(v &gt;= level)</span><br><span class="line">    &#125;</span><br><span class="line">    return Verbose(false)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func (v Verbose) Info(args ...interface&#123;&#125;) &#123;</span><br><span class="line">    if v &#123;</span><br><span class="line">        logging.print(infoLog, args...)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func (v Verbose) Infoln(args ...interface&#123;&#125;) &#123;</span><br><span class="line">    if v &#123;</span><br><span class="line">        logging.println(infoLog, args...)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func (v Verbose) Infof(format string, args ...interface&#123;&#125;) &#123;</span><br><span class="line">    if v &#123;</span><br><span class="line">        logging.printf(infoLog, format, args...)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序中标注的4个地方，除了第4个地方，其他都说了，Flush的作用清空缓冲区，就是把日志写到文件。golog初始化的时候，起了一个Flush的守护进程，然后定期去执行I/O操作，所以退出的时候需要显示清除一下缓冲区。glog启动的初始化代码如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">func init() &#123;</span><br><span class="line">    ...</span><br><span class="line">    go logging.flushDaemon()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面应该是glog的大部分使用方法了，更详细的信息可以参考<a href="github.com/golang/glog">github.com/golang/glog</a>。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/03/11/go-log/" rel="next" title="go语言记log：log,logger">
+                  <i class="fa fa-chevron-left"></i> go语言记log：log,logger
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/04/22/mockserver-md/" rel="prev" title="记一次mockserver开发设计实践">
+                  记一次mockserver开发设计实践 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

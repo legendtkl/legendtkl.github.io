@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="上周写了摄像机标定的原理，这次主要来谈谈几种摄像机标定的方法。 一、直接线性变换（DLT变换） 直接线性是将像点和特点的成像几何关系在齐次坐标下写成透视投影矩阵的形式：">
+<meta name="keywords" content="DLT">
+<meta property="og:type" content="article">
+<meta property="og:title" content="三维重建之摄像机标定：DLT方法">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2014&#x2F;05&#x2F;31&#x2F;3d-reconstruction-calibration2&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="上周写了摄像机标定的原理，这次主要来谈谈几种摄像机标定的方法。 一、直接线性变换（DLT变换） 直接线性是将像点和特点的成像几何关系在齐次坐标下写成透视投影矩阵的形式：">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2014&#x2F;05&#x2F;DLT0.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2014&#x2F;05&#x2F;DLT.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2014&#x2F;05&#x2F;%E7%9F%A9%E9%98%B5.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2014&#x2F;05&#x2F;DLT2.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2014&#x2F;05&#x2F;DLT3.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.935Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2014&#x2F;05&#x2F;DLT0.png">
+
+<link rel="canonical" href="http://yoursite.com/2014/05/31/3d-reconstruction-calibration2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>三维重建之摄像机标定：DLT方法 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/05/31/3d-reconstruction-calibration2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          三维重建之摄像机标定：DLT方法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-05-31 20:37:01" itemprop="dateCreated datePublished" datetime="2014-05-31T20:37:01+08:00">2014-05-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF%E7%82%B9%E6%BB%B4/" itemprop="url" rel="index">
+                    <span itemprop="name">技术点滴</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上周写了摄像机标定的原理，这次主要来谈谈几种摄像机标定的方法。</p>
+<p>一、直接线性变换（DLT变换）</p>
+<p>直接线性是将像点和特点的成像几何关系在齐次坐标下写成透视投影矩阵的形式：</p>
+<p><img src="/img/uploads/2014/05/DLT0.png" alt=""></p>
+<a id="more"></a>其中(u,v,1)为图像坐标系下的点的齐次坐标，(Xw, Yw, Zw)为世界坐标系下的空间点的欧氏坐标，P为3×4的透视投影矩阵，S为未知尺度因子。也就是说，我们把相机的内参以及旋转平衡当成一个整体P，直接对P进行求解。消去s，可以得到方程组：
+
+<p><img src="/img/uploads/2014/05/DLT.png" alt=""></p>
+<p>当已知N个空间点和对应的图像上的点时，可以得到一个含有2*N个方程的方程组：</p>
+<p><img src="/img/uploads/2014/05/%E7%9F%A9%E9%98%B5.png" alt=""></p>
+<p>其中A为2N*12的矩阵，每一对对应点对应两行矩阵如下：</p>
+<p><img src="/img/uploads/2014/05/DLT2.png" alt=""></p>
+<p>L为透视投影矩阵元素组成的向量为[p11,p12,p13,p14,p21,p22,p23,p24,p31,p32,p33,p34]的转置（wordpress编辑器无力吐糟了…）。相机定标的任务就是寻找合适的L，使得||AL||最小.12个未知数，12个线性方程，也就是6对对应点就可以解出来了。但是这么解出来的解不是唯一。又由旋转矩阵的正交性和Z方向上的平移量不为0，可以引入约束</p>
+<p><img src="/img/uploads/2014/05/DLT3.png" alt=""></p>
+<p>L’为L的前11个元素组成的向量,C为A前11列组成的矩阵，B为A第12列组成的向量。求解的过程通过构造伪逆矩阵来求解。其实很简单，我用代码简单实现如下，其中Utilities::matSet2D(cv::Mat M, int x, int y, double val)完成设置M矩阵的位置(y,x)设置为val的操作。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">calDLTParams</span><span class="params">(<span class="built_in">std</span>::<span class="built_in">string</span> objCornersFile,<span class="built_in">std</span>::<span class="built_in">string</span> imgCornersFile)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	cv::<span class="built_in">vector</span>&amp;lt;cv::Point3f&amp;gt; objCorner;</span><br><span class="line">	cv::<span class="built_in">vector</span>&amp;lt;cv::Point2f&amp;gt; imgCorner; </span><br><span class="line"></span><br><span class="line">	<span class="built_in">std</span>::<span class="function">ifstream <span class="title">in</span><span class="params">(objCornersFile.c_str())</span></span>;</span><br><span class="line">	<span class="keyword">if</span>(!in)&#123;</span><br><span class="line">		<span class="built_in">std</span>::<span class="built_in">cout</span> &amp;lt;&amp;lt; <span class="string">"Load objCorners ERROR: can't open file "</span> &amp;lt;&amp;lt; objCornersFile &amp;lt;&amp;lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">while</span>(in)&#123;</span><br><span class="line">		cv::Point3f tmp;</span><br><span class="line">		in &amp;gt;&amp;gt; tmp.x &amp;gt;&amp;gt; tmp.y &amp;gt;&amp;gt; tmp.z;</span><br><span class="line">		objCorner.push_back(tmp);</span><br><span class="line">	&#125;</span><br><span class="line">	in.<span class="built_in">close</span>();</span><br><span class="line"></span><br><span class="line">	in.<span class="built_in">open</span>(imgCornersFile.c_str());</span><br><span class="line">	<span class="keyword">if</span>(!in)&#123;</span><br><span class="line">		<span class="built_in">std</span>::<span class="built_in">cout</span> &amp;lt;&amp;lt; <span class="string">"Load imgCorners ERROR: can't open file "</span> &amp;lt;&amp;lt; imgCornersFile &amp;lt;&amp;lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">while</span>(in)&#123;</span><br><span class="line">		cv::Point2f tmp;</span><br><span class="line">		in &amp;gt;&amp;gt; tmp.x &amp;gt;&amp;gt; tmp.y;</span><br><span class="line">		imgCorner.push_back(tmp);</span><br><span class="line">	&#125;</span><br><span class="line">	in.<span class="built_in">close</span>();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> N = imgCorner.<span class="built_in">size</span>();</span><br><span class="line">	cv::<span class="function">Mat <span class="title">C</span><span class="params">(<span class="number">2</span>*N, <span class="number">11</span>, CV_64F)</span></span>;</span><br><span class="line">	cv::<span class="function">Mat <span class="title">B</span><span class="params">(<span class="number">2</span>*N, <span class="number">1</span>, CV_64F)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;<span class="number">2</span>*N; i=i+<span class="number">2</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">0</span>, i, objCorner[i/<span class="number">2</span>].x);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">1</span>, i, objCorner[i/<span class="number">2</span>].y);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">2</span>, i, objCorner[i/<span class="number">2</span>].z);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">3</span>, i, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">4</span>; j&amp;lt;<span class="number">8</span>; j++)</span><br><span class="line">			Utilities::matSet2D(C, j, i, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">		Utilities::matSet2D(C, <span class="number">8</span>, i, objCorner[i/<span class="number">2</span>].x*imgCorner[i/<span class="number">2</span>].x);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">9</span>, i, objCorner[i/<span class="number">2</span>].y*imgCorner[i/<span class="number">2</span>].x);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">10</span>, i, objCorner[i/<span class="number">2</span>].z*imgCorner[i/<span class="number">2</span>].x);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&amp;lt;<span class="number">2</span>*N; i=i+<span class="number">2</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>; j&amp;lt;<span class="number">4</span>; j++)</span><br><span class="line">			Utilities::matSet2D(C, j, i, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">		Utilities::matSet2D(C, <span class="number">4</span>, i, objCorner[i/<span class="number">2</span>].x);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">5</span>, i, objCorner[i/<span class="number">2</span>].y);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">6</span>, i, objCorner[i/<span class="number">2</span>].z);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">7</span>, i, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">		Utilities::matSet2D(C, <span class="number">8</span>, i, objCorner[i/<span class="number">2</span>].x*imgCorner[i/<span class="number">2</span>].y);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">9</span>, i, objCorner[i/<span class="number">2</span>].y*imgCorner[i/<span class="number">2</span>].y);</span><br><span class="line">		Utilities::matSet2D(C, <span class="number">10</span>, i, objCorner[i/<span class="number">2</span>].z*imgCorner[i/<span class="number">2</span>].y);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;<span class="number">2</span>*N; i=i+<span class="number">2</span>)</span><br><span class="line">		Utilities::matSet2D(B, <span class="number">0</span>, i, imgCorner[i/<span class="number">2</span>].x);</span><br><span class="line">	<span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&amp;lt;<span class="number">2</span>*N; i=i+<span class="number">2</span>)</span><br><span class="line">		Utilities::matSet2D(B, <span class="number">0</span>, i, imgCorner[i/<span class="number">2</span>].y);</span><br><span class="line"></span><br><span class="line">	cv::Mat L = -(C.t()*C).inv()*C.t()*B;</span><br><span class="line">	<span class="built_in">std</span>::<span class="built_in">string</span> folderPath=<span class="string">""</span>;</span><br><span class="line">	folderPath += <span class="string">"/DLT.txt"</span>;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">std</span>::<span class="function">ofstream <span class="title">out</span><span class="params">(folderPath.c_str())</span></span>;</span><br><span class="line">	<span class="keyword">if</span>(!out)&#123;</span><br><span class="line">		<span class="built_in">std</span>::<span class="built_in">cout</span> &amp;lt;&amp;lt; <span class="string">"DLT write ERROR: can't open file "</span> &amp;lt;&amp;lt; folderPath &amp;lt;&amp;lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;<span class="number">11</span>; i++)</span><br><span class="line">		out &amp;lt;&amp;lt; Utilities::matGet2D(L, <span class="number">0</span>, i) &amp;lt;&amp;lt; <span class="string">'\n'</span>;</span><br><span class="line">	out.<span class="built_in">flush</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>又到假期了，大家双节愉快！</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DLT/" rel="tag"># DLT</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/05/23/3d-reconstruction-intro/" rel="next" title="三维重建之摄像机标定：原理">
+                  <i class="fa fa-chevron-left"></i> 三维重建之摄像机标定：原理
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/06/06/3d-reconstruction-tsai/" rel="prev" title="三维重建之摄像机标定: Tsai的基于Rac定标方法">
+                  三维重建之摄像机标定: Tsai的基于Rac定标方法 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

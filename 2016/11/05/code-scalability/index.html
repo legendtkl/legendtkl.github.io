@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="如何写出扩展性好的代码？这是我工作最近半年来一直在考虑的问题。不管自己做一套系统还是接手别人的项目，只要你的项目需要和别人交互，这个问题都是需要考虑的。我们今天只说说如何写出扩展性好的函数代码。代码都以golang示例。 函数声明函数声明首先是函数名字要具有自解释性，这个要说到代码注释了，这里就不赘述了。除了函数声明外，还有函数的形参定义。这里以一个例子来说一下扩展性好的函数的参数应该如何定义。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="写扩展性好的代码：函数">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;11&#x2F;05&#x2F;code-scalability&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="如何写出扩展性好的代码？这是我工作最近半年来一直在考虑的问题。不管自己做一套系统还是接手别人的项目，只要你的项目需要和别人交互，这个问题都是需要考虑的。我们今天只说说如何写出扩展性好的函数代码。代码都以golang示例。 函数声明函数声明首先是函数名字要具有自解释性，这个要说到代码注释了，这里就不赘述了。除了函数声明外，还有函数的形参定义。这里以一个例子来说一下扩展性好的函数的参数应该如何定义。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.917Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/11/05/code-scalability/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>写扩展性好的代码：函数 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/11/05/code-scalability/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          写扩展性好的代码：函数
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-11-05 20:26:56" itemprop="dateCreated datePublished" datetime="2016-11-05T20:26:56+08:00">2016-11-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Architecture/" itemprop="url" rel="index">
+                    <span itemprop="name">Architecture</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>如何写出扩展性好的代码？这是我工作最近半年来一直在考虑的问题。不管自己做一套系统还是接手别人的项目，只要你的项目需要和别人交互，这个问题都是需要考虑的。我们今天只说说如何写出扩展性好的函数代码。代码都以golang示例。</p>
+<h2 id="函数声明"><a href="#函数声明" class="headerlink" title="函数声明"></a>函数声明</h2><p>函数声明首先是函数名字要具有自解释性，这个要说到代码注释了，这里就不赘述了。除了函数声明外，还有函数的形参定义。这里以一个例子来说一下扩展性好的函数的参数应该如何定义。</p>
+<a id="more"></a>
+
+<h4 id="1-普通函数"><a href="#1-普通函数" class="headerlink" title="1. 普通函数"></a>1. 普通函数</h4><p>假设我们需要一个简单的server，我们可以像下面这样定义，addr表示server启动在哪个端口上。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewServer</span><span class="params">(addr <span class="keyword">string</span>)</span></span></span><br></pre></td></tr></table></figure>
+<p>第一期的需求很简单，就上面这些足够满足了。项目上线跑了一段时间发现，由于连接没有设置超时，很多连接一直得不到释放（异常情况），严重影响服务器性能。好，那第二期我们加个timeout。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewServer</span><span class="params">(addr <span class="keyword">string</span>, timeout time.Duration)</span></span></span><br></pre></td></tr></table></figure>
+<p>这个时候尴尬的情况出现了，调用你代码的所有人都需要改动代码。而且这只是一个改动，之后如果要支持tls，那么又得改动一次。</p>
+<h4 id="2-不定参数"><a href="#2-不定参数" class="headerlink" title="2. 不定参数"></a>2. 不定参数</h4><p>解决上面的窘境的一种方法是使用不定参数。下面先简单介绍一下不定参数。第一次接触不定参数是学习C语言中的<code>Hello World</code>的代码中<code>printf</code>，声明如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">printf</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *fmt, ...)</span></span></span><br></pre></td></tr></table></figure>
+<p>C的函数调用可以简单看成<code>call/ret</code>，<code>call</code>的时候会把当前的IP保存起来，然后将函数地址以及函数参数入栈。printf的fmt中保存了参数的类型(%d表示int，%s表示string)并能计算出个数，这样就能找到每个具体的参数是什么了。golang也是支持不定参数的，比如我要实现一个整数加法。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Add</span><span class="params">(list ...<span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">    sum := <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> _, x := <span class="keyword">range</span> list &#123;</span><br><span class="line">        sum += x</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> sum</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    fmt.Println(Add(<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>)) <span class="comment">//6</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面是所有的变参都是同一种类型，如果是不同的类型可以使用interface，使用反射来判断其类型。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Varargs</span><span class="params">(list ...<span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> _, x := <span class="keyword">range</span> list &#123;</span><br><span class="line">        <span class="keyword">if</span> reflect.ValueOf(x).Kind() == <span class="keyword">int</span> &#123;</span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是如果是我们自己定义的函数的话，类型通常是知道的，也就不需要上面那么麻烦地再去判断一次，可以直接进行类型转换。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Varargs</span><span class="params">(list ...<span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">    <span class="comment">//通过interface.(type)将interface类型转换成type类型</span></span><br><span class="line">    fmt.Println(list[<span class="number">0</span>].(<span class="keyword">int</span>))</span><br><span class="line">    fmt.Println(list[<span class="number">1</span>].(<span class="keyword">string</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是这么做比较危险，使用的时候必须严格按照说明进行传参，任何一种类型不正确，程序将panic。还有一个问题就是不定参数不能为空，或者说传入的实参必须是形参的一个严格前缀。</p>
+<h4 id="3-封装成-struct"><a href="#3-封装成-struct" class="headerlink" title="3. 封装成 struct"></a>3. 封装成 struct</h4><p>相比于上面两种方法更好一点的是把所有参数封装成struct，这样函数声明看起来很简单。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Param <span class="keyword">struct</span> &#123;</span><br><span class="line">    x   <span class="keyword">int</span></span><br><span class="line">    y   <span class="keyword">string</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Varargs</span><span class="params">(p *Param)</span></span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>封装成struct的方式应该是一种对参数比较好的组织形式，之后函数不管怎么扩张，只需要增加struct成员就好，而不需要改变函数声明了。而struct的坏处在什么地方呢？比如上面的Param.x是int型，如果我们不设置x，也就是下面这样传参。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">p := &amp;Param&#123;</span><br><span class="line">    y:  <span class="string">"hello"</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Varargs(p)</span><br></pre></td></tr></table></figure>
+<p>这个时候Varargs看到的Param.x的0。你让Varargs怎么想？用户没有设置x（忘记设置？想使用默认值？）？用户把x设置成0？这真的有点尴尬。但是这个问题还是有解决方案的？1.避开默认值，int型不使用0，string类型不使用””。2.使用指针，用户没有设置的时候x==nil，设置的时候对x解引用(*x)取得值。这两种方式不管怎么来看，都是十分的反人类，一点也不simple。</p>
+<h4 id="4-option"><a href="#4-option" class="headerlink" title="4. option"></a>4. option</h4><p>option的方式的最早是由<a href="https://en.wikipedia.org/wiki/Rob_Pike" target="_blank" rel="noopener">Rob Pike</a> 提出，Rob Pike就不做介绍了，感兴趣的可以看他的wiki连接。我们把option参数封装成一个函数传给我们的目标函数，所有相关的工作由函数来做。举个栗子，我们现在要写个Server，timeout和tls都是可选项，那么可以像下面这么来写(所有error handle都省去)。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewServer</span><span class="params">(addr <span class="keyword">string</span>, options ...<span class="keyword">func</span>(*Server)</span>) <span class="params">(*Server, error)</span></span> &#123;</span><br><span class="line">    srv := &amp;Server&#123;</span><br><span class="line">        Addr:   addr,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> _, option := <span class="keyword">range</span> options &#123;</span><br><span class="line">        option(srv)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> srv</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">timeout</span><span class="params">(d time.Duration)</span> <span class="title">func</span><span class="params">(*Server)</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">func</span><span class="params">(srv *Server)</span></span> &#123;</span><br><span class="line">        srv.timeout = d</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">tls</span><span class="params">(c *config)</span> <span class="title">func</span><span class="params">(*Server)</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">func</span><span class="params">(srv *Server)</span></span> &#123;</span><br><span class="line">        Tls := loadConfig(c)</span><br><span class="line">        srv.tls = Tls</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//使用</span></span><br><span class="line">src, err = NewServer(<span class="string">"localhost:8080"</span>, timeout(<span class="number">1</span>), tls(path/to/cert))</span><br></pre></td></tr></table></figure>
+<p>这么写的好处一目了然，横向扩展起来特别方便，而且解决上面的提到的基本所有的问题。</p>
+<h2 id="函数实现"><a href="#函数实现" class="headerlink" title="函数实现"></a>函数实现</h2><p>正常单一功能的函数实现没有什么好说的。如果需要根据不同的条件来执行不同的行为的话，这个应该怎么做的？举个例子，我现在在公司做一个优惠券的项目，用户领券和使用券的时候有一些规则，比如每人每日限领3张等。这些规则肯定不会一成不变，也许第一期是2个规则，第二期就变成4个规则了。正常可能会像下面这么写。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ruleVerify</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">//process</span></span><br><span class="line">    <span class="keyword">if</span> cond1 &#123;</span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> cond2 &#123;</span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>或者用switch-case。虽然很多人说switch-case写起来要比if-else更好看或者高端一点，其实我并不这么觉得。if-else和switch-case本质上并没有什么区别，扩展的时候如果需要多加一个条件分支，这两种方法改动起来都比较丑。下面说说我的解决方案。</p>
+<h4 id="1-类工厂模式"><a href="#1-类工厂模式" class="headerlink" title="1. 类工厂模式"></a>1. 类工厂模式</h4><p>熟悉设计模式的肯定对工厂模式肯定不会陌生。工厂模式的意思是通过参数来决定生成什么样的对象实例。我这里并不是说直接使用工厂模式而是使用工厂模式这种思想来编程。举个典型的例子，webserver的router实现方式：根据不同的路由（/foo，/bar）对应到不同的handler。光这么说，可能很多人还是不明白这种方式的扩展性好在什么地方。下面从0到1来感受一下。<br>首先根据不同的条件对应不同的handler，这个最简单的是使用Map来实现，没有问题，但是map里面存什么呢？如果我要增加一个条件以及对应的处理函数的时候怎么做呢？</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//存放 &lt;cond, handler&gt; 对应关系</span></span><br><span class="line"><span class="keyword">var</span> mux <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="function"><span class="keyword">func</span><span class="params">(option *Option)</span> <span class="title">error</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">//注册handler</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">register</span><span class="params">(key <span class="keyword">string</span>, f <span class="keyword">func</span>(option *Option)</span> <span class="title">error</span>)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> mux == <span class="literal">nil</span> &#123;</span><br><span class="line">        mux = <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="function"><span class="keyword">func</span><span class="params">(option *Option)</span> <span class="title">error</span>)</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> _, exist := mux[key]; exist &#123;</span><br><span class="line">        <span class="keyword">return</span> errors.New(<span class="string">"handler exist"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    mux[key] = f</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//factory</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">factory</span><span class="params">(option *Option)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> mux[option.Key](option)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码主要分三个部分：1.mux用来存放cond和handler的对应关系；2.register用来注册新的handler; 3.提供给外部的代码入口。下面到了最核心的问题了，如果某一天PM和你说：大神，我们现在要新加一个用户用券规则。这个时候你就可以和她说：没问题。代码上的改动只需要实现一个新增规则的实现函数，同时调用一下register即可。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>踏出校门一年多了，我经常在想什么样的代码才是好的代码？我相信每个人都会有不同的答案。从我个人角度来看，扩展性确实是衡量好代码的一个很重要的指标。在做业务系统的时候经常为了赶进度写的代码而忽略扩展性，最后随着版本迭代发现之前的代码框架越来越臃肿，不得不进行重构。重构，从某种意义上来说，就是填坑。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="http://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis" target="_blank" rel="noopener">Functional options for friendly apis.</a></li>
+<li><a href="https://commandcenter.blogspot.com.au/2014/01/self-referential-functions-and-design.html" target="_blank" rel="noopener">self referential functions and design.</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/10/26/rwmutex/" rel="next" title="读写锁以及golang的实现">
+                  <i class="fa fa-chevron-left"></i> 读写锁以及golang的实现
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/12/06/beanstalk-code-ds/" rel="prev" title="beanstalkd 源码剖析：数据结构">
+                  beanstalkd 源码剖析：数据结构 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#函数声明"><span class="nav-number">1.</span> <span class="nav-text">函数声明</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-普通函数"><span class="nav-number">1.0.1.</span> <span class="nav-text">1. 普通函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-不定参数"><span class="nav-number">1.0.2.</span> <span class="nav-text">2. 不定参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-封装成-struct"><span class="nav-number">1.0.3.</span> <span class="nav-text">3. 封装成 struct</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-option"><span class="nav-number">1.0.4.</span> <span class="nav-text">4. option</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#函数实现"><span class="nav-number">2.</span> <span class="nav-text">函数实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-类工厂模式"><span class="nav-number">2.0.1.</span> <span class="nav-text">1. 类工厂模式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

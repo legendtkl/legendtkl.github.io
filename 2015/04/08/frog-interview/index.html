@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="译注1：在我刚开始写博客的时候，发现了Peteris Krumins，特别高产的博主。博客地址是：www.catonmat.net。我给他发了一封邮件，希望可以将他的一篇博文翻译成中文，他很开心的答应了。前段时候Peteris来信问我，有没有兴趣再翻译一篇。于是有了这篇译文。 译注2：关于Fog Creek公司。Fog Creek是一家致力于项目管理工具的公司。我所知道的Trello就是出自这家">
+<meta name="keywords" content="Fog Creek,Peteris Krumins">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】Fog Creek采访：Peteris Krumins">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2015&#x2F;04&#x2F;08&#x2F;frog-interview&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="译注1：在我刚开始写博客的时候，发现了Peteris Krumins，特别高产的博主。博客地址是：www.catonmat.net。我给他发了一封邮件，希望可以将他的一篇博文翻译成中文，他很开心的答应了。前段时候Peteris来信问我，有没有兴趣再翻译一篇。于是有了这篇译文。 译注2：关于Fog Creek公司。Fog Creek是一家致力于项目管理工具的公司。我所知道的Trello就是出自这家">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;ww4.sinaimg.cn&#x2F;mw690&#x2F;7cc829d3gw1eqz7p4ul34j203c03caa1.jpg">
+<meta property="og:image" content="http:&#x2F;&#x2F;ww1.sinaimg.cn&#x2F;mw690&#x2F;7cc829d3gw1eqz7p66mrkj20ju05tdi7.jpg">
+<meta property="og:image" content="http:&#x2F;&#x2F;ww1.sinaimg.cn&#x2F;mw690&#x2F;7cc829d3gw1eqz7p6y2uoj20ju05ttaw.jpg">
+<meta property="og:image" content="http:&#x2F;&#x2F;ww2.sinaimg.cn&#x2F;mw690&#x2F;7cc829d3gw1eqz7p7szj5j20ju05tdjl.jpg">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;ww4.sinaimg.cn&#x2F;mw690&#x2F;7cc829d3gw1eqz7p4ul34j203c03caa1.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2015/04/08/frog-interview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>【译】Fog Creek采访：Peteris Krumins | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/04/08/frog-interview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【译】Fog Creek采访：Peteris Krumins
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-04-08 19:36:17" itemprop="dateCreated datePublished" datetime="2015-04-08T19:36:17+08:00">2015-04-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BF%BB%E8%AF%91/" itemprop="url" rel="index">
+                    <span itemprop="name">翻译</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <ul>
+<li>译注1：在我刚开始写<a href="http://www.legendtkl.com" target="_blank" rel="noopener">博客</a>的时候，发现了Peteris Krumins，特别高产的博主。博客地址是：<a href="http://www.catonmat.net" target="_blank" rel="noopener">www.catonmat.net</a>。我给他发了一封邮件，希望可以将他的一篇博文翻译成中文，他很开心的答应了。前段时候Peteris来信问我，有没有兴趣再翻译一篇。于是有了这篇译文。</li>
+<li>译注2：关于Fog Creek公司。Fog Creek是一家致力于项目管理工具的公司。我所知道的Trello就是出自这家公司。让我印象比较深刻的还有办公环境，说其好于google也不为过。不信你去搜索一下。</li>
+<li>注3：Fog Creek会定期对一些开发人员进行访谈。下面是采访译文。<a id="more"></a></li>
+</ul>
+<hr>
+<p><img src="http://ww4.sinaimg.cn/mw690/7cc829d3gw1eqz7p4ul34j203c03caa1.jpg" alt="peter"></p>
+<p>在dev.life栏目中，我们会和一些开发者聊聊关于他们的编程热情：他们怎么喜欢上编程，以及喜欢什么样的工作。</p>
+<p>本文的嘉宾是 <a href="https://twitter.com/pkrumins" target="_blank" rel="noopener">Peteris Krumins</a>，他是 <a href="https://www.browserling.com/" target="_blank" rel="noopener">Browserling</a> 公司的联合创始人兼 CEO。Browserling是一个网站多浏览器测试的在线工具，汇集了主流浏览器的网站，可以帮助网页设计师测试网站在不同浏览器下的兼容性。同时他还是书籍《Perl One-Liners》的作者。他经常在博客上写一些关于软件开发的文章。</p>
+<p><strong>Fog Creek：你是怎么进入软件开发行业的？</strong></p>
+<p><strong>Peteris：</strong>我在6岁的时候第一次接触计算机，当时在妈妈工作的地方看到了一个386或者486的计算机。当时我就被深深吸引了。之后我就一起幻想能有一台自己的电脑。我试了很多方法，最后从一些朋友那儿得到了一台。为了蹭网，我甚至假装是大学生，尽管我还是一个小孩子。</p>
+<p>我最开始从一个叫Zombie的朋友那儿得到了一台笔记本电脑。他是一个了不起的系统管理员，将一台闲置的笔记本送给我了。我现在还保存着：IBM Butterfly 笔记本（ThinkPad 701CS），8M内存，800M硬盘，我最开始用来跑Windows 95和OpenBSD。后来我将内存升级成了40M。它还有细缆PCMCIA网卡，我家里的网络最开始是10Mb/s。</p>
+<p><img src="http://ww1.sinaimg.cn/mw690/7cc829d3gw1eqz7p66mrkj20ju05tdi7.jpg" alt=""></p>
+<p>再后来我在15岁的时候拥有了自己的计算机。当时它有着很不错的配置：400Mhz赛扬处理器，256M内存，8G硬盘驱动器，16M 3D Blaster Banshee显卡，17寸75Hz，分辨率1024×768的CRT显示器，原厂配置Windows 98操作系统。</p>
+<p>计算机知识我是完全自学的。刚开始我学习了各种编程语言。当我拿到我赛扬计算机的时候，我已经知道自己想要做什么了。我想要做网页，于是开始学习HTML、JavaScript和CSS。最开始我并不知道网站是怎么工作的以及服务器相关的知识，一段时间才明白我需要一个web服务器去运行我的网站。我先是将我的网站托管在Angelfire上，后来用PHP和MySQL搭建了自己的Linux Slackware web服务器。我也想做一名黑客，所以我还学习了C和汇编语言。另外我花了很多时间在IRCNet上，所以我还学习了mIRC脚本并用VB搭建了自己的IRC客户端。（注：IRC是Internet Relay Chat的英文缩写，中文一般称为互联网中继聊天。由芬兰人JarkkOikarinen于1988年首创的一种网络聊天协议。mIRC是英国mIRC公司出品的IRC类客户端软件。mIRC脚本是其集成的脚本语言。）</p>
+<p><strong>Fog Creek：谈一谈你现在的工作。</strong></p>
+<p><strong>Peteris：</strong>我现在是Browserling公司的CEO。2011年，我和一个朋友在旧金山湾区成立了Browerling公司。现在我每天都会写很多代码，管理服务器，和客户与雇员们工作。我很喜欢我现在的工作，实在无法想像如果我从事别的工作会是什么样。另外我还是Paul Graham的死粉，也是他的文章激励我创业。（注：Paul Graham就是特别火的《黑客与画家》的作者，没有读过的朋友，建议看一看。）</p>
+<p>我现在全身心致力于扩展业务。我停止了所有副业、写书等任何可能分散我注意力的事情。创业成功的首要原则就是要百分百地投入。我现在已经实现了营收增长，并且正在建一个国际化远程的开发团队。我刚招聘了一个乌克兰的牛逼工程师，并向非英语市场上扩展业务。</p>
+<p>我也解决了一些技术问题，比如如何将虚拟机上运行的浏览器分配给不同的客户，如何每秒钟抓取数以百计的浏览器截图。我喜欢服务器相关的工作，并且我打算将服务器从EC2和Rackspace云上迁到物理机上。云服务器是很适合初创公司，但是随着发展壮大，服务器迁到自己的地盘还是很有必要的：可以节省开支并提高性能。（注：EC2是Amazon云。Rackspace是全球三个云厂商之一。）</p>
+<p><strong>Fog Creek:：什么时候是你最开心的编程时刻？</strong></p>
+<p><strong>Peteris：</strong>当我工作状态极好和搞定问题的时候是最开心的。我经常能进入状态，打算分享一下。晚上工作白天休息。晚上时间干扰很少能让你保持专心。另外一个秘诀是关闭Twitter、Facebook、Skype、GTalk、G+等社交工具。当你在工作状态时候不想被突然的消息提示打断吧。</p>
+<p><img src="http://ww1.sinaimg.cn/mw690/7cc829d3gw1eqz7p6y2uoj20ju05ttaw.jpg" alt=""></p>
+<p><strong>Fog Creek：你的开发环境是什么样的？</strong></p>
+<p><strong>Peteris：</strong>我装了双操作系统。我在自己的工作站使用Windows 7，通过SSH登录Linux服务器。我上个月刚搭建了一个新的工作站：Intel i7 4790K 处理器并超频处理到 4.7Ghz。</p>
+<p>另外我还有一个Linux 防火墙服务器、一个Linux文件服务器和一个Linux开发服务器。通过Samba将Linux文件服务器挂载到Windows上，然后在RAID6上运行驱动器。所有的这些Linux服务器都运行Slackware。我很喜欢Slackware的简洁。为了保证系统简洁，我一般只安装的需要的package。比如firewall服务器上只有Bash, Vim和Iptable。文件服务器上只有Bash, Vim, Cryptsetup和Samba。开发服务器上有我开发需要的一切工具。</p>
+<p>我在Linux上使用Vim，在Windows上使用gVim和Visual Studio。Windows应用开发的时候，如果环境中没有IntelliSense，也很让人抓狂。我有一个高度定制化的Vim并有很多插件，比如：</p>
+<ul>
+<li><p>surround.vim (quickly edit surrounding text)</p>
+</li>
+<li><p>repeat.vim (repeat surround commands)</p>
+</li>
+<li><p>matchit.vim (extend what % key matches)</p>
+</li>
+<li><p>snipmate.vim (code snippets)</p>
+</li>
+<li><p>nerd_tree.vim (explore filesystem from vim)</p>
+</li>
+<li><p>a.vim (alternate C and H files)</p>
+</li>
+<li><p>ragtag.vim (mappings for editing HTML)</p>
+</li>
+<li><p>tabular.vim (aligning text)</p>
+</li>
+<li><p>bufexplorer.vim (working with buffers)</p>
+</li>
+<li><p>python.vim (better python support)</p>
+</li>
+<li><p>exchange.vim (exchange text quickly)</p>
+</li>
+<li><p>abolish.vim (substitute words)</p>
+</li>
+<li><p>speeddating.vim (increment dates)<br>Windows下的工具：</p>
+</li>
+<li><p>Total Commander (file manager)</p>
+</li>
+<li><p>Visual Studi(can’t beat IntelliSense)</p>
+</li>
+<li><p>SQLyog (GUI manager for MySQL databases)</p>
+</li>
+<li><p>SQLiteSpy (GUI manager for SQLite databases)</p>
+</li>
+<li><p>pgAdmin (GUI manager for Postrgres databases)</p>
+</li>
+<li><p>WinSCP and SecureFX (secure FTP clients)</p>
+</li>
+<li><p>Putty and SecureCRT (SSH clients)</p>
+</li>
+<li><p>KeePass (password manager)</p>
+</li>
+<li><p>ClipX (clipboard manager)</p>
+</li>
+<li><p>Launchy (program launcher)</p>
+</li>
+<li><p>Locate32 (file indexer)</p>
+</li>
+<li><p>allSnap (window manager)</p>
+</li>
+<li><p>AutoHotkeys (automate tasks and programs)</p>
+</li>
+<li><p>Virtual CloneDrive (mount disk images)</p>
+</li>
+<li><p>IsoBuster (extract disk images)</p>
+</li>
+<li><p>ImgBurn (image burner)</p>
+</li>
+<li><p>Enounce MySpeed (speedup or slow down videos)</p>
+</li>
+<li><p>Hex Workshop (hex editor)</p>
+</li>
+<li><p>VMWare Workstation (virtual machines)</p>
+</li>
+<li><p>Cygwin (unix tools)</p>
+</li>
+<li><p>UltraMon (multi-screen support)</p>
+</li>
+<li><p>Beyond Compare (diffing tool)</p>
+</li>
+<li><p>Tclock2 (better clock)</p>
+</li>
+<li><p>Fineprint (printer proxy)</p>
+</li>
+<li><p>SumatraPDF (better PDF viewer)</p>
+</li>
+<li><p>AviSynth (edit videos programmatically)</p>
+</li>
+<li><p>ffmpeg (convert videos)</p>
+</li>
+<li><p>VirtualDub (convert and edit videos)</p>
+</li>
+<li><p>WinDirStat (disk space visualization)</p>
+</li>
+<li><p>clink (better cmd.exe)</p>
+</li>
+<li><p>IDA Pr(debugging)</p>
+</li>
+<li><p>Photoshop</p>
+</li>
+<li><p>Sysinternals tools<br>Linux下的工具：</p>
+</li>
+<li><p>samba (mounting Linux on Windows)</p>
+</li>
+<li><p>tmux and screen (persistent shell sessions)</p>
+</li>
+<li><p>all the standard UNIX utilities (awk, sed, grep, head, tail, uniq, sort, etc.)</p>
+</li>
+<li><p>perl (rapid prototyping, quick hacks, one-liners)</p>
+</li>
+<li><p>iptables and nftables (firewalling)</p>
+</li>
+<li><p>htop (better top)</p>
+</li>
+<li><p>mtr (better traceroute)</p>
+</li>
+<li><p>multitail (tail multiple files in multiple windows)</p>
+</li>
+<li><p>nc (netcat, TCP/IP swiss army knife)</p>
+</li>
+<li><p>iftop (bandwidth monitor)</p>
+</li>
+<li><p>ack (better grep)</p>
+</li>
+<li><p>ipcalc (network address calculator)</p>
+</li>
+<li><p>pv (pipe viewer – UNIX pipe progress bar)</p>
+</li>
+<li><p>rsync (backups)</p>
+</li>
+<li><p>ncdu (disk space visualization)</p>
+</li>
+<li><p>curl (http client)</p>
+</li>
+<li><p>nmap (network scanner)</p>
+</li>
+<li><p>tcpdump and wireshark (for network debugging)</p>
+</li>
+<li><p>sysdig (strace + lsof + tcpdump combined)</p>
+</li>
+<li><p>youtube-dl (downloading all online videos)<br>我坐着编程。我从来没有试过站着或者走着编程，我觉得那样太怪了。当我在工作状态时，我收听电台di.fm。如果不在，音乐往往让人分心。我已经用微软的Natural键盘写了十年代码了，除了年老色衰之外，它现在依然工作很好。</p>
+</li>
+</ul>
+<p>在我试着理解某些东西的时候，我会做很多的笔记。当我遇到复杂问题的时候，我一般将它们分解成小的易于解决的子问题，列在ToDlist上，一个一个解决。实际上我的ToDlist分成三种：长期的（未来1到2年）、中期的（未来几个月）和短期的。</p>
+<p><strong>Fog Creek：关于开发，最喜欢的书或者资源？</strong></p>
+<p><strong>Peteris：</strong>我很喜欢计算机和科学书籍。每几个月我就花一天时间研究一下最新的出版物并买上一些最感兴趣的。下面我列出我最喜欢的5本书。</p>
+<p>1. 《<a href="http://www.amazon.cn/gp/product/0805071660/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=0805071660&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">The New Turing Omnibus</a>》<br>对计算机感兴趣的人必读。这本书共有66篇小文章，全都是最重要和最有趣的计算机相关知识，比如压缩、图灵机、正则方法和神经网络等。这本书的写作风格休闲，基本不含有数学相关的知识。一直是我的最爱。</p>
+<p>2. 《<a href="http://www.amazon.cn/gp/product/1441418687/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=1441418687&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">The Little Book of Semaphores</a>》<br>这本书告诉我们如何去思考多线程执行的问题以及如何解决同步问题。我强烈推荐这本书，如果你是自学的话更加推荐。这本书会引导读者一步一步去解决一系列的经典和非经典同步问题。解决问题的过程很有乐趣，我已经将它推荐给了我身边的每一个人。</p>
+<p>3. 《<a href="http://www.amazon.cn/gp/product/B00SFZH0DC/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=B00SFZH0DC&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">编程珠玑</a>》和《<a href="http://www.amazon.cn/gp/product/B004ZWBW5G/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=B004ZWBW5G&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">编程</a><a href="http://www.amazon.cn/gp/product/B004ZWBW5G/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=B004ZWBW5G&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">珠玑（续）</a>》<br>经典编程书籍。Jon Bentley知道如何清楚、热情地写算法问题。这本书一直很好，它会教你如何分析问题、将问题拆开成小问题，以及高效实现解决方法。如果你读了这两本书，那么你会通过Google面试的。（注：我们都知道这是远远不够的：）。）</p>
+<p>4. 《<a href="http://www.amazon.cn/gp/product/0262560992/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=0262560992&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">The Little Schemer</a>》<br>这本书会以一种很有趣的方式教你一些关于LISP的知识。这本书就像你和作者之间关于数百个Scheme编程问题的对话，它会教学会递归思考。它会教你思考并锻炼你的思维能力。最有趣的编程书籍之一。</p>
+<p>5. 《The Elements of Style | <a href="http://www.amazon.cn/gp/product/B008H0PQPE/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=B008H0PQPE&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">风格的要素</a>》 和 《The Elements of Programming Style | <a href="http://www.amazon.cn/gp/product/B00UG7A7KA/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=B00UG7A7KA&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">编程风格</a>》<br>严格意义上来说，《The elements of Style》并不是完全的开发或者编程书籍，而是一本关于写作的书籍。为了成为一个牛逼的程序员，你需要和别人清楚的交流，写作技巧是必要的。这本书一共100页，你一个晚上就可以读完。</p>
+<p>《The Elements of Programming Style | <a href="http://www.amazon.cn/gp/product/B00UG7A7KA/ref=as_li_qf_sp_asin_il_tl?ie=UTF8&amp;camp=536&amp;creative=3200&amp;creativeASIN=B00UG7A7KA&amp;linkCode=as2&amp;tag=vastwork-23" target="_blank" rel="noopener">编程风格</a>》要一本经典的编程书籍。作者是Kernighan，写作风格深受到前一本书影响。这本书有点古老，但是基本所有的东西依然很有用。这本书共有70条编程规则，比如<strong>清晰书写</strong>。</p>
+<p><img src="http://ww2.sinaimg.cn/mw690/7cc829d3gw1eqz7p7szj5j20ju05tdjl.jpg" alt=""></p>
+<p><strong>Fog Creek：你目前使用的技术能分享一下吗？</strong></p>
+<p><strong>Peteris：</strong>我是Visual Studio的死粉，刚下载了Visual Studi2015 Preview版本并且开始使用了。我还在虚拟机中装了Windows 10。由于我现在做多浏览器的测试工作，对微软的新浏览器Spartan还是很期待的。</p>
+<p>Google刚开源了Kythe，这是一个很好的学习机会。我去年就从一个Googler朋友那儿听说了，早已经等不及了。这个周末我打算在Linux内核源代码上试试Kythe。</p>
+<p>如果我有更多时间，我想把Oculus Rift和运动平台结合起来做一些虚拟现实的小东东。</p>
+<p><strong>Fog Creek：不编程的时候喜欢做些什么？</strong></p>
+<p><strong>Peteris：</strong>我喜欢锻炼身体，做一些田径运动。我发现短路运动比咖啡更有用。我做10组短路之后，在接下来10到12个小时里都精力充沛，可以整个晚上编程像个怪物一样。我也喜欢田径比赛，特别是400米和800米。</p>
+<p><strong>Fog Creek：对于年轻的自己，你有什么建议？</strong></p>
+<p><strong>Peteris：</strong>4条建议：</p>
+<ul>
+<li>1. 快速、高效解决问题，并继续</li>
+<li>2. 不要做没价值的事情</li>
+<li>3. 更早开始写技术博客</li>
+<li>4. 版本迭代尽量早尽量快</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Fog-Creek/" rel="tag"># Fog Creek</a>
+              <a href="/tags/Peteris-Krumins/" rel="tag"># Peteris Krumins</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/10/31/go-datastructure/" rel="next" title="Go语言学习笔记:数据类型">
+                  <i class="fa fa-chevron-left"></i> Go语言学习笔记:数据类型
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/05/06/linux-alias/" rel="prev" title="linux妙用alias">
+                  linux妙用alias <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

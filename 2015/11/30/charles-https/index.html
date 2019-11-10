@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="先给结论：中间人攻击（man in the middle attack），下面在展开说。 1. HTTPSHTTPS是一种安全的构建在http基础上的安全传输协议。HTTPS由两部分组成：HTTPS和TLS。HTTP大家都很熟悉，全称是Hyper Text Transfer Protocal，超文本传输协议。HTTP的问题是数据是明文传输的，明文传输的问题在于HTTP整个传输过程中任意一个环节出问">
+<meta name="keywords" content="charles,https">
+<meta property="og:type" content="article">
+<meta property="og:title" content="charles是如何抓取https数据包的">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2015&#x2F;11&#x2F;30&#x2F;charles-https&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="先给结论：中间人攻击（man in the middle attack），下面在展开说。 1. HTTPSHTTPS是一种安全的构建在http基础上的安全传输协议。HTTPS由两部分组成：HTTPS和TLS。HTTP大家都很熟悉，全称是Hyper Text Transfer Protocal，超文本传输协议。HTTP的问题是数据是明文传输的，明文传输的问题在于HTTP整个传输过程中任意一个环节出问">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;charles.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;12306.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.915Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;charles.png">
+
+<link rel="canonical" href="http://yoursite.com/2015/11/30/charles-https/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>charles是如何抓取https数据包的 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/11/30/charles-https/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          charles是如何抓取https数据包的
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-11-30 17:57:01" itemprop="dateCreated datePublished" datetime="2015-11-30T17:57:01+08:00">2015-11-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BF%A1%E6%81%AF%E5%AE%89%E5%85%A8/" itemprop="url" rel="index">
+                    <span itemprop="name">信息安全</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>先给结论：中间人攻击（man in the middle attack），下面在展开说。</p>
+<h3 id="1-HTTPS"><a href="#1-HTTPS" class="headerlink" title="1. HTTPS"></a>1. HTTPS</h3><p>HTTPS是一种安全的构建在http基础上的安全传输协议。HTTPS由两部分组成：HTTPS和TLS。HTTP大家都很熟悉，全称是Hyper Text Transfer Protocal，超文本传输协议。HTTP的问题是数据是明文传输的，明文传输的问题在于HTTP整个传输过程中任意一个环节出问题都会导致信息的泄露以及篡改，比如一到年底就很常见的运营商流量劫持，这里就不展开细说了。</p>
+<a id="more"></a>
+
+<p>TLS是Transport Layer Security的简称，中文一般叫做安全传输层协议。有些人或许觉得TLS有点陌生，但是它的前身，你们一定都知道，SSL。我们知道建立TCP连接需要三次握手，而TLS握手需要九次，而这个过程主要就是用来做非对称加密。这也是为什么HTTPS出来很长一段时间内，大部分网站还是采用HTTP协议的原因之一，当然其他原因还有加密解密比较吃CPU，这里先按住不表。</p>
+<h3 id="2-Charles"><a href="#2-Charles" class="headerlink" title="2. Charles"></a>2. Charles</h3><p>Charles是一款很好用的抓包软件，对于网站开发、信息安全以及App开发人员基本是必备的。</p>
+<p><img src="/img/uploads/charles.png" alt=""></p>
+<p>关于Charles使用，可以参考乌云的这篇<a href="http://drops.wooyun.org/tips/2423" target="_blank" rel="noopener">charles使用教程指南</a></p>
+<p>我们知道Charles不仅可以抓取HTTP数据包（这是自然），那么她是如何抓取HTTPS的数据包呢？我们下面一点一点说。</p>
+<h3 id="3-非对称加密"><a href="#3-非对称加密" class="headerlink" title="3. 非对称加密"></a>3. 非对称加密</h3><p>HTTPS使用的是非对称加密。要理解非对称加密，需要先理解对称加密。简单来说，对称加密就是加密解密使用同一个密钥。浏览器和服务器交互的话一般会动态生成一个密钥，所以密钥如何安全传递就成了问题。非对称加密正是为了这个目的，也就是密钥交换（也叫密钥协商）。</p>
+<p>浏览器和服务器每次新建会话时都使用非对称密钥交换算法协商出对称密钥，使用这些对称密钥完成应用数据的加解密和验证，整个会话过程中的密钥只在内存中生成和保存，而且每个会话的对称密钥都不相同（除非会话复用），中间者无法窃取。</p>
+<p>服务器有一对公钥和私钥，公钥用于加密，私钥用于解密。密钥交换过程：服务器的公钥是公开的，私钥是不公开的。浏览器先向服务器取得公钥，然后用公钥加密自己的私钥连同自己私钥加密的请求一并发送给服务器。服务器使用自己私钥解密得到浏览器的私钥，使用浏览器的私钥解密请求。然后再用浏览器的私钥加密response发送回服务器。</p>
+<p>但是这里公钥是可以被人伪造的。那么就出现了证书（Certification Authority, CA）。CA由专门的CA厂商发布，当然厂商也分很多种，我们的浏览器也可以选择不信任，比如我们访问12306的时候，会出现下面这张图。可以看到这个CA是SRCA发布的，而Safari就不是很相信。</p>
+<p><img src="/img/uploads/12306.png" alt=""></p>
+<h3 id="4-中间人攻击"><a href="#4-中间人攻击" class="headerlink" title="4. 中间人攻击"></a>4. 中间人攻击</h3><p>中间人攻击是一种很形象的说法，那么一定有人会问了（好吧，也可能没人问），『中间是谁的中间啊？』，是客户端和服务器的中间，这也是我为什么说她形象的原因了。简单来说，中间人攻击就是通过破解客户端和服务器的正常通信数据并进行数据篡改而达到攻击的目的。具个简单例子，DNS欺骗就是一种中间人攻击。</p>
+<h3 id="5-Charles抓取HTTPS数据包"><a href="#5-Charles抓取HTTPS数据包" class="headerlink" title="5. Charles抓取HTTPS数据包"></a>5. Charles抓取HTTPS数据包</h3><p>正常的中间人攻击是无法攻击HTTPS的，首先所有的传输数据都是加密的，其次中间人无法伪造服务器，因为证书的问题。而Charles的中间人角色需要我们手动添加Charles的证书信任。这样浏览器眼中的服务器就是Charles，而服务器眼中的客户端也是Charles，从而实现了双向数据解密。</p>
+<h3 id="6-ATS"><a href="#6-ATS" class="headerlink" title="6. ATS"></a>6. ATS</h3><p>ATS是App Transport Security的简称，iOS采用的HTTPS协议传输。下面是如何在这种情况下使用Charles。</p>
+<p>You need to disable App Transport Security in your app to use Charles SSL Proxying with apps running on iOS 9.<br>To disable ATS you need to add keys to your app’s Info.plist file, as below. See this tech note from Apple for more information.<br>You must remember to re-enable ATS before you release your app to take advantage of the security that ATS provides.</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">key</span>&gt;</span>NSAppTransportSecurity<span class="tag">&lt;/<span class="name">key</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dict</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">key</span>&gt;</span>NSAllowsArbitraryLoads<span class="tag">&lt;/<span class="name">key</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">true</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dict</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>Note that this means that you cannot use Charles to observe SSL traffic from apps that you do not control.</p>
+<p>ATS的一些信息：<a href="https://developer.apple.com/library/prerelease/mac/documentation/General/Reference/InfoPlistKeyReference/Articles/CocoaKeys.html" target="_blank" rel="noopener">About ATS</a></p>
+<p>iOS的ATS是一种对安全的加强。在About ATS里面我们可以看到ATS对证书的一些限制。现在无法使用Charles，则是因为iOS 9 认为这个连接不安全，目前的解决方案是禁用ATS。长远来看，要么Charles的证书能够是ATS眼中的『安全证书』，要么ATS自己修改spec将Charles的证书认为是安全的，但是这两种方法目前看来可能还需要一段时候。</p>
+<h3 id="7-Reference"><a href="#7-Reference" class="headerlink" title="7. Reference"></a>7. Reference</h3><p>维基百科HTTPS词条：<a href="https://en.wikipedia.org/wiki/HTTPS" target="_blank" rel="noopener">HTTPS</a><br>SSL/TLS握手：<a href="https://www.ssl.com/article/ssl-tls-handshake-overview/" target="_blank" rel="noopener">SSL/TLS Handshake</a><br>维基百科中间人攻击词条：<a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack" target="_blank" rel="noopener">Man-in-the-middle attach</a><br>Charles Document: <a href="https://www.charlesproxy.com/documentation/proxying/ssl-proxying/" target="_blank" rel="noopener">SSL Proxying</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/charles/" rel="tag"># charles</a>
+              <a href="/tags/https/" rel="tag"># https</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/11/28/go-interface-reflect/" rel="next" title="谈一谈Go的interface和reflect">
+                  <i class="fa fa-chevron-left"></i> 谈一谈Go的interface和reflect
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/12/05/aerospike-note/" rel="prev" title="aerospike学习笔记">
+                  aerospike学习笔记 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-HTTPS"><span class="nav-number">1.</span> <span class="nav-text">1. HTTPS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Charles"><span class="nav-number">2.</span> <span class="nav-text">2. Charles</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-非对称加密"><span class="nav-number">3.</span> <span class="nav-text">3. 非对称加密</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-中间人攻击"><span class="nav-number">4.</span> <span class="nav-text">4. 中间人攻击</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-Charles抓取HTTPS数据包"><span class="nav-number">5.</span> <span class="nav-text">5. Charles抓取HTTPS数据包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-ATS"><span class="nav-number">6.</span> <span class="nav-text">6. ATS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-Reference"><span class="nav-number">7.</span> <span class="nav-text">7. Reference</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

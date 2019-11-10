@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="1.引言git commit 是很小的一件事情，但是往往小的事情往往引不起大家的关注，不妨打开公司的 gitlab 上的任一个 repo，查看 commit log，满篇的 update 和 fix，完全不知道这些 commit 是要做啥。下面就说一些最近的看到和自己尝试的一些还不错的实践。">
+<meta name="keywords" content="git">
+<meta property="og:type" content="article">
+<meta property="og:title" content="git 最佳实践: commit msg">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;12&#x2F;22&#x2F;git-good-practice-commit-msg&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="1.引言git commit 是很小的一件事情，但是往往小的事情往往引不起大家的关注，不妨打开公司的 gitlab 上的任一个 repo，查看 commit log，满篇的 update 和 fix，完全不知道这些 commit 是要做啥。下面就说一些最近的看到和自己尝试的一些还不错的实践。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;git_commit_example.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.916Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;git_commit_example.png">
+
+<link rel="canonical" href="http://yoursite.com/2016/12/22/git-good-practice-commit-msg/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>git 最佳实践: commit msg | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/22/git-good-practice-commit-msg/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          git 最佳实践: commit msg
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-12-22 00:38:52" itemprop="dateCreated datePublished" datetime="2016-12-22T00:38:52+08:00">2016-12-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/git/" itemprop="url" rel="index">
+                    <span itemprop="name">git</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1.引言"></a>1.引言</h2><p>git commit 是很小的一件事情，但是往往小的事情往往引不起大家的关注，不妨打开公司的 gitlab 上的任一个 repo，查看 commit log，满篇的 update 和 fix，完全不知道这些 commit 是要做啥。下面就说一些最近的看到和自己尝试的一些还不错的实践。</p>
+<a id="more"></a>
+
+<h2 id="2-Tips"><a href="#2-Tips" class="headerlink" title="2. Tips"></a>2. Tips</h2><h3 id="1-one-thing-one-commit"><a href="#1-one-thing-one-commit" class="headerlink" title="1. one thing one commit"></a>1. one thing one commit</h3><p>在提交 commit 的时候尽量保证这个 commit 只做一件事情，比如实现某个功能或者修改了配置文件。</p>
+<h5 id="1-易读"><a href="#1-易读" class="headerlink" title="1.易读"></a>1.易读</h5><p>阅读整个项目代码的时候有时候整个项目通读并不是一个好的方法。我们可以通过 issue 或者 commit 来一点一点分解整个 repo。如果一个 commit 只聚焦在一个点上，那么代码看起来也会比较舒服，顺着 commit 读下来就是当初的开发过程了。</p>
+<h5 id="2-cherry-pick"><a href="#2-cherry-pick" class="headerlink" title="2.cherry-pick"></a>2.cherry-pick</h5><p>cherry-pick 是 git 中的一个非常有用的命令，可以将 commit 从一个分支“拷贝”到另一个分支。如果我的 commit 划分都很清楚，那么 cherry-pick 就会比较轻松。但是如果我的一个 commit 即实现了功能A，又实现了功能B，而我只想要功能A，这就很尴尬了。</p>
+<p>也许有人会说怎么会有这么奇葩的需求，那么我说一个我刚遇到的例子。我现在负责一些底层的服务，上游的服务会对我有依赖。我对自己的服务有个排期，上游的服务有个排期，而且我目前做了一些接口的升级并不在上游服务的紧接着的下一次上线排期中。目前我的所有开发都是在 dev 分支，为了配合上游服务上线，我需要上线 dev 分支上的部分功能。这个时候只能从 master 上新开一个分支，然后把 dev 分支上和上游服务相关的 commit “拷贝”过去，也就是 cherry-pick。这个时候就可能遇到上面说的那种尴尬的情况。</p>
+<h5 id="3-code-review"><a href="#3-code-review" class="headerlink" title="3. code review"></a>3. code review</h5><p>review 过别人代码的人都知道如果 commit 乱七八糟那将有多么痛苦。我曾经给 githug 项目（一个 ruby 写的练习 git 的终端小游戏）提交 pr 的时候，一个 pr 包含了三个 commit，其中有两个 commit 是修改拼写错误，然后 repo 的作者让我把 commit 合并为一个，才答应给我 merge。</p>
+<h3 id="2-thoughtbot-规范"><a href="#2-thoughtbot-规范" class="headerlink" title="2. thoughtbot 规范"></a>2. thoughtbot 规范</h3><p>地址：<a href="https://github.com/thoughtbot/dotfiles/blob/master/gitmessage" target="_blank" rel="noopener">https://github.com/thoughtbot/dotfiles/blob/master/gitmessage</a></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># <span class="number">50</span>-character subject <span class="built_in">line</span></span><br><span class="line">#</span><br><span class="line"># <span class="number">72</span>-character wrapped longer description. This should answer:</span><br><span class="line">#</span><br><span class="line"># * Why was <span class="keyword">this</span> change necessary?</span><br><span class="line"># * How does it address the problem?</span><br><span class="line"># * Are there any side effects?</span><br><span class="line">#</span><br><span class="line"># Include a link to the ticket, <span class="keyword">if</span> any.</span><br></pre></td></tr></table></figure>
+
+<p>关于这个规范更详细的说明可以参考他们的一篇文章 <a href="https://robots.thoughtbot.com/5-useful-tips-for-a-better-commit-message" target="_blank" rel="noopener">5 Useful Tips For A Better Commit Message</a> 。简单来说：</p>
+<ol>
+<li>第一行不超过 50 个字符</li>
+<li>第二行空一行</li>
+<li>第三行开始是描述信息，每行长度不超过 72 个字符，超过了自己换行。</li>
+<li>描述信息主要说明：<ol>
+<li>这个改动为什么是必要的？</li>
+<li>这个改动解决了什么问题？</li>
+<li>会影响到哪些其他的代码？</li>
+</ol>
+</li>
+<li>最后最好有一个相应 ticket 的链接</li>
+</ol>
+<p>Commit 这种格式有点类似邮件，主题不超过50个字符，然后空一行，这样显示的下面的部分都会折叠起来，类似下面的样子。我们使用命令 <code>git log --oneline</code>的时候就只显示第一行。</p>
+<p>正文部分不超过 72 个字符，这个也主要是为了阅读方便。</p>
+<p>关于最后的一个 ticket 的说明。我们开发之前需要将所有的功能进行拆解，然后开发过程中需要通过一些工具来 track ，每个小功能就是一个 ticket。有些公司使用 jira，有些公司使用 wiki。以使用 jira 为例，前面把功能拆解之后分到每个人手上。这样我们进行提交的时候附上对于的 ticket 链接或者 ticket 号，之后再回溯的时候就会非常方便了。或者也可以给 jira 开发插件，通过抓取 git commit 信息进行分析就能将相应的改动代码直接展示在 jira 上了。这么做的好处不言而喻，需求-功能-开发-代码，整个都被串起来了，不管是对于新人了解系统还是5年或者10年之后回溯都是非常有帮助的。</p>
+<p>下面看一个我们项目中不同风格的 commit 截图对比。</p>
+<p><img src="/img/uploads/2016/git_commit_example.png" alt=""></p>
+<h2 id="3-示例"><a href="#3-示例" class="headerlink" title="3. 示例"></a>3. 示例</h2><p>我们不妨看看开源社区的 git commit 规范。</p>
+<h3 id="1-AngularJS"><a href="#1-AngularJS" class="headerlink" title="1.AngularJS"></a>1.<strong>AngularJS</strong></h3><p>地址：<a href="https://docs.google.com/document/d/1QrDFcIiPjSLDn3EL15IJygNPiHORgU1_OOAqWjiDU5Y/edit#heading=h.uyo6cb12dt6w" target="_blank" rel="noopener"><strong>AngularJS Git Commit Message Conventions</strong></a> 。commit msg 包括三部分：header, body, footer。</p>
+<h4 id="1-commit-msg-format"><a href="#1-commit-msg-format" class="headerlink" title="1.  commit msg format"></a>1.  commit msg format</h4><h5 id="1-revert"><a href="#1-revert" class="headerlink" title="1. revert"></a>1. revert</h5><p>如果这个commit revert 了别的 commit，那么它的 header 应该以 “revert:”开始，后面跟上被 revert 的 commit 的标题。body 应该是 <strong><code>This reverts commit &lt;hash&gt;.</code></strong></p>
+<h5 id="2-header"><a href="#2-header" class="headerlink" title="2. header"></a>2. header</h5><p>header 应该包括 type，分隔符，主题</p>
+<p>type 主要包括：</p>
+<ul>
+<li>feat (feature)</li>
+<li>fix (bug fix)</li>
+<li>docs (documentation)</li>
+<li>style (formating, missing semi colons, …)</li>
+<li>refactor</li>
+<li>test (when adding missing tests)</li>
+<li>chore (maintain)</li>
+</ul>
+<p>主题信息能够简短地描述你的 commit 即可，结尾不要使用“.”，开头首字母不要大写。使用祈使语态，比如使用 change，而不是 changed</p>
+<h5 id="3-msg-body"><a href="#3-msg-body" class="headerlink" title="3.msg body"></a>3.msg body</h5><p>除了 header 的主题信息的要求外，还需要包括为什么要做这个 commit，以及改动前后的对比。</p>
+<h5 id="4-footer"><a href="#4-footer" class="headerlink" title="4.footer"></a>4.footer</h5><ul>
+<li>Breaking changes: 重要的改动要声明。(其实我觉得这个放在header里面更好)</li>
+<li>Referencing issues: 如果和 issue 相关，指出来。</li>
+</ul>
+<h4 id="2-Example"><a href="#2-Example" class="headerlink" title="2.  Example"></a>2.  Example</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">fix(<span class="variable">$compile</span>): couple of unit tests <span class="keyword">for</span> IE9</span><br><span class="line"></span><br><span class="line">Older IEs serialize html uppercased, but IE9 does not...</span><br><span class="line">Would be better to expect <span class="keyword">case</span> insensitive, unfortunately jasmine does</span><br><span class="line">not allow to user regexps <span class="keyword">for</span> throw expectations.</span><br><span class="line"></span><br><span class="line">Closes <span class="comment">#392</span></span><br><span class="line">Breaks foo.bar api, foo.baz should be used instead</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/git/" rel="tag"># git</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/12/17/beanstalk-code-mainflow/" rel="next" title="beanstalkd 源码剖析：主流程">
+                  <i class="fa fa-chevron-left"></i> beanstalkd 源码剖析：主流程
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/12/31/git-good-practice-gitflow/" rel="prev" title="git最佳实践: 分支管理">
+                  git最佳实践: 分支管理 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-引言"><span class="nav-number">1.</span> <span class="nav-text">1.引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Tips"><span class="nav-number">2.</span> <span class="nav-text">2. Tips</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-one-thing-one-commit"><span class="nav-number">2.1.</span> <span class="nav-text">1. one thing one commit</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-易读"><span class="nav-number">2.1.0.1.</span> <span class="nav-text">1.易读</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-cherry-pick"><span class="nav-number">2.1.0.2.</span> <span class="nav-text">2.cherry-pick</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-code-review"><span class="nav-number">2.1.0.3.</span> <span class="nav-text">3. code review</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-thoughtbot-规范"><span class="nav-number">2.2.</span> <span class="nav-text">2. thoughtbot 规范</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-示例"><span class="nav-number">3.</span> <span class="nav-text">3. 示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-AngularJS"><span class="nav-number">3.1.</span> <span class="nav-text">1.AngularJS</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-commit-msg-format"><span class="nav-number">3.1.1.</span> <span class="nav-text">1.  commit msg format</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-revert"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">1. revert</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-header"><span class="nav-number">3.1.1.2.</span> <span class="nav-text">2. header</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-msg-body"><span class="nav-number">3.1.1.3.</span> <span class="nav-text">3.msg body</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-footer"><span class="nav-number">3.1.1.4.</span> <span class="nav-text">4.footer</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-Example"><span class="nav-number">3.1.2.</span> <span class="nav-text">2.  Example</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

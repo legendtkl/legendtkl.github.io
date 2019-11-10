@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言Ganglia 是目前最广泛的应用是用来监控 Hadoop 相关指标，亚马逊、阿里云、Cloudera Manager 等都在使用。但是目前网络上的文档非常的少，所以打算写一系列关于 Ganglia 的文章，包括安装、使用、扩展、架构以及源码等。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解 Ganglia 之 Overview">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;08&#x2F;12&#x2F;understanding-ganglia-1&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言Ganglia 是目前最广泛的应用是用来监控 Hadoop 相关指标，亚马逊、阿里云、Cloudera Manager 等都在使用。但是目前网络上的文档非常的少，所以打算写一系列关于 Ganglia 的文章，包括安装、使用、扩展、架构以及源码等。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.995Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/08/12/understanding-ganglia-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>深入理解 Ganglia 之 Overview | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/12/understanding-ganglia-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入理解 Ganglia 之 Overview
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-08-12 16:19:38" itemprop="dateCreated datePublished" datetime="2017-08-12T16:19:38+08:00">2017-08-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h2><p>Ganglia 是目前最广泛的应用是用来监控 Hadoop 相关指标，亚马逊、阿里云、Cloudera Manager 等都在使用。但是目前网络上的文档非常的少，所以打算写一系列关于 Ganglia 的文章，包括安装、使用、扩展、架构以及源码等。</p>
+<a id="more"></a>
+
+<h2 id="1-Ganglia-简介"><a href="#1-Ganglia-简介" class="headerlink" title="1. Ganglia 简介"></a>1. Ganglia 简介</h2><p>Ganglia 包括三个部分：gmond, gmetad, gweb。最常用的 Ganglia 架构如下图所示（数据流向从左到右）。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[gmond collector 1]                        [gweb]</span><br><span class="line">                   \                      /</span><br><span class="line">                    [gmetad] --&gt; [rrdtool] </span><br><span class="line">                   /                      \</span><br><span class="line">[gmond collector 2]                        [disk]</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="1-1-gmond"><a href="#1-1-gmond" class="headerlink" title="1.1 gmond"></a>1.1 gmond</h4><p>gmond 可以类比成 server-agent 架构中的 agent，负责指标收集。与 agent 不同的，gmond 之间可以互相通信，我们可以将多个 gmond 的监控数据发送给一个或者几个 gmond (unicast mode，单播)，也可以让所有 gmond 之间都收集其他 gmond 的监控数据（multicast mode，广播）。</p>
+<p>集群监控的时候，每一台机器都需要运行一个 gmond 进程用来做监控数据采集。如果是 unicast 的话，会有一个或者几个 gmond 负责指标的收集和汇总。gmond 之间是通过 udp 协议来通信的，如果要设置发送指标的 gmond host，需要设置配置文件（gmond.conf) 中的 udp_send_channel。同时还要保证接收者的 udp_recv_channel 中的 port 和发送者的一致。</p>
+<h4 id="1-2-gmetad"><a href="#1-2-gmetad" class="headerlink" title="1.2 gmetad"></a>1.2 gmetad</h4><p>gmetad 可以类比成 server-agent 架构中的 server。gmetad 通过 tcp poller 的方式从 gmond 拉取数据，然后处理成 rrd 文件格式落盘。</p>
+<p>关于 rrd，是 Round Robin Database 的缩写，中文一般叫环状数据库。这里的 Round Robin 和负载均衡里面的是两回事。rrd 一般用来存放时间序列的数据，time-series。所谓环状就是说老数据会被新数据覆盖，而且距当前时间越久远，时间存放的粒度会越大。</p>
+<p>rrd 文件操作，一般使用 rrdtool。关于 rrdtool 的使用可以通过 help 查看。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ rrdtool -<span class="built_in">help</span></span><br><span class="line">RRDtool 1.4.8  Copyright 1997-2013 by Tobias Oetiker &lt;tobi@oetiker.ch&gt;</span><br><span class="line">               Compiled Nov 20 2015 19:23:48</span><br><span class="line"></span><br><span class="line">Usage: rrdtool [options] <span class="built_in">command</span> command_options</span><br><span class="line">Valid commands: create, update, updatev, graph, graphv,  dump, restore,</span><br><span class="line">		last, lastupdate, first, info, fetch, tune,</span><br><span class="line">		resize, xport, flushcached</span><br><span class="line"></span><br><span class="line">RRDtool is distributed under the Terms of the GNU General</span><br><span class="line">Public License Version 2. (www.gnu.org/copyleft/gpl.html)</span><br><span class="line"></span><br><span class="line">For more information <span class="built_in">read</span> the RRD manpages</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-3-gweb"><a href="#1-3-gweb" class="headerlink" title="1.3 gweb"></a>1.3 gweb</h4><p>gweb 也就是数据可视化，内部是 php 实现的，这个就不细说了。 监控数据可视化可以有多种解决方案，比如最近比较流行的 grafana。</p>
+<h2 id="2-安装"><a href="#2-安装" class="headerlink" title="2. 安装"></a>2. 安装</h2><p>安装可以拉源码下来自己 make install，或者直接通过包管理（apt-get 或者 yum）安装二进制文件。安装过程这里不再展开。</p>
+<h2 id="3-Hadoop-指标采集"><a href="#3-Hadoop-指标采集" class="headerlink" title="3. Hadoop 指标采集"></a>3. Hadoop 指标采集</h2><p>Hadoop 支持将部分监控数据发送给 gmond，我们前面说到 gmond 之间数据交互使用 udp 协议，Hadoop 的指标就是自己主动发送给 gmond。对于 Hadoop 2.0 以上版本只需要修改配置文件  hadoop-metrics2.properties 即可，示例如下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">*.sink.file.class=org.apache.hadoop.metrics2.sink.FileSink</span><br><span class="line"><span class="comment"># default sampling period, in seconds</span></span><br><span class="line">*.period=10</span><br><span class="line"></span><br><span class="line"><span class="comment"># for Ganglia 3.1 support, 3.1 以上版本</span></span><br><span class="line">*.sink.ganglia.class=org.apache.hadoop.metrics2.sink.ganglia.GangliaSink31</span><br><span class="line"></span><br><span class="line">*.sink.ganglia.period=10</span><br><span class="line"></span><br><span class="line">*.sink.ganglia.supportsparse=<span class="literal">true</span></span><br><span class="line"></span><br><span class="line">*.sink.ganglia.slope=jvm.metrics.gcCount=zero,jvm.metrics.memHeapUsedM=both</span><br><span class="line">*.sink.ganglia.dmax=jvm.metrics.threadsBlocked=70,jvm.metrics.memHeapUsedM=40</span><br><span class="line"></span><br><span class="line"><span class="comment">#filter 自己可以自由设置</span></span><br><span class="line">*.source.filter.class=org.apache.hadoop.metrics2.filter.RegexFilter</span><br><span class="line">*.record.filter.class=<span class="variable">$&#123;*.source.filter.class&#125;</span></span><br><span class="line">*.metric.filter.class=<span class="variable">$&#123;*.source.filter.class&#125;</span></span><br><span class="line"></span><br><span class="line">datanode.sink.ganglia.record.filter.exclude=UgiMetrics|MetricsSystem|rpcdetailed</span><br><span class="line">nodemanager.sink.ganglia.record.filter.exclude=UgiMetrics|MetricsSystem|rpcdetailed</span><br><span class="line">namenode.sink.ganglia.record.filter.exclude=UgiMetrics|MetricsSystem</span><br><span class="line">resourcemanager.sink.ganglia.record.filter.exclude=UgiMetrics|MetricsSystem</span><br><span class="line">mrappmaster.sink.ganglia.record.filter.exclude=UgiMetrics|MetricsSystem|rpcdetailed</span><br><span class="line">jobhistoryserver.sink.ganglia.record.filter.exclude=UgiMetrics|MetricsSystem</span><br><span class="line"></span><br><span class="line">namenode.sink.ganglia.servers=yourgangliahost_1:8649,yourgangliahost_2:8649</span><br><span class="line"></span><br><span class="line">datanode.sink.ganglia.servers=yourgangliahost_1:8649,yourgangliahost_2:8649</span><br><span class="line"></span><br><span class="line">resourcemanager.sink.ganglia.servers=yourgangliahost_1:8649,yourgangliahost_2:8649</span><br><span class="line"></span><br><span class="line">nodemanager.sink.ganglia.servers=yourgangliahost_1:8649,yourgangliahost_2:8649</span><br><span class="line"></span><br><span class="line">mrappmaster.sink.ganglia.servers=yourgangliahost_1:8649,yourgangliahost_2:8649</span><br><span class="line"></span><br><span class="line">jobhistoryserver.sink.ganglia.servers=yourgangliahost_1:8649,yourgangliahost_2:8649</span><br></pre></td></tr></table></figure>
+
+<p>指标发送的 gmond server 配置在最后，可以使用 IP 或 host name。如果不加端口号，默认使用 8649。如果有 多个 server，可以使用逗号或者空格隔开。关于分割符，我之前使用逗号的时候只能解析出来第一个 server，最后把逗号换成空格问题解决。这个地方非常诡异，我翻了一下 Hadoop 源码对这个参数的解析，分隔符是逗号和空格都 OK 的。</p>
+<h2 id="4-实践"><a href="#4-实践" class="headerlink" title="4. 实践"></a>4. 实践</h2><p>下面我们来配置一个单播的集群，gmond 主要配置如下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">cluster &#123;   // 分组</span><br><span class="line">  name = cluster_workers</span><br><span class="line">  owner = <span class="string">"unspecified"</span></span><br><span class="line">  latlong = <span class="string">"unspecified"</span></span><br><span class="line">  url = <span class="string">"unspecified"</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">udp_send_channel &#123;	// 发送 metrics 的目的 host, port 设置</span><br><span class="line">  host = host-1     // 换成你的 hostname</span><br><span class="line">  port = 8649</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/* You can specify as many udp_recv_channels as you like as well. */</span><br><span class="line">udp_recv_channel &#123;  // 如果是 gmond 收集点，这个需要设置</span><br><span class="line">  port = 8649</span><br><span class="line">  retry_bind = <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/* You can specify as many tcp_accept_channels as you like to share</span><br><span class="line">   an xml description of the state of the cluster */</span><br><span class="line">tcp_accept_channel &#123;  // 提供了一个读取 xml 文件的 tcp 端口, gmetad 也是从这读取的数据</span><br><span class="line">  port = 8649</span><br><span class="line">  <span class="comment"># If you want to gzip XML output</span></span><br><span class="line">  gzip_output = no</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>配置完之后重启 gmond，通过查看系统 /var/log/messages 可以查看一些 log 信息。telnet 8649 端口就能取到汇总的指标数据了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># service gmond restart</span></span><br><span class="line"><span class="comment"># telnet host-1 8649</span></span><br><span class="line">&lt;?xml version=<span class="string">"1.0"</span> encoding=<span class="string">"ISO-8859-1"</span> standalone=<span class="string">"yes"</span>?&gt;</span><br><span class="line">&lt;!DOCTYPE GANGLIA_XML [</span><br><span class="line">   &lt;!ELEMENT GANGLIA_XML (GRID|CLUSTER|HOST)*&gt;</span><br><span class="line">      &lt;!ATTLIST GANGLIA_XML VERSION CDATA <span class="comment">#REQUIRED&gt;</span></span><br><span class="line">      &lt;!ATTLIST GANGLIA_XML SOURCE CDATA <span class="comment">#REQUIRED&gt;</span></span><br><span class="line">   &lt;!ELEMENT GRID (CLUSTER | GRID | HOSTS | METRICS)*&gt;</span><br><span class="line">      &lt;!ATTLIST GRID NAME CDATA <span class="comment">#REQUIRED&gt;</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>其中指标数据类似如下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;METRIC NAME=<span class="string">"tcp_outsegs"</span> VAL=<span class="string">"7.26570"</span> TYPE=<span class="string">"float"</span> UNITS=<span class="string">"count/s"</span> TN=<span class="string">"1"</span> TMAX=<span class="string">"60"</span> DMAX=<span class="string">"0"</span> SLOPE=<span class="string">"both"</span>&gt;</span><br><span class="line">&lt;EXTRA_DATA&gt;</span><br><span class="line">&lt;EXTRA_ELEMENT NAME=<span class="string">"GROUP"</span> VAL=<span class="string">"tcp"</span>/&gt;</span><br><span class="line">&lt;EXTRA_ELEMENT NAME=<span class="string">"DESC"</span> VAL=<span class="string">"outsegs"</span>/&gt;</span><br><span class="line">&lt;EXTRA_ELEMENT NAME=<span class="string">"TITLE"</span> VAL=<span class="string">"TCP segments sent"</span>/&gt;</span><br><span class="line">&lt;/EXTRA_DATA&gt;</span><br></pre></td></tr></table></figure>
+
+<p>gmetad 配置主要是设置数据采集源。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">data_source <span class="string">"cluster_workers"</span> host-1</span><br><span class="line"></span><br><span class="line">rrd_rootdir <span class="string">"/dev/shm/ganglia/rrds"</span> 	<span class="comment"># RRD 文件存放地址</span></span><br></pre></td></tr></table></figure>
+
+<p>配置完之后重启 gmetad，如果没有出现问题就能在 rrd_rootdir 下面看到落盘的 rrd 文件的。</p>
+<p>Hadoop 指标的采集配置如前所述，配置完需要重启 Hadoop 相关进程：NameNode, DataNode, ResourceManager, NodeManager 等。</p>
+<h2 id="5-参考："><a href="#5-参考：" class="headerlink" title="5. 参考："></a>5. 参考：</h2><ol>
+<li><a href="http://www.fromdual.com/sites/default/files/rrd.pdf" target="_blank" rel="noopener">Round Robin Database Storage Engine</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/08/06/golang-channel-implement/" rel="next" title="Go Channel 源码剖析">
+                  <i class="fa fa-chevron-left"></i> Go Channel 源码剖析
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/08/19/understanding-ganglia-gmond/" rel="prev" title="深入理解 Ganglia 之 gmond">
+                  深入理解 Ganglia 之 gmond <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Ganglia-简介"><span class="nav-number">2.</span> <span class="nav-text">1. Ganglia 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-gmond"><span class="nav-number">2.0.1.</span> <span class="nav-text">1.1 gmond</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-gmetad"><span class="nav-number">2.0.2.</span> <span class="nav-text">1.2 gmetad</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-gweb"><span class="nav-number">2.0.3.</span> <span class="nav-text">1.3 gweb</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-安装"><span class="nav-number">3.</span> <span class="nav-text">2. 安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Hadoop-指标采集"><span class="nav-number">4.</span> <span class="nav-text">3. Hadoop 指标采集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-实践"><span class="nav-number">5.</span> <span class="nav-text">4. 实践</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-参考："><span class="nav-number">6.</span> <span class="nav-text">5. 参考：</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

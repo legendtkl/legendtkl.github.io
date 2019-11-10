@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="周五看了一本书《高效能程序员的修炼》，感觉有些建议还是很不错的，难得可贵的是，有些观点和我一直以来的想法一样，心有戚戚焉。 这本书的作者是stack overflow的创始人，书还是很值得一看的。 培养写作习惯">
+<meta name="keywords" content="写作,高效能程序员的修炼">
+<meta property="og:type" content="article">
+<meta property="og:title" content="读书：《高效能程序员的修炼》">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2015&#x2F;05&#x2F;17&#x2F;reading-about-effective-programming&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="周五看了一本书《高效能程序员的修炼》，感觉有些建议还是很不错的，难得可贵的是，有些观点和我一直以来的想法一样，心有戚戚焉。 这本书的作者是stack overflow的创始人，书还是很值得一看的。 培养写作习惯">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.913Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2015/05/17/reading-about-effective-programming/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>读书：《高效能程序员的修炼》 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/05/17/reading-about-effective-programming/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          读书：《高效能程序员的修炼》
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-05-17 11:41:36" itemprop="dateCreated datePublished" datetime="2015-05-17T11:41:36+08:00">2015-05-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AF%BB%E4%B9%A6/" itemprop="url" rel="index">
+                    <span itemprop="name">读书</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>周五看了一本书《高效能程序员的修炼》，感觉有些建议还是很不错的，难得可贵的是，有些观点和我一直以来的想法一样，心有戚戚焉。</p>
+<p>这本书的作者是stack overflow的创始人，书还是很值得一看的。</p>
+<p><strong><span style="font-size: 14pt;">培养写作习惯</span></strong></p>
+<a id="more"></a>在第一章，作者就提出了一个观点：成为一名杰出的程序员其实跟写代码没有太大的关系。做程序员确实需要一些技能，当然，还要有坚韧不拔的精神。除此之外，更重要的还是要有良好的沟通技巧。杰出程序员和普通程序员的区别：能否将想法表达清楚。沟通这个话题一直很大，去Amazon上搜索一下相关的书籍多达几千条。
+
+<p>日常生活中最简单的两种沟通方式就是口头沟通和书面沟通。不得不承认，在沟通这个问题上大部分人都没有刻意的练习过。这两种沟通方式中书面沟通又更为重要，毕竟对时间地点的要求都要小一点，像工作中使用邮件。当然这里并不会介绍如何去写邮件，这个也是我需要学习的。</p>
+<p>可悲的是，大部分人的书面表达能力都很有限，特别是程序员。所以程序员更需要去写博客。但是写博客的好处并不止于此。在写作的时候经常要做的一件事是要站在听众/浏览者的角度来看文章。这就要考虑很多问题。比如一篇科普文章一定要有自洽性。每一个专业词汇出现的第一次，可能都需要交代背景。这也是科普文章难写的原因之一。还有一个好处是，在我们写技术博客的时候，相当于又学了一遍，幸运的话会发现很多之前没有发现的知识盲点。提问题也是同一个道理。比如你要提一个技术问题，那么环境、error log等都是要交代的。可能就在你提问题的过程中，自己就想到了答案。一个好的提问和一个好的答案一样重要。这也是stack overflow网站作为一个高质量问答网站的伟大之处。</p>
+<p>最后我想说的是，写作的目的是表达清楚，不管是一件事还是一个观点。不是说写作手法不重要，而是过于追求写作手法或者文章的趣味性的话，可能有点舍本逐末的味道。还有一点，实在不建议大家写作的时候掺杂过多网络用语。网络用语不管好坏，都是大众选择的结果，可能迎合大众很多情况下也没有错。但是网络用语的一个问题是生存周期太短，生存周期一过，后期的读者对于文章的一些表达可能就会很费解。</p>
+<p><strong><span style="font-size: 14pt;">不断练习</span></strong></p>
+<p>如果想要在某方面有所提高，最好的方法就是勤加练习。但是，如果你只骨折埋头写代码，练讨论、反思或者学习的时间都没有，将得不到真正的进步。必须在磨炼工艺与思考如何提高工艺之间找到一个适当的平衡点。</p>
+<p>这个话题Steve Yegge也提到过，在其文章《<a href="https://sites.google.com/site/steveyegge2/practicing-programming" target="_blank" rel="noopener">Practicing Programming</a>》中。下面摘抄一些。</p>
+<p>与你所相信的恰恰相反，单纯地每天埋头于工作并不能算是真正意义上的锻炼——参加会议并不能锻炼你的人际交往能力；回复邮件并不能提高你的打字水平。你必须定期留出时间，集中锻炼，这样才能把事情做得更好。我认识很多杰出的程序员——这是在亚马逊工作最好的额外“福利”之一。如果仔细观察他们，你会发现他们时时都在锻炼。他们已经很优秀了，但他们仍然不忘锻炼。据我了解，这些杰出程序员之所以如此成功，就是因为他们一直在锻炼。完美的身材要靠定期的锻炼才能获得，而且必须坚持锻炼才能保持，否则身材就会走形。对于编程和软件工程来说，道理是一样的。</p>
+<p>那么如何锻炼呢？在Scientific American的一篇文章《The Expert Mind》中有如下表述。</p>
+<p>爱立信提出，重要的并不是经验本身，而是“努力的学习”，也就是要不断地挑战自身能力之外的东西。一些狂热的爱好者花费了大量的时间去下棋、打高尔夫球或者玩乐器，但他们可能始终停留在业余水平上，而一个训练有素的学生却可以在相对较短的时间里超越他们，原因就在这里。值得注意的是，在提高水平方面，花费在下棋上的大量时间（即使参加各种比赛）似乎还是比不过专门的训练来得更为有效。训练的主要价值在于发现弱点，并有针对性地进行提高。</p>
+<p>所谓“努力的学习”，倒不如说是“略微吃力的学习”。我们需要不断挑战我们能力之外的东西，但是如果太难的话，往往会受挫。如果我们将自己的知识技能简单划分为“舒适区”（游刃有余）和“不适区”（寸步难行），那么我们需要练习的就是位于“舒适区”和“不适区”的地方，不断挑战自己的极限，不断扩大“舒适区”。但是最难的其实不是练习，而是远离“舒适区”。</p>
+<p>依稀记得这么一个问答。</p>
+<p>“你觉得什么样的人生很酷？”“Stay away from your comfortable zone.”</p>
+<p>本来想写的书中的“高效编程的原则”，前面不小心写的有点多了。那么只能下次再说了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%86%99%E4%BD%9C/" rel="tag"># 写作</a>
+              <a href="/tags/%E9%AB%98%E6%95%88%E8%83%BD%E7%A8%8B%E5%BA%8F%E5%91%98%E7%9A%84%E4%BF%AE%E7%82%BC/" rel="tag"># 高效能程序员的修炼</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/05/08/python-pypdf2/" rel="next" title="python: PyPDF2">
+                  <i class="fa fa-chevron-left"></i> python: PyPDF2
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/05/24/reading-about-effective-programming-ii/" rel="prev" title="读书：《高效能程序员的修炼》（二）">
+                  读书：《高效能程序员的修炼》（二） <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

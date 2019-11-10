@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="公司最近在将Memcached替换成Aerospike，整理了一下学习笔记。 Aerospike是什么Aerospike是一个高性能的分布式Key-Value NoSQL数据库，可基于行随机存取，索引存放在内存中。数据存取可以在内存中或者SSD。">
+<meta name="keywords" content="Aerospike">
+<meta property="og:type" content="article">
+<meta property="og:title" content="aerospike学习笔记">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2015&#x2F;12&#x2F;05&#x2F;aerospike-note&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="公司最近在将Memcached替换成Aerospike，整理了一下学习笔记。 Aerospike是什么Aerospike是一个高性能的分布式Key-Value NoSQL数据库，可基于行随机存取，索引存放在内存中。数据存取可以在内存中或者SSD。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;aerospike.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;datamodel.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;aerospikeset.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.921Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;aerospike.png">
+
+<link rel="canonical" href="http://yoursite.com/2015/12/05/aerospike-note/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>aerospike学习笔记 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2015/12/05/aerospike-note/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          aerospike学习笔记
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2015-12-05 21:59:48" itemprop="dateCreated datePublished" datetime="2015-12-05T21:59:48+08:00">2015-12-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DB/" itemprop="url" rel="index">
+                    <span itemprop="name">DB</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>公司最近在将Memcached替换成Aerospike，整理了一下学习笔记。</p>
+<h3 id="Aerospike是什么"><a href="#Aerospike是什么" class="headerlink" title="Aerospike是什么"></a>Aerospike是什么</h3><p>Aerospike是一个高性能的分布式Key-Value NoSQL数据库，可基于行随机存取，索引存放在内存中。数据存取可以在内存中或者SSD。</p>
+<a id="more"></a>
+
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>一个典型应用是广告业务。作为服务器端的cookie存储来使用，这种情况对写入性能要求比较高。</p>
+<h3 id="Aerospike-Architecture"><a href="#Aerospike-Architecture" class="headerlink" title="Aerospike Architecture"></a>Aerospike Architecture</h3><p>如下图所示，我们可以将Aerospike看成4个部分：Client, Cluster, Server, Storage.<br><img src="/img/uploads/aerospike.png" alt=""></p>
+<p>架构是Shared Nothing架构。Shared nothing架构（shared nothing architecture）是一种分布式计算架构。这种架构中的每一个节点都是独立、自给的，而且整个系统中没有单点竞争。在一个纯Shared Nothing系统中，通过简单地增加一些廉价的计算机做为系统的节点却可以获取几乎无限的扩展。Shared nothing系统通常需要将他的数据分布在多个节点的不同数据库中（不同的计算机处理不同的用户和查询）或者要求每个节点通过使用某些协调协议来保留它自己的应用程序数据备份 ，这通常被成为数据库Sharding。Aerospike的架构主要包括三个部分：Client, Cluster, Storage.</p>
+<h4 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h4><p>我们通过Client可以对Aerospike Server进行数据的get/put。开发支持多种语言，包括C,Golang,Python,libevent等。Client能够监控Cluster的所有节点，并且能自动感知Nodes的更新，同时掌握数据在Cluster内的分布。Client具有一下特点：</p>
+<ul>
+<li>高效性：确保request能直接到相应的节点读写数据，减少响应时间</li>
+<li>稳定性：如果节点出错，不需要重启Client端</li>
+<li>连接池：Aerospike的C/S交互是TCP连接，Client会在内部维护一个连接池保持长连接（指在一个连接上可以连续发送多个数据包），这样可以有效减少频繁的Open/Close TCP操作。</li>
+</ul>
+<h4 id="Cluster"><a href="#Cluster" class="headerlink" title="Cluster"></a>Cluster</h4><p>Cluster使用Paxos分布式一致（Paxos’ distributed consensus）算法，支持持久化一致性。数据随机非配到节点，可以最小化惊群问题。<br>注：惊群问题，举一个很简单的例子，当你往一群鸽子中间扔一块食物，虽然最终只有一个鸽子抢到食物，但所有鸽子都会被惊动来争夺，没有抢到食物的鸽子只好回去继续睡觉，等待下一块食物到来。这样，每扔一块食物，都会惊动所有的鸽子，即为惊群。对于操作系统来说，多个进程/线程在等待同一资源是，也会产生类似的效果，其结果就是每当资源可用，所有的进程/线程都来竞争资源，造成的后果：<br>1）系统对用户进程/线程频繁的做无效的调度、上下文切换，系统系能大打折扣。</p>
+<h4 id="Storage"><a href="#Storage" class="headerlink" title="Storage"></a>Storage</h4><p>Aerospike有两种数据存储模式：内存、闪存(SSD)。为了满足高性能，索引存放在内存中。另外数据的存储模式非常灵活，下面再说。</p>
+<h3 id="Data-Model"><a href="#Data-Model" class="headerlink" title="Data Model"></a>Data Model</h3><p>NoSQL数据库一般称为schemaless（无模式的），也就是数据存储没有固定的模式。对于Aerospike来说，less-schema应该更恰当一点。数据存储模式就是key-value，只是对于value并没有特定的格式要求。Aerospike的数据组织模式如下图所示。key索引存放在内存中，数据结构是红黑树。value可以存放在内存或者闪存中，其中bin，我们可以类比成mysql中的字段。<br><img src="/img/uploads/datamodel.png" alt=""></p>
+<h4 id="namespace"><a href="#namespace" class="headerlink" title="namespace"></a>namespace</h4><p>namespace可以类比为关系型数据库的一个数据库或者多个数据库。namespace包括records,indexes和policies。policy规定了数据的行为，包括数据的存储方式（内存/闪存），备份数目，记录过期时间。下面是一个namespace示例。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">namespace &lt;namespace-name&gt; &#123;</span><br><span class="line">    <span class="comment"># memory-size 4G           # 4GB of memory to be used for index and data</span></span><br><span class="line">    <span class="comment"># replication-factor 2     # For multiple nodes, keep 2 copies of the data</span></span><br><span class="line">    <span class="comment"># high-water-memory-pct 60 # Evict non-zero TTL data if capacity exceeds</span></span><br><span class="line">                               <span class="comment"># 60% of 4GB</span></span><br><span class="line">    <span class="comment"># stop-writes-pct 90       # Stop writes if capacity exceeds 90% of 4GB</span></span><br><span class="line">    <span class="comment"># default-ttl 0            # Writes from client that do not provide a TTL</span></span><br><span class="line">                               <span class="comment"># will default to 0 or never expire</span></span><br><span class="line">    <span class="comment"># storage-engine memory    # Store data in memory only</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="set"><a href="#set" class="headerlink" title="set"></a>set</h4><p>我一般习惯将set理解为关系型数据库中的表。一个namespace可以包含多个set，set只是一个对数据的逻辑上划分，namespace中的数据可以属于某个set，也可以不属于set.<br><img src="/img/uploads/aerospikeset.png" alt=""></p>
+<h4 id="record"><a href="#record" class="headerlink" title="record"></a>record</h4><p>record是Aerospike中数据存储的基本单位，我们知道Aerospike是行存储，一个record就对应一行。record包括下面一些数据。<br>component | description<br>— | —<br>key | 通过key的hash值可以定位到record<br>metadata | record的版本（第几次更新）和time-to-live(ttl)<br>bin    | 类似RDBM的字段。</p>
+<p>每个bin包括一个name和object，object里面定义了具体的类型。如果是key-value存储的话，最后我们取出的数据就是返回一个bin数据结构。我们可以简单看一下Aerospke提供的libevent API来看bin的组织形式。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">ev2citrusleaf_bin_s</span> &#123;</span></span><br><span class="line">	ev2citrusleaf_bin_name		bin_name;</span><br><span class="line">	ev2citrusleaf_object			object;</span><br><span class="line">&#125; ev2citrusleaf_bin;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">ev2citrusleaf_object_s</span> &#123;</span></span><br><span class="line">	<span class="keyword">enum</span> ev2citrusleaf_type    type;</span><br><span class="line">	<span class="keyword">size_t</span>			<span class="built_in">size</span>;</span><br><span class="line">	<span class="keyword">union</span> &#123;</span><br><span class="line">		<span class="keyword">char</span> 		*str; <span class="comment">// note for str: size is strlen (not strlen+1 </span></span><br><span class="line">		<span class="keyword">void</span> 		*blob;</span><br><span class="line">		<span class="keyword">int64_t</span>		i64;   <span class="comment">// easiest to have one large int type</span></span><br><span class="line">	&#125; u;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">void</span> *<span class="built_in">free</span>; <span class="comment">// if this is set, this must be freed on destructuion	</span></span><br><span class="line"></span><br><span class="line">&#125; ev2citrusleaf_object;</span><br></pre></td></tr></table></figure>
+<p>简单明了，就不解释了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Aerospike/" rel="tag"># Aerospike</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2015/11/30/charles-https/" rel="next" title="charles是如何抓取https数据包的">
+                  <i class="fa fa-chevron-left"></i> charles是如何抓取https数据包的
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2015/12/11/go-memory/" rel="prev" title="tcmalloc 介绍">
+                  tcmalloc 介绍 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Aerospike是什么"><span class="nav-number">1.</span> <span class="nav-text">Aerospike是什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用场景"><span class="nav-number">2.</span> <span class="nav-text">应用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Aerospike-Architecture"><span class="nav-number">3.</span> <span class="nav-text">Aerospike Architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Client"><span class="nav-number">3.1.</span> <span class="nav-text">Client</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Cluster"><span class="nav-number">3.2.</span> <span class="nav-text">Cluster</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Storage"><span class="nav-number">3.3.</span> <span class="nav-text">Storage</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Model"><span class="nav-number">4.</span> <span class="nav-text">Data Model</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#namespace"><span class="nav-number">4.1.</span> <span class="nav-text">namespace</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#set"><span class="nav-number">4.2.</span> <span class="nav-text">set</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#record"><span class="nav-number">4.3.</span> <span class="nav-text">record</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

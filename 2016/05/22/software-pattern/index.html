@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="这次的QCon去打了个酱油，发现现在微服务框架已经变成最火的概念了。有人说微服务其实就是SOA的包装，其实我觉得并不能完全这么说。SOA和微服务的区别在于粒度更细，更容易，但是话说回来，“细”，“容易”本身也不是用来区分的。QCon回来找了一本书《Software Architecture Patterns》看了一下，说的还不错。这是一本比较轻量的书，相比于之前的一本圣经基本的书《Pattern-">
+<meta property="og:type" content="article">
+<meta property="og:title" content="构架模型概述">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;05&#x2F;22&#x2F;software-pattern&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="这次的QCon去打了个酱油，发现现在微服务框架已经变成最火的概念了。有人说微服务其实就是SOA的包装，其实我觉得并不能完全这么说。SOA和微服务的区别在于粒度更细，更容易，但是话说回来，“细”，“容易”本身也不是用来区分的。QCon回来找了一本书《Software Architecture Patterns》看了一下，说的还不错。这是一本比较轻量的书，相比于之前的一本圣经基本的书《Pattern-">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;layered.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;event.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;broker.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;microkernel.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;microservice.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.996Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;layered.png">
+
+<link rel="canonical" href="http://yoursite.com/2016/05/22/software-pattern/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>构架模型概述 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/05/22/software-pattern/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          构架模型概述
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-05-22 19:27:16" itemprop="dateCreated datePublished" datetime="2016-05-22T19:27:16+08:00">2016-05-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Architecture/" itemprop="url" rel="index">
+                    <span itemprop="name">Architecture</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这次的QCon去打了个酱油，发现现在微服务框架已经变成最火的概念了。有人说微服务其实就是SOA的包装，其实我觉得并不能完全这么说。SOA和微服务的区别在于粒度更细，更容易，但是话说回来，“细”，“容易”本身也不是用来区分的。QCon回来找了一本书《Software Architecture Patterns》看了一下，说的还不错。这是一本比较轻量的书，相比于之前的一本圣经基本的书《Pattern-oriented Software Architecture》，实在是太轻量了。下面就简单谈一下书中提到的几种软件建构。</p>
+<h2 id="Layered-Architecture"><a href="#Layered-Architecture" class="headerlink" title="Layered Architecture"></a>Layered Architecture</h2><p>这种架构是最古老的架构，一般最早想到的架构就是这种架构，在早起的Java EE项目（比如传统软件公司）中广泛使用。可以用下面的图来表示。简单来说就是整体按功能分成多个层级（展现层、业务逻辑层、持久化层、DB），层级之间再交互，理论上各个层级之间松耦合，但是实际实现中经常会出现紧耦合的情况。正常的request是通过一个一个层级最后到达DB。</p>
+<a id="more"></a>
+<p><img src="/img/uploads/2016/layered.png" alt=""></p>
+<p>评价：</p>
+<ul>
+<li>Overall Agility: Low.</li>
+<li>Ease of Deployment: Low. 这种架构可以把最后的程序看成一个二进制文件，部署的话就是服务器上的二进制文件替换掉。这种部署方式不容易的地方在于对于每一个小的改动都需要重新编译整个大项目，非常不灵活。</li>
+<li>Testability: High.</li>
+<li>Performance: Low.</li>
+<li>Scalability: Low.</li>
+<li>Ease of Development: Easy.</li>
+</ul>
+<h2 id="Event-Driven-Architecture"><a href="#Event-Driven-Architecture" class="headerlink" title="Event-Driven Architecture"></a>Event-Driven Architecture</h2><p>事件驱动架构模型通常用于分布式的异步系统中，比如说服务器模型。这种架构又可以分两个种类：Mediator 和 Broker。Mediator如下图所示。</p>
+<p><img src="/img/uploads/2016/event.png" alt=""></p>
+<p>上图中的Mediator主要包括四个部分：event queue, event mediator, event channel 和 event processor。其中 queue 主要负责接收原始的事件，现在可以实现这种功能的包括各种消息队列组件，比如Kafka, ZMQ 等；mediator 负责调度event到不同的channel；最后不同的channel对应不同的processor。以服务器为例，用户request到达服务器之后，我们可以选择多种处理方式，异步的处理方式就是使用一个主进程负责接收所有的用户请求，但是并不处理，而是放到消息队列中。然后起多个线程去异步处理消息队列中的事件。关于这个异步处理是用线程还是进程，我觉得都可以。</p>
+<p>Broker模型图如下所示。</p>
+<p><img src="/img/uploads/2016/broker.png" alt=""></p>
+<p>Broker和Mediator的区别在于对于原始的event不进入mediator而是直接送到first processor，再加工之后送到second processor。</p>
+<p>评价：</p>
+<ul>
+<li>Overall Agility: High. </li>
+<li>Easy of Deployment: High. 因为这种架构是天然松耦合的。Mediator和Broker比较起来，Broker又更容易一些，因为Mediator中mediator导致完全解耦合是不可能的。</li>
+<li>Testability: Low.</li>
+<li>Performance: High.</li>
+<li>Scalability: High.</li>
+<li>Ease of Development: Low.</li>
+</ul>
+<h2 id="Microkernel-Architecture"><a href="#Microkernel-Architecture" class="headerlink" title="Microkernel Architecture"></a>Microkernel Architecture</h2><p>这种架构模式是把核心系统发布出来，然后其他功能通过各种插件实现。一图以蔽之。</p>
+<p><img src="/img/uploads/2016/microkernel.png" alt=""></p>
+<p>评价：</p>
+<ul>
+<li>Overall Agility: High.</li>
+<li>Easy of Deployment: High.</li>
+<li>Testability: High.</li>
+<li>Performance: High.</li>
+<li>Scalability: High.</li>
+<li>Ease of Development: Low.</li>
+</ul>
+<h2 id="Microservice-Architecture"><a href="#Microservice-Architecture" class="headerlink" title="Microservice Architecture"></a>Microservice Architecture</h2><p>终于到微服务架构了。微服务架构简单来说就是按功能把整个系统拆解成尽量小的组件，然后每个组件做成一个单独的服务。这样系统就可以针对每一个组件进行单独的开发，部署和维护。这样带来的一个好处是开发人员只需要专注于自己的部分就可以了。</p>
+<p><img src="/img/uploads/2016/microservice.png" alt=""></p>
+<p>当然微服务框架也是有问题的。套用前东家CTO的话，微服务架构有一个好处，就是承诺了一个愿景，考虑围绕业务领域组建来创建应用，这些应用可独立进行开发、管理和迭代，从而使管理和服务功能的交付变得更加容易。但是我个人认为，这个概念很简单，但要把这一点做好并不容易。微服务架构特性决定了每个微服务实现的功能要相对独立，同时不能太复杂，复杂的应用要多个微服务协调产生。那么如何在保持微服务敏捷特性的同时，高效地组建复杂应用，就是最关键的问题。尤其是对于业务领域相对复杂的公司来说，客户都是大企业，应用很复杂，这其实对架构师的水平是更高的挑战。</p>
+<p>评价：</p>
+<ul>
+<li>Overall Agility: High.</li>
+<li>Ease of Deployment: High.</li>
+<li>Tesability: High.</li>
+<li>Performance: Low. 因为整个系统架构是一个分布式的，比如消息通讯就会导致性能不够好。</li>
+<li>Scalability: High.</li>
+<li>Ease of Development: High.</li>
+</ul>
+<h2 id="Space-based-Architecture"><a href="#Space-based-Architecture" class="headerlink" title="Space-based Architecture"></a>Space-based Architecture</h2><p>讲道理，这个有点没太看懂，就先不写了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/05/04/recent/" rel="next" title="近况">
+                  <i class="fa fa-chevron-left"></i> 近况
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/06/04/service-discovery/" rel="prev" title="服务发现简介">
+                  服务发现简介 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Layered-Architecture"><span class="nav-number">1.</span> <span class="nav-text">Layered Architecture</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Event-Driven-Architecture"><span class="nav-number">2.</span> <span class="nav-text">Event-Driven Architecture</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Microkernel-Architecture"><span class="nav-number">3.</span> <span class="nav-text">Microkernel Architecture</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Microservice-Architecture"><span class="nav-number">4.</span> <span class="nav-text">Microservice Architecture</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Space-based-Architecture"><span class="nav-number">5.</span> <span class="nav-text">Space-based Architecture</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

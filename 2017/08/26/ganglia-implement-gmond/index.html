@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言前面几篇文章从使用和特性方面介绍了 ganglia，我们这篇文章直接来看一下 ganglia 的核心 gmond 的源码。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ganglia 源码剖析之 gmond">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;08&#x2F;26&#x2F;ganglia-implement-gmond&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言前面几篇文章从使用和特性方面介绍了 ganglia，我们这篇文章直接来看一下 ganglia 的核心 gmond 的源码。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:26.002Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/08/26/ganglia-implement-gmond/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Ganglia 源码剖析之 gmond | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/26/ganglia-implement-gmond/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ganglia 源码剖析之 gmond
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-08-26 16:19:38" itemprop="dateCreated datePublished" datetime="2017-08-26T16:19:38+08:00">2017-08-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:26" itemprop="dateModified" datetime="2019-11-08T11:09:26+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h2><p>前面几篇文章从使用和特性方面介绍了 ganglia，我们这篇文章直接来看一下 ganglia 的核心 gmond 的源码。</p>
+<a id="more"></a>
+<h2 id="1-主流程"><a href="#1-主流程" class="headerlink" title="1. 主流程"></a>1. 主流程</h2><p>gmond 的主流程主要包括几个部分：</p>
+<ul>
+<li>命令行参数解析</li>
+<li>解析处理配置文件</li>
+<li>载入指标采集 module</li>
+<li>创建一个进程处理 tcp 请求</li>
+<li>循环处理指标采集、发送、接收</li>
+</ul>
+<p>我们会在文章的之后几节依次进行介绍。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// 命令行参数解析</span></span><br><span class="line">    <span class="keyword">if</span> (cmdline_parser (argc, argv, &amp;args_info) != <span class="number">0</span>)</span><br><span class="line">        <span class="built_in">exit</span>(EXIT_FAILURE);</span><br><span class="line">  </span><br><span class="line">     <span class="comment">/* Builds a default configuration based on platform */</span></span><br><span class="line">    build_default_gmond_configuration((Ganglia_pool)global_context);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 处理配置文件</span></span><br><span class="line">    process_configuration_file();</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 载入 metric collect module</span></span><br><span class="line">    load_metric_modules();</span><br><span class="line">  </span><br><span class="line">  	<span class="comment">// 建立 metric name 和 handler 之间的对应关系</span></span><br><span class="line">    setup_metric_callbacks();</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 创建 tcp server</span></span><br><span class="line">    <span class="comment">/* Create TCP listener thread */</span></span><br><span class="line">    <span class="keyword">if</span>(!deaf)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">apr_thread_t</span> *thread;</span><br><span class="line">        <span class="keyword">if</span> (apr_thread_create(&amp;thread, <span class="literal">NULL</span>, tcp_listener, <span class="literal">NULL</span>, global_context) != APR_SUCCESS)</span><br><span class="line">        &#123;</span><br><span class="line">            err_msg(<span class="string">"Failed to create TCP listener thread. Exiting.\n"</span>);</span><br><span class="line">            <span class="built_in">exit</span>(EXIT_FAILURE);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环处理指标的采集、发送、收集等。</span></span><br><span class="line">    <span class="keyword">for</span> (;!done;) &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="2-metric-采集"><a href="#2-metric-采集" class="headerlink" title="2. metric 采集"></a>2. metric 采集</h2><p>metric 采集要说的主要由两个部分：load module 和 metric collect。先来看一下 load module。</p>
+<h4 id="2-1-module-load"><a href="#2-1-module-load" class="headerlink" title="2.1 module load"></a>2.1 module load</h4><p>要说 module 载入，需要先说一下配置文件结构。关于配置文件中的 module 配置具体说明可以参考文件 <strong><em>monitor-core/gmond/conf.pod</em></strong> 的说明。正常 <strong><em>modules</em></strong> 节点下至少有一个 <strong><em>module</em></strong>，<strong><em>module</em></strong> 的属性包括：</p>
+<ul>
+<li><strong><em>name</em></strong>: module 的名字，比如说 python module 的话对应的就是文件名</li>
+<li><strong><em>language</em></strong>: module 类型，可以是 C/C++, 也可以是 Python。如果没有，则默认为 C/C++。</li>
+<li><strong><em>enable</em></strong>: 开启标志。没有配置则默认为 yes。</li>
+<li><strong><em>path</em></strong>: module 的 path。载入的时候会根据 path 去查找。</li>
+<li><strong><em>params</em></strong>:  metric_init 函数的参数，可以为空。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">modules &#123;</span><br><span class="line">    module &#123;</span><br><span class="line">        name = <span class="string">"example_module"</span></span><br><span class="line">        language = <span class="string">"C/C++"</span></span><br><span class="line">        enabled = yes</span><br><span class="line">        path = <span class="string">"modexample.so"</span></span><br><span class="line">        params = <span class="string">"An extra raw parameter"</span></span><br><span class="line">        param RandomMax &#123;</span><br><span class="line">            value = 75</span><br><span class="line">        &#125;</span><br><span class="line">        param ConstantValue &#123;</span><br><span class="line">            value = 25</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>module 的具体载入过程在函数 <strong><em>load_metric_modules</em></strong> 中实现。所有的 module 会被组成一个链表，表头保存在全局变量 metric_modules 中。通过下面的载入过程我们可以知道，并不是 module 定义了就会载入的，而是根据 conf 来决定载入的 module 的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">load_metric_modules( <span class="keyword">void</span> )</span><br><span class="line">&#123;</span><br><span class="line">    tmp = cfg_getsec( config_file, <span class="string">"modules"</span>);</span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; cfg_size(tmp, <span class="string">"module"</span>); j++) </span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">cfg_t</span> *<span class="keyword">module</span> = cfg_getnsec(tmp, <span class="string">"module"</span>, j);</span><br><span class="line">        ...</span><br><span class="line">          </span><br><span class="line">        modLanguage = cfg_getstr(<span class="keyword">module</span>, <span class="string">"language"</span>);</span><br><span class="line">        ...</span><br><span class="line">          </span><br><span class="line">        modEnabled = cfg_getbool(<span class="keyword">module</span>, <span class="string">"enabled"</span>);</span><br><span class="line">        ...</span><br><span class="line">        </span><br><span class="line">        modPath = cfg_getstr(<span class="keyword">module</span>, <span class="string">"path"</span>);</span><br><span class="line">        ...</span><br><span class="line">          </span><br><span class="line">        modName = cfg_getstr(<span class="keyword">module</span>, <span class="string">"name"</span>);</span><br><span class="line">        modparams = cfg_getstr(<span class="keyword">module</span>, <span class="string">"params"</span>);</span><br><span class="line">        ...</span><br><span class="line">        </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * Load the file into the gmond address space</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (apr_dso_load(&amp;modHandle, modPath, global_context) != APR_SUCCESS) </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">char</span> my_error[<span class="number">256</span>];</span><br><span class="line"></span><br><span class="line">            err_msg(<span class="string">"Cannot load %s metric module: %s"</span>, modPath,</span><br><span class="line">                     apr_dso_error(modHandle, my_error, <span class="keyword">sizeof</span>(my_error)));</span><br><span class="line">            <span class="keyword">if</span> (!modPath) </span><br><span class="line">                err_msg(<span class="string">"No load path specified for module: %s or incorrect module language designation [%s].\n"</span>, </span><br><span class="line">                        modName, modLanguage);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        modp = (mmodule*) modSym;</span><br><span class="line">        modp-&gt;dynamic_load_handle = (<span class="keyword">apr_dso_handle_t</span> *)modHandle;</span><br><span class="line">        modp-&gt;module_name = apr_pstrdup (global_context, modName);</span><br><span class="line">        modp-&gt;module_params = apr_pstrdup (global_context, modparams);</span><br><span class="line">        modp-&gt;module_params_list = modParams_list;</span><br><span class="line">        modp-&gt;config_file = config_file;</span><br><span class="line">      </span><br><span class="line">        ...</span><br><span class="line">          </span><br><span class="line">        <span class="keyword">if</span> (metric_modules != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            modp-&gt;next = metric_modules;</span><br><span class="line">        &#125;</span><br><span class="line">        metric_modules = modp;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-2-metric-init"><a href="#2-2-metric-init" class="headerlink" title="2.2 metric init"></a>2.2 metric init</h4><p>module 载入之后，我们需要做的是建立一个 metric name 和 handler 之间的对应关系表。在扩展 gmod 的 metric 的时候需要定义函数 <strong><em>metric_init()</em></strong>，其实这就是 metric init。主流程中由函数 <strong><em>setup_metric_callbacks()</em></strong> 来做这件事。<strong><em>metrics_modules</em></strong> 就是 2.1 生成的链表，<strong><em>setup_metric_callbacks()</em></strong> 函数就是遍历 <strong><em>metrics_modules</em></strong> 将其保存的 metric name 和 handler 建立关联关系，保存在 hash 表 metric_cb 中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">setup_metric_callbacks( <span class="keyword">void</span> )</span><br><span class="line">&#123;</span><br><span class="line">    mmodule *modp = metric_modules;</span><br><span class="line">    Ganglia_metric_callback *metric_cb;</span><br><span class="line">    <span class="comment">/* Create the metric_callbacks hash */</span></span><br><span class="line">    metric_callbacks = apr_hash_make( global_context );</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">while</span> (modp) &#123;</span><br><span class="line">        <span class="keyword">const</span> Ganglia_25metric* metric_info;</span><br><span class="line">        <span class="keyword">int</span> i;</span><br><span class="line">	    </span><br><span class="line">        <span class="comment">// metric init。modp-&gt;init() 是函数指针，指向 metric_init() 函数。</span></span><br><span class="line">        <span class="keyword">if</span> (modp-&gt;init &amp;&amp; modp-&gt;init(global_context)) &#123;</span><br><span class="line">            err_msg(<span class="string">"Module %s failed to initialize.\n"</span>, modp-&gt;module_name);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            apr_pool_cleanup_register(global_context, modp,</span><br><span class="line">                                      modular_metric_cleanup,</span><br><span class="line">                                      apr_pool_cleanup_null);</span><br><span class="line"></span><br><span class="line">            metric_info = modp-&gt;metrics_info;</span><br><span class="line">            <span class="keyword">for</span> (i = <span class="number">0</span>; metric_info[i].name != <span class="literal">NULL</span>; i++) </span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">// modp-&gt;handler 就是 metric name 对应的 handler 函数，全部放到 hash 表 metric_cb 中</span></span><br><span class="line">                metric_cb = Ganglia_metric_cb_define(metric_info[i].name, modp-&gt;handler, i, modp);</span><br><span class="line">                <span class="keyword">if</span> (metric_cb) </span><br><span class="line">                    metric_cb-&gt;info = (Ganglia_25metric*)&amp;(metric_info[i]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        modp = modp-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们下面看一下 python module 的处理过程，在文件 <strong><em>mod_python.c</em></strong> 中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mmodule python_module =</span><br><span class="line">&#123;</span><br><span class="line">    STD_MMODULE_STUFF,</span><br><span class="line">    pyth_metric_init,	<span class="comment">// 对应的就是上面的 modp-&gt;init 函数</span></span><br><span class="line">    <span class="literal">NULL</span>,</span><br><span class="line">    <span class="literal">NULL</span>, <span class="comment">/* defined dynamically */</span></span><br><span class="line">    pyth_metric_handler,  <span class="comment">// 对应上面的 modp-&gt;handler 函数</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>下面看一下具体函数，函数里面会有 c 调用 python module 的部分代码，比如获得 GIL 全局锁之类的，下面不再细说。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">pyth_metric_init</span> <span class="params">(<span class="keyword">apr_pool_t</span> *p)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">while</span> ((entry = readdir(dp)) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="comment">// 判断是否是 python module</span></span><br><span class="line">        modname = is_python_module(entry-&gt;d_name);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (modname == <span class="literal">NULL</span>)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">      	<span class="comment">// 查找配置文件</span></span><br><span class="line">        <span class="comment">/* Find the specified module configuration in gmond.conf </span></span><br><span class="line"><span class="comment">           If this return NULL then either the module config</span></span><br><span class="line"><span class="comment">           doesn't exist or the module is disabled. */</span></span><br><span class="line">        module_cfg = find_module_config(modname);</span><br><span class="line">        <span class="keyword">if</span> (!module_cfg)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">        PyEval_RestoreThread(gtstate);</span><br><span class="line">        <span class="comment">// 载入 python module</span></span><br><span class="line">        pmod = PyImport_ImportModule(modname);</span><br><span class="line">        ...</span><br><span class="line">      	<span class="comment">// 获得 module 中的 metric_init() 函数地址</span></span><br><span class="line">        pinitfunc = PyObject_GetAttrString(pmod, <span class="string">"metric_init"</span>);</span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">// 构造函数参数</span></span><br><span class="line">        <span class="comment">/* Build a parameter dictionary to pass to the module */</span></span><br><span class="line">        pparamdict = build_params_dict(module_cfg);</span><br><span class="line">      </span><br><span class="line">        <span class="comment">// 调用 metric_init(param) 函数，这个函数会返回一个 dict，包含了 metric name 和 handler 的对应关系</span></span><br><span class="line">        <span class="comment">/* Now call the metric_init method of the python module */</span></span><br><span class="line">        pobj = PyObject_CallFunction(pinitfunc, <span class="string">"(N)"</span>, pparamdict);</span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">// 处理 metric_init(param) 函数返回的 dict</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-3-metric-collect"><a href="#2-3-metric-collect" class="headerlink" title="2.3 metric collect"></a>2.3 metric collect</h4><p>下面在看一下负责具体 metric 采集的 <strong><em>pyth_metric_handler</em></strong> 函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> g_val_t <span class="title">pyth_metric_handler</span><span class="params">( <span class="keyword">int</span> metric_index )</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 调用 metric_name 对应的 handler，handler 的参数就是 metric name</span></span><br><span class="line">    pobj = PyObject_CallFunction(mi[metric_index].pcb, <span class="string">"s"</span>, gmi[metric_index].name);</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 处理 handler 返回的值</span></span><br><span class="line">    <span class="keyword">switch</span> (gmi[metric_index].type) &#123;</span><br><span class="line">        <span class="keyword">case</span> GANGLIA_VALUE_STRING:</span><br><span class="line">        &#123;</span><br><span class="line">            get_python_string_value(pobj, val.str, <span class="keyword">sizeof</span>(val.str));</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-udp-send"><a href="#3-udp-send" class="headerlink" title="3. udp send"></a>3. udp send</h2><p>对于上面的第二节会收集到的 metric data，还需要发送出去（有单播和多播模式），对应的就是 <strong><em>gmond.conf</em></strong> 中的 udp_send_channel。<strong><em>gmond.conf</em></strong> 一般定义如下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">udp_send_channel &#123;</span><br><span class="line">    <span class="comment">#bind_hostname = yes # Highly recommended, soon to be default.</span></span><br><span class="line">                       <span class="comment"># This option tells gmond to use a source address</span></span><br><span class="line">                       <span class="comment"># that resolves to the machine's hostname.  Without</span></span><br><span class="line">                       <span class="comment"># this, the metrics may appear to come from any</span></span><br><span class="line">                       <span class="comment"># interface and the DNS names associated with</span></span><br><span class="line">                       <span class="comment"># those IPs will be used to create the RRDs.</span></span><br><span class="line">    <span class="comment">#mcast_join = 10.252.135.105</span></span><br><span class="line">    host = emr-header-1</span><br><span class="line">    port = 8649</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>单播模式对应的是 host，多播对应的 mcast_join。<strong><em>main</em></strong> 里面根据 gmond.conf 配置建立相关的 socket 对应的代码如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 建立 socket channel</span></span><br><span class="line">    udp_send_channels = Ganglia_udp_send_channels_create((Ganglia_pool)global_context, </span><br><span class="line">                                                       (Ganglia_gmond_config)config_file);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Ganglia_udp_send_channels</span><br><span class="line">Ganglia_udp_send_channels_create( Ganglia_pool p, Ganglia_gmond_config <span class="built_in">config</span> )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">apr_array_header_t</span> *send_channels = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">cfg_t</span> *cfg=(<span class="keyword">cfg_t</span> *)<span class="built_in">config</span>;</span><br><span class="line">    <span class="keyword">int</span> i, num_udp_send_channels = cfg_size( cfg, <span class="string">"udp_send_channel"</span>);</span><br><span class="line">    <span class="keyword">apr_pool_t</span> *context = (<span class="keyword">apr_pool_t</span>*)p;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Return null if there are no send channels specified */</span></span><br><span class="line">    <span class="keyword">if</span>(num_udp_send_channels &lt;= <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> (Ganglia_udp_send_channels)send_channels;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Create my UDP send array */</span></span><br><span class="line">    send_channels = apr_array_make( context, num_udp_send_channels, </span><br><span class="line">                                  <span class="keyword">sizeof</span>(<span class="keyword">apr_socket_t</span> *));</span><br><span class="line">    <span class="comment">// 解析 gmond.conf 中的所有 udp_send_channel</span></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i&lt; num_udp_send_channels; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        udp_send_channel = cfg_getnsec( cfg, <span class="string">"udp_send_channel"</span>, i);</span><br><span class="line">        host           = cfg_getstr( udp_send_channel, <span class="string">"host"</span> );</span><br><span class="line">        mcast_join     = cfg_getstr( udp_send_channel, <span class="string">"mcast_join"</span> );</span><br><span class="line">        mcast_if       = cfg_getstr( udp_send_channel, <span class="string">"mcast_if"</span> );</span><br><span class="line">        port           = cfg_getint( udp_send_channel, <span class="string">"port"</span>);</span><br><span class="line">        ttl            = cfg_getint( udp_send_channel, <span class="string">"ttl"</span>);</span><br><span class="line">        bind_address   = cfg_getstr( udp_send_channel, <span class="string">"bind"</span> );</span><br><span class="line">        bind_hostname  = cfg_getbool( udp_send_channel, <span class="string">"bind_hostname"</span>);</span><br><span class="line">      </span><br><span class="line">        <span class="keyword">if</span>( mcast_join )</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* We'll be listening on a multicast channel */</span></span><br><span class="line">            socket = create_mcast_client(pool, mcast_join, port, ttl, mcast_if, bind_address, bind_hostname);</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* Create a UDP socket */</span></span><br><span class="line">            socket = create_udp_client( pool, host, port, mcast_if, bind_address, bind_hostname );</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// socket 入队列</span></span><br><span class="line">        <span class="comment">/* Add the socket to the array */</span></span><br><span class="line">        *(<span class="keyword">apr_socket_t</span> **)apr_array_push(send_channels) = socket;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> (Ganglia_udp_send_channels)send_channels;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>向 socket 发送 metric 的主流程如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* Loop */</span></span><br><span class="line">    <span class="keyword">for</span>(;!done;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 每隔固定的时间采集一次 metric</span></span><br><span class="line">        <span class="comment">/* Make sure we never wait for negative seconds (shouldn't happen) */</span></span><br><span class="line">        <span class="keyword">apr_interval_time_t</span> wait = next_collection &gt;= now ? next_collection - now : <span class="number">1</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// udp_listen_channel 下面细说</span></span><br><span class="line">        <span class="keyword">if</span> (udp_listen_channels != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* Pull in incoming data */</span></span><br><span class="line">            poll_udp_listen_channels(wait, now);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* Sleep until next collection */</span></span><br><span class="line">            apr_sleep( wait );</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* only continue if it's time to process our collection groups */</span></span><br><span class="line">        now = apr_time_now();</span><br><span class="line">        <span class="keyword">if</span>(now &lt; next_collection)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 收集指标数据并发送</span></span><br><span class="line">        <span class="keyword">if</span>(!mute)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* collect data from collection_groups */</span></span><br><span class="line">            next_collection = process_collection_groups( now );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">apr_time_t</span></span><br><span class="line">process_collection_groups( <span class="keyword">apr_time_t</span> now )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">apr_time_t</span> next = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Run through each collection group and collect any data that needs collecting... */</span></span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>; i&lt; collection_groups-&gt;nelts; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Ganglia_collection_group *group = ((Ganglia_collection_group **)(collection_groups-&gt;elts))[i];</span><br><span class="line">        <span class="keyword">if</span>(group-&gt;next_collect &lt;= now)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 收集指标数据</span></span><br><span class="line">            Ganglia_collection_group_collect(group, now);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Run through each collection group and send any data that needs sending... */</span></span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>; i&lt; collection_groups-&gt;nelts; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Ganglia_collection_group *group = ((Ganglia_collection_group **)(collection_groups-&gt;elts))[i];</span><br><span class="line">        <span class="keyword">if</span>( group-&gt;next_send &lt;= now )</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 发送指标数据</span></span><br><span class="line">            Ganglia_collection_group_send(group, now);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于 <strong><em>Ganglia_collection_group_send(group, now)</em></strong> 的实现涉及比较深的函数调用链，单独拿出来看下。已略去部分无关逻辑，主要看函数调用关系。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span></span><br><span class="line">Ganglia_collection_group_send( Ganglia_collection_group *group, <span class="keyword">apr_time_t</span> now)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>; i&lt; group-&gt;metric_array-&gt;nelts; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 构造要发送的 metric data</span></span><br><span class="line">        <span class="keyword">if</span> (override_hostname != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            errors = Ganglia_metadata_send_real(gmetric, udp_send_channels, cb-&gt;msg.Ganglia_value_msg_u.gstr.metric_id.host);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            errors = Ganglia_metadata_send(gmetric, udp_send_channels);</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">Ganglia_metadata_send( Ganglia_metric gmetric, Ganglia_udp_send_channels send_channels )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> Ganglia_metadata_send_real( gmetric, send_channels, <span class="literal">NULL</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">Ganglia_metadata_send_real( Ganglia_metric gmetric, Ganglia_udp_send_channels send_channels, <span class="keyword">char</span> *override_string )</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 构造数据</span></span><br><span class="line">    <span class="comment">/* Send the encoded data along...*/</span></span><br><span class="line">    <span class="keyword">return</span> Ganglia_udp_send_message( send_channels, gmetricmsg, len);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* This function will send a datagram to every udp_send_channel specified */</span></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">Ganglia_udp_send_message(Ganglia_udp_send_channels channels, <span class="keyword">char</span> *buf, <span class="keyword">int</span> len )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">apr_status_t</span> status;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">int</span> num_errors = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">apr_size_t</span> <span class="built_in">size</span>;</span><br><span class="line">    <span class="keyword">apr_array_header_t</span> *chnls=(<span class="keyword">apr_array_header_t</span>*)channels;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(!chnls || !buf || len&lt;=<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>; i&lt; chnls-&gt;nelts; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">apr_socket_t</span> *socket = ((<span class="keyword">apr_socket_t</span> **)(chnls-&gt;elts))[i];</span><br><span class="line">        <span class="built_in">size</span>   = len;</span><br><span class="line">        <span class="comment">// 真正的向 socket 发送数据代码</span></span><br><span class="line">        status = apr_socket_send( socket, buf, &amp;<span class="built_in">size</span> );</span><br><span class="line">        <span class="keyword">if</span>(status != APR_SUCCESS)</span><br><span class="line">        &#123;</span><br><span class="line">            num_errors++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> num_errors;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-udp-recv"><a href="#4-udp-recv" class="headerlink" title="4. udp recv"></a>4. udp recv</h2><p>第三节的数据发送出去还需要接收，接收的 server 需要在 <strong><em>gmond.conf</em></strong> 中设置 <strong><em>udp_recv_channel</em></strong>，一般配置如下。其中主要的参数是 port 表示接收端口，其他的参数可以参考书籍《<strong><em>Monitoring with ganglia</em></strong>》。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">/* You can specify as many udp_recv_channels as you like as well. */</span><br><span class="line">udp_recv_channel &#123;</span><br><span class="line">    port = 8649</span><br><span class="line">    retry_bind = <span class="literal">true</span></span><br><span class="line">    <span class="comment"># Size of the UDP buffer. If you are handling lots of metrics you really</span></span><br><span class="line">    <span class="comment"># should bump it up to e.g. 10MB or even higher.</span></span><br><span class="line">    <span class="comment"># buffer = 10485760</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再说主流程代码之前，我们需要先了解一下 I/O 多路复用：server 对于多个 client 请求，也就是 socket 连接（网络 I/O 事件) 进行统一的管理。具体的实现有 select，poll，epoll，这里不再展开。APR(Apache portable Run-time libraries，Apache可移植运行库)主要为上层的应用程序提供一个可以跨越多操作系统平台使用的底层支持接口库。通过 APR 可以非常简单实现 poll 模型，官方示例如下。更多的可以参考 <a href="http://dev.ariel-networks.com/apr/" target="_blank" rel="noopener">apr-tutorial</a>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">apr_status_t</span> rv;</span><br><span class="line">    <span class="keyword">apr_pool_t</span> *mp;</span><br><span class="line">    <span class="keyword">apr_socket_t</span> *lsock;<span class="comment">/* listening socket */</span></span><br><span class="line">    <span class="keyword">apr_pollset_t</span> *pollset;</span><br><span class="line">    <span class="keyword">apr_int32_t</span> num;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">apr_pollfd_t</span> *ret_pfd;</span><br><span class="line"></span><br><span class="line">    apr_initialize();</span><br><span class="line">    apr_pool_create(&amp;mp, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    lsock = create_listen_sock(mp);</span><br><span class="line">    assert(lsock);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 创建 pollset</span></span><br><span class="line">    apr_pollset_create(&amp;pollset, DEF_POLLSET_NUM, mp, <span class="number">0</span>);</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">apr_pollfd_t</span> pfd = &#123; mp, APR_POLL_SOCKET, APR_POLLIN, <span class="number">0</span>, &#123; <span class="literal">NULL</span> &#125;, <span class="literal">NULL</span> &#125;;</span><br><span class="line">        pfd.desc.s = lsock;</span><br><span class="line">        <span class="comment">// 将要监听的 socket 添加到 pollset</span></span><br><span class="line">        apr_pollset_add(pollset, &amp;pfd);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// poll 监听与事件处理</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="comment">// 获取准备就绪的 socket </span></span><br><span class="line">        rv = apr_pollset_poll(pollset, DEF_POLL_TIMEOUT, &amp;num, &amp;ret_pfd);</span><br><span class="line">        <span class="keyword">if</span> (rv == APR_SUCCESS) &#123;</span><br><span class="line">            <span class="keyword">int</span> i;</span><br><span class="line">            assert(num &gt; <span class="number">0</span>);</span><br><span class="line">            <span class="comment">// 依次处理</span></span><br><span class="line">            <span class="comment">/* scan the active sockets */</span></span><br><span class="line">            <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; num; i++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (ret_pfd[i].desc.s == lsock) &#123;</span><br><span class="line">                    <span class="comment">/* the listen socket is readable. that indicates we accepted a new connection */</span></span><br><span class="line">                    do_accept(pollset, lsock, mp);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">serv_ctx_t</span> *serv_ctx = ret_pfd[i].client_data;</span><br><span class="line">                    <span class="keyword">socket_callback_t</span> cb_func = serv_ctx-&gt;cb_func;</span><br><span class="line"></span><br><span class="line">                    cb_func(serv_ctx, pollset, ret_pfd[i].desc.s);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有了上面的铺垫，我们只需要将 gmond 的代码对号入座即可。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">if</span>(!deaf)</span><br><span class="line">    &#123;</span><br><span class="line">        setup_listen_channels_pollset();</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">setup_listen_channels_pollset( <span class="keyword">void</span> )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> num_udp_recv_channels   = cfg_size( config_file, <span class="string">"udp_recv_channel"</span>);</span><br><span class="line">    <span class="keyword">int</span> num_tcp_accept_channels = cfg_size( config_file, <span class="string">"tcp_accept_channel"</span>);  <span class="comment">// 这个是第 5 节的</span></span><br><span class="line">    <span class="keyword">int</span> total_listen_channels   = num_udp_recv_channels + num_tcp_accept_channels;</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">if</span> (num_udp_recv_channels &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 创建 pollset</span></span><br><span class="line">        <span class="keyword">if</span>((status = apr_pollset_create(&amp;udp_listen_channels, num_udp_recv_channels, global_context, pollset_opts)) != APR_SUCCESS)</span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">            <span class="built_in">exit</span>(EXIT_FAILURE);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">     </span><br><span class="line">    <span class="comment">// 将 gmond.conf 配置中的所有 udp_recv_channel 都建立 socket 并进行监听</span></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i&lt; num_udp_recv_channels; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 参数解析</span></span><br><span class="line">        udp_recv_channel = cfg_getnsec( config_file, <span class="string">"udp_recv_channel"</span>, i);</span><br><span class="line">        mcast_join     = cfg_getstr( udp_recv_channel, <span class="string">"mcast_join"</span> );</span><br><span class="line">        mcast_if       = cfg_getstr( udp_recv_channel, <span class="string">"mcast_if"</span> );</span><br><span class="line">        port           = cfg_getint( udp_recv_channel, <span class="string">"port"</span>);</span><br><span class="line">        bindaddr       = cfg_getstr( udp_recv_channel, <span class="string">"bind"</span>);</span><br><span class="line">        family         = cfg_getstr( udp_recv_channel, <span class="string">"family"</span>);</span><br><span class="line">        retry_bind     = cfg_getbool( udp_recv_channel, <span class="string">"retry_bind"</span>);</span><br><span class="line">        <span class="built_in">buffer</span>         = cfg_getint( udp_recv_channel, <span class="string">"buffer"</span>);</span><br><span class="line">      </span><br><span class="line">        ...</span><br><span class="line">        <span class="keyword">if</span>( mcast_join )</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* Listen on the specified multicast channel */</span></span><br><span class="line">            socket = create_mcast_server(pool, sock_family, mcast_join, port, bindaddr, mcast_if );</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* Create a UDP server */</span></span><br><span class="line">            socket = create_udp_server( pool, sock_family, port, bindaddr );</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">      </span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">/* Build the socket poll file descriptor structure */</span></span><br><span class="line">        socket_pollfd.desc_type   = APR_POLL_SOCKET;</span><br><span class="line">        socket_pollfd.reqevents   = APR_POLLIN;</span><br><span class="line">        socket_pollfd.desc.s      = socket;</span><br><span class="line">        ...</span><br><span class="line">        <span class="comment">/* Add the socket to the pollset */</span></span><br><span class="line">        status = apr_pollset_add(udp_listen_channels, &amp;socket_pollfd);</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>监听处理。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(;!done;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (udp_listen_channels != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">/* Pull in incoming data */</span></span><br><span class="line">            poll_udp_listen_channels(wait, now);</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">poll_udp_listen_channels( <span class="keyword">apr_interval_time_t</span> timeout, <span class="keyword">apr_time_t</span> now)</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    status = apr_pollset_poll(udp_listen_channels, timeout, &amp;num, &amp;descs);</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i&lt; num ; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Ganglia_channel *channel = descs[i].client_data;</span><br><span class="line">        <span class="keyword">switch</span>( channel-&gt;type )</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">case</span> UDP_RECV_CHANNEL:</span><br><span class="line">                process_udp_recv_channel(descs+i, now); </span><br><span class="line">                udp_last_heard = apr_time_now();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">process_udp_recv_channel(<span class="keyword">const</span> <span class="keyword">apr_pollfd_t</span> *desc, <span class="keyword">apr_time_t</span> now)</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 收集数据</span></span><br><span class="line">    <span class="comment">/* Grab the data */</span></span><br><span class="line">    status = apr_socket_recvfrom(remotesa, socket, <span class="number">0</span>, buf, &amp;len);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 数据处理， XDR 协议</span></span><br><span class="line">    <span class="comment">/* Create the XDR receive stream */</span></span><br><span class="line">    xdrmem_create(&amp;x, buf, max_udp_message_len, XDR_DECODE);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="5-tcp-channel"><a href="#5-tcp-channel" class="headerlink" title="5. tcp channel"></a>5. tcp channel</h2><p>在 <strong><em>gmond.conf</em></strong> 还有一个配置项: <strong><em>tcp_accept_channel</em></strong>，根据该配置会在相应的端口建立一个 tcp server，以 xml 形式输出 gmond 收集到的指标数据，比如 gmetad 收集 gmond 数据就是通过这个 tcp server 获取的。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">tcp_accept_channel &#123;</span><br><span class="line">    port = 8649</span><br><span class="line">    <span class="comment"># If you want to gzip XML output</span></span><br><span class="line">    gzip_output = no</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>处理和第四节的 <strong><em>udp_recv_channel</em></strong> 类似：建立 pollset，然后监听处理。pollset 建立也在函数 <strong><em>setup_listen_channels_pollset( void )</em></strong> 中，不再细说。下面主要说一下处理。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main ( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* Create TCP listener thread */</span></span><br><span class="line">    <span class="keyword">if</span>(!deaf)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">apr_thread_t</span> *thread;</span><br><span class="line">        <span class="keyword">if</span> (apr_thread_create(&amp;thread, <span class="literal">NULL</span>, tcp_listener, <span class="literal">NULL</span>, global_context) != APR_SUCCESS)</span><br><span class="line">        &#123;</span><br><span class="line">            err_msg(<span class="string">"Failed to create TCP listener thread. Exiting.\n"</span>);</span><br><span class="line">            <span class="built_in">exit</span>(EXIT_FAILURE);</span><br><span class="line">        &#125;</span><br><span class="line">     &#125;</span><br><span class="line">     ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先在 main 函数中通过函数 <strong><em>apr_thread_create</em></strong> 新建一个线程执行函数 <strong><em>tcp_listener</em></strong>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span>* APR_THREAD_FUNC <span class="title">tcp_listener</span><span class="params">(<span class="keyword">apr_thread_t</span> *thd, <span class="keyword">void</span> *data)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">apr_time_t</span> now;</span><br><span class="line">    <span class="keyword">apr_interval_time_t</span> wait = <span class="number">100</span> * <span class="number">1000</span>; <span class="comment">// 100ms</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tcp_listen_channels == <span class="literal">NULL</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    debug_msg(<span class="string">"[tcp] Starting TCP listener thread..."</span>);</span><br><span class="line">    <span class="keyword">for</span>(;!done;)</span><br><span class="line">    &#123;</span><br><span class="line">        now = apr_time_now();</span><br><span class="line">        <span class="comment">/* Pull in incoming data */</span></span><br><span class="line">        poll_tcp_listen_channels(wait, now);</span><br><span class="line">    &#125;</span><br><span class="line">    apr_thread_exit(thd, APR_SUCCESS);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>函数 <strong><em>tcp_listener</em></strong> 中的 <strong><em>poll_tcp_listen_channels</em></strong> 功能和函数 <strong><em>poll_udp_listen_channels</em></strong> 类似。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">poll_tcp_listen_channels( <span class="keyword">apr_interval_time_t</span> timeout, <span class="keyword">apr_time_t</span> now)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* Poll for incoming TCP requests */</span></span><br><span class="line">    status = apr_pollset_poll(tcp_listen_channels, timeout, &amp;num, &amp;descs);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i&lt; num ; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Ganglia_channel *channel = descs[i].client_data;</span><br><span class="line">        <span class="keyword">switch</span>( channel-&gt;type )</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">case</span> TCP_ACCEPT_CHANNEL:</span><br><span class="line">                debug_msg(<span class="string">"[tcp] Request for XML data received."</span>);</span><br><span class="line">                process_tcp_accept_channel(descs+i, now);</span><br><span class="line">                debug_msg(<span class="string">"[tcp] Request for XML data completed."</span>);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span></span><br><span class="line">process_tcp_accept_channel(<span class="keyword">const</span> <span class="keyword">apr_pollfd_t</span> *desc, <span class="keyword">apr_time_t</span> now)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">apr_socket_t</span> *client, *server;</span><br><span class="line">    ...</span><br><span class="line">    </span><br><span class="line">    status = apr_socket_accept(&amp;client, server, client_context);</span><br><span class="line">    ...</span><br><span class="line">      </span><br><span class="line">    <span class="comment">/* Print the DTD, GANGLIA_XML and CLUSTER tags */</span></span><br><span class="line">    status = print_xml_header(client);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 逐个处理 host</span></span><br><span class="line">    <span class="keyword">for</span>(hi = apr_hash_first(client_context, hosts); hi; hi = apr_hash_next(hi))</span><br><span class="line">    &#123;</span><br><span class="line">        apr_hash_this(hi, <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;val);</span><br><span class="line">        status = print_host_start(client, (Ganglia_host *)val);</span><br><span class="line">      </span><br><span class="line">        <span class="comment">// 逐个处理 metric</span></span><br><span class="line">        apr_thread_mutex_lock(((Ganglia_host *)val)-&gt;mutex);</span><br><span class="line">        <span class="keyword">for</span>(metric_hi = apr_hash_first(client_context, ((Ganglia_host *)val)-&gt;metrics);</span><br><span class="line">          metric_hi; metric_hi = apr_hash_next(metric_hi))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">void</span> *metric, *mval;</span><br><span class="line">            apr_hash_this(metric_hi, <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;metric);</span><br><span class="line"></span><br><span class="line">            mval = apr_hash_get(((Ganglia_host *)val)-&gt;gmetrics, ((Ganglia_metadata*)metric)-&gt;name, APR_HASH_KEY_STRING);</span><br><span class="line">	</span><br><span class="line">            <span class="comment">// 向 client 发送 metric</span></span><br><span class="line">            <span class="comment">/* Print each of the metrics for a host ... */</span></span><br><span class="line">            <span class="keyword">if</span>(print_host_metric(client, metric, mval, now) != APR_SUCCESS)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">/* Release the mutex and close down the accepted socket */</span></span><br><span class="line">                ...</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        apr_thread_mutex_unlock(((Ganglia_host *)val)-&gt;mutex);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面涉及到以 <strong><em>print</em></strong> 开头的函数就是想 socket 发送数据，可以简单看一下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">apr_status_t</span></span><br><span class="line">print_xml_header( <span class="keyword">apr_socket_t</span> *client )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(cluster_tag)</span><br><span class="line">    &#123;</span><br><span class="line">        len = apr_snprintf( clusterxml, <span class="number">1024</span>, </span><br><span class="line">        <span class="string">"&lt;CLUSTER NAME=\"%s\" LOCALTIME=\"%d\" OWNER=\"%s\" LATLONG=\"%s\" URL=\"%s\"&gt;\n"</span>, </span><br><span class="line">                  name?name:<span class="string">"unspecified"</span>, </span><br><span class="line">                  (<span class="keyword">int</span>)(now / APR_USEC_PER_SEC),</span><br><span class="line">                  owner?owner:<span class="string">"unspecified"</span>, </span><br><span class="line">                  latlong?latlong:<span class="string">"unspecified"</span>,</span><br><span class="line">                  url?url:<span class="string">"unspecified"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> socket_send( client, clusterxml, &amp;len);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="6-总结"><a href="#6-总结" class="headerlink" title="6. 总结"></a>6. 总结</h2><p>截止到上面，gmond 的主要模块我们基本上已经介绍完了，另外还有一些细节可以根据上面提供了脉络进行梳理。</p>
+<h2 id="7-参考"><a href="#7-参考" class="headerlink" title="7. 参考"></a>7. 参考</h2><ol>
+<li><a href="http://dev.ariel-networks.com/apr/" target="_blank" rel="noopener">apr-tutorial</a></li>
+<li><a href="https://github.com/ganglia/monitor-core" target="_blank" rel="noopener">ganglia source code</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/08/19/understanding-ganglia-gmond/" rel="next" title="深入理解 Ganglia 之 gmond">
+                  <i class="fa fa-chevron-left"></i> 深入理解 Ganglia 之 gmond
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/09/03/ganglia-implement-gmetad/" rel="prev" title="Ganglia 源码剖析之 gmetad">
+                  Ganglia 源码剖析之 gmetad <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-主流程"><span class="nav-number">2.</span> <span class="nav-text">1. 主流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-metric-采集"><span class="nav-number">3.</span> <span class="nav-text">2. metric 采集</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-module-load"><span class="nav-number">3.0.1.</span> <span class="nav-text">2.1 module load</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-metric-init"><span class="nav-number">3.0.2.</span> <span class="nav-text">2.2 metric init</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-metric-collect"><span class="nav-number">3.0.3.</span> <span class="nav-text">2.3 metric collect</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-udp-send"><span class="nav-number">4.</span> <span class="nav-text">3. udp send</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-udp-recv"><span class="nav-number">5.</span> <span class="nav-text">4. udp recv</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-tcp-channel"><span class="nav-number">6.</span> <span class="nav-text">5. tcp channel</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-总结"><span class="nav-number">7.</span> <span class="nav-text">6. 总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-参考"><span class="nav-number">8.</span> <span class="nav-text">7. 参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

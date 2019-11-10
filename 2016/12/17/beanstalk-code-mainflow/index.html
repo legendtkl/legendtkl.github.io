@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="1.引言Beanstalkd 是单进程的，同时也是单线程的。仔细留意一下就会发现很多高性能网络框架都是单进程的和异步的。单线程就避免了 context switch 的开销，而异步是任何高性能系统都会采用的一种架构。我们今天看一下 Beanstalkd 的框架是怎么样的？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="beanstalkd 源码剖析：主流程">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;12&#x2F;17&#x2F;beanstalk-code-mainflow&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="1.引言Beanstalkd 是单进程的，同时也是单线程的。仔细留意一下就会发现很多高性能网络框架都是单进程的和异步的。单线程就避免了 context switch 的开销，而异步是任何高性能系统都会采用的一种架构。我们今天看一下 Beanstalkd 的框架是怎么样的？">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;blockingIO.gif">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;noblockingIO.gif">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;IOmultiplexing.gif">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;signalIO.gif">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;asynchronousIO.gif">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;comparisionIO.gif">
+<meta property="og:updated_time" content="2019-11-08T03:09:26.004Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;blockingIO.gif">
+
+<link rel="canonical" href="http://yoursite.com/2016/12/17/beanstalk-code-mainflow/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>beanstalkd 源码剖析：主流程 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/17/beanstalk-code-mainflow/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          beanstalkd 源码剖析：主流程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-12-17 22:46:14" itemprop="dateCreated datePublished" datetime="2016-12-17T22:46:14+08:00">2016-12-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:26" itemprop="dateModified" datetime="2019-11-08T11:09:26+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mq/" itemprop="url" rel="index">
+                    <span itemprop="name">mq</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1.引言"></a>1.引言</h2><p>Beanstalkd 是单进程的，同时也是单线程的。仔细留意一下就会发现很多高性能网络框架都是单进程的和异步的。单线程就避免了 context switch 的开销，而异步是任何高性能系统都会采用的一种架构。我们今天看一下 Beanstalkd 的框架是怎么样的？</p>
+<a id="more"></a>
+
+<h2 id="2-select、poll、epoll"><a href="#2-select、poll、epoll" class="headerlink" title="2.select、poll、epoll"></a>2.select、poll、epoll</h2><h4 id="1-I-O模型"><a href="#1-I-O模型" class="headerlink" title="1.I/O模型"></a>1.I/O模型</h4><p>这里说的 I/O 指的都是是网络 I/O。Unix 下可用的 5 种 I/O 模型如下：</p>
+<ul>
+<li>阻塞式 I/O</li>
+<li>非阻塞式 I/O</li>
+<li>I/O 复用</li>
+<li>信号驱动式 I/O</li>
+<li>异步 I/O</li>
+</ul>
+<h6 id="1-阻塞式-I-O"><a href="#1-阻塞式-I-O" class="headerlink" title="1. 阻塞式 I/O"></a>1. 阻塞式 I/O</h6><p>进程调用recvfrom，系统调用直到数据报到达且被复制到应用进程的缓冲区中或者发生错误才返回。网上有很多经典的例子，比如去查看水壶的水有没有开，直到水开了或者被其他更重要的事情打断才返回。</p>
+<p><img src="/img/uploads/2016/blockingIO.gif" alt=""></p>
+<h6 id="2-非阻塞式-I-O"><a href="#2-非阻塞式-I-O" class="headerlink" title="2.非阻塞式 I/O"></a>2.非阻塞式 I/O</h6><p>非阻塞式I/O 与阻塞式的区别在于，询问内核数据没有准备好时候，系统调用并不会一直等待下去，而是先返回一个错误。然后隔一段时间再去查看，直到数据准备好，然后将其从内核拷贝到进程缓冲区，结束。还是以上面的查看水壶的水有没有开的例子，如果发现水没有开则返回，过一段时间再去查看。其实本质上就是轮训，这么做往往会耗费大量CPU 时间。</p>
+<p><img src="/img/uploads/2016/noblockingIO.gif" alt=""></p>
+<h6 id="3-I-O-复用"><a href="#3-I-O-复用" class="headerlink" title="3. I/O 复用"></a>3. I/O 复用</h6><p>前面阻塞式 I/O 是阻塞在一个系统调用，如果我们需要阻塞于多个系统调用，这就需要用到 IO 复用。I/O 复用借助于 select/poll 实现，select/poll 可以认为是系统调用的代理，select/poll 负责监听一组系统调用，用户进程阻塞于 select/poll，其中任何一个就绪，select/poll 都将不在阻塞。典型使用如下：</p>
+<ul>
+<li>当需要处理多个描述符（通常是交互式输入和 socket）时，必须使用 I/O 复用。</li>
+<li>处理多个 socket。</li>
+<li>一个 TCP 服务器既要处理监听 socket，又要处理已连接 socket。</li>
+<li>…</li>
+</ul>
+<p><img src="/img/uploads/2016/IOmultiplexing.gif" alt=""></p>
+<h6 id="4-信号驱动式-I-O"><a href="#4-信号驱动式-I-O" class="headerlink" title="4.信号驱动式 I/O"></a>4.信号驱动式 I/O</h6><p>内核在描述符就绪时发送 SIGIO 信号通知用户进程。</p>
+<p><img src="/img/uploads/2016/signalIO.gif" alt=""></p>
+<h6 id="5-异步I-O"><a href="#5-异步I-O" class="headerlink" title="5.异步I/O"></a>5.异步I/O</h6><p>告知内核启动某个操作，并让内核在整个操作（包括将数据从内核复制到用户进程的缓冲区）完成后通知用户进程。这种模型有点类似信号驱动式 I/O，区别在于：信号驱动式 I/O 由内核通知何时可以启动一个 I/O 操作，而异步 I/O 模型是由内核通知我们 I/O 操作何时完成。</p>
+<p><img src="/img/uploads/2016/asynchronousIO.gif" alt=""></p>
+<p>闲扯一句，非阻塞并不等同于异步。根据 POSIX 对同步 I/O 和 异步 I/O 的定义：</p>
+<ul>
+<li>A synchronous I/O operation causes the requesting process to be blocked until that I/O operation completes.</li>
+<li>An asynchronous I/O operation does not cause the requesting process to be blocked.</li>
+</ul>
+<p>我们将上述五种 I/O 模型汇总如下，发现前四种 I/O 模型都是同步 I/O。</p>
+<p><img src="/img/uploads/2016/comparisionIO.gif" alt=""></p>
+<h4 id="2-select"><a href="#2-select" class="headerlink" title="2. select"></a>2. select</h4><p>select 以及下面要说的 poll 和 epoll 都是 I/O 复用的系统调用API。简单介绍一下。select 函数容许进程指示内核等待多个事件中的任何一个发生，并只在有一个或多个事件发生或经历一段指定的时间才唤醒它。函数定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/select.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span><span class="params">(<span class="keyword">int</span> maxfdp1, fd_set *readset, fd_set *writeset, fd_set exceptset, <span class="keyword">const</span> struct timeval *timeout)</span></span>;</span><br><span class="line">返回：若有就绪描述符则为其数目，若超时则为<span class="number">0</span>，出错则为<span class="number">-1.</span></span><br></pre></td></tr></table></figure>
+
+<p>参数简单介绍一下：</p>
+<ul>
+<li>maxfdp1: 指定待测试的描述符的个数，值是待测试的最大描述符加1</li>
+<li>readset, writeset, exceptset 指定我们要让内核测试读、写和异常条件的描述符</li>
+<li>timeout: 告知内核等待所指定描述符中的任何一个就绪可花多长事件。<ul>
+<li>空指针：永远等待，仅有一个描述符准备好 I/O 时才返回</li>
+<li>某个值：在有一个描述符准备好 I/O 时返回，但是不超过 timeout 中定义的时间。</li>
+<li>0: 这种情况，根本不等待，检查描述符后立即返回，也就是轮询。</li>
+</ul>
+</li>
+</ul>
+<p>select 返回是就绪的描述符个数，但是并不会返回具体哪个/哪几个描述符就绪了，所有在用户态还需要我们自己去手动遍历文件描述符。而且我们每次调用 select 的时候都需要将所有的文件描述符从用户态拷贝到内核态（比如我的文件描述符是5），那么我需要传递的就是6个文件描述符{0,1,2,3,4,5}，6个文件描述符都会被检测（内核中通过轮询传入的文件描述符来检测状态）。</p>
+<p>select 确实解决了一些问题，但是本身也是有问题的，比如 select 支持最大描述符数目是 1024，按照常理，单个线程 1024 个描述符是够用了，但是对于高性能服务器，这是远远不够的。如果要修改这个值只能修改内核文件然后重新编译内核。</p>
+<h4 id="3-poll"><a href="#3-poll" class="headerlink" title="3. poll"></a>3. poll</h4><p>poll 和 select 函数类似，接口定义有所区别。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;poll.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">poll</span><span class="params">(struct pollfd fdarray[], <span class="keyword">nfds_t</span> nfds, <span class="keyword">int</span> timeout)</span></span>;</span><br><span class="line">返回值：准备就绪的描述符数，若超时则返回<span class="number">0</span>，若出错返回<span class="number">-1</span>。</span><br><span class="line">  </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> &#123;</span></span><br><span class="line">  	<span class="keyword">int</span> fd;		<span class="comment">/*file discriptor to check, or &lt;0 to ignore*/</span></span><br><span class="line">  	<span class="keyword">short</span> events; <span class="comment">/*events of interest on fd*/</span></span><br><span class="line">  	<span class="keyword">short</span> revents;	<span class="comment">/*events that occurred on fd*/</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>poll 不再为每个状态（可读、可写和异常状态）构造一个描述符集，而是构造一个 pollfd 结构数组，每个数组元素指定一个描述符编号以及对其所关心的状态，也就是参数 fdarray，fdarray 数组中元素个数由 nfds 说明。</p>
+<p>timeout 与 select 中的也不再一样，是一个 int 类型。</p>
+<ul>
+<li>timeout == -1：永远等待。当所指定的描述符中一个准备好，或捕捉到一个信号时返回。</li>
+<li>timeout == 0: 不等待，也就是轮询。</li>
+<li>timeout &gt; 0：等待 timeout 毫秒。</li>
+</ul>
+<p>poll 的第一个参数解决了 select 的最大描述符个数的限制，但是由于本质上还是和 select 一样，描述符也需要在用户态和内核态之间拷贝，内核中还是需要轮询所有的描述符，在监控的描述符数量过大，程序的性能也会受到影响。</p>
+<h4 id="4-epoll"><a href="#4-epoll" class="headerlink" title="4.epoll"></a>4.epoll</h4><p>前面说到 select/poll 在内核实现上都采用轮询的方式，导致性能存在瓶颈，所以就有了 epoll。epoll 是将 select/poll 的时间复杂度从 O(n) 降到了 O(1)。我们不需要传递庞大的文件描述符，而是只注册我们感兴趣的文件描述符。我们来看一下 epoll 简单用法。</p>
+<p>epoll 使用主要包括三个函数：</p>
+<ul>
+<li>epoll_create()：从内核申请一个 实例</li>
+<li>epoll_ctl()：注册我们感兴趣的事件</li>
+<li>epoll_wait()：等待我们感兴趣的事件发生。</li>
+</ul>
+<p>关于 select/poll/epoll 的更详细的使用以及内核实现之后放到新的文章中讲吧，毕竟这篇文章主要还是来讲 beanstalkd 的。</p>
+<h2 id="3-beanstalkd-主流程"><a href="#3-beanstalkd-主流程" class="headerlink" title="3.beanstalkd 主流程"></a>3.beanstalkd 主流程</h2><p>首先找到 main 函数，在 main.c 文件中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">main(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> r;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">job</span> <span class="title">list</span> = &#123;</span>&#125;;</span><br><span class="line"></span><br><span class="line">    progname = argv[<span class="number">0</span>];</span><br><span class="line">    setlinebuf(<span class="built_in">stdout</span>);</span><br><span class="line">    optparse(&amp;srv, argv+<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (verbose) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"pid %d\n"</span>, getpid());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    r = make_server_socket(srv.addr, srv.port);</span><br><span class="line">    <span class="keyword">if</span> (r == <span class="number">-1</span>) twarnx(<span class="string">"make_server_socket()"</span>), <span class="built_in">exit</span>(<span class="number">111</span>);</span><br><span class="line">    srv.sock.fd = r;</span><br><span class="line"></span><br><span class="line">    prot_init();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (srv.user) su(srv.user);</span><br><span class="line">    set_sig_handlers();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (srv.wal.use) &#123;</span><br><span class="line">        <span class="comment">// We want to make sure that only one beanstalkd tries</span></span><br><span class="line">        <span class="comment">// to use the wal directory at a time. So acquire a lock</span></span><br><span class="line">        <span class="comment">// now and never release it.</span></span><br><span class="line">        <span class="keyword">if</span> (!waldirlock(&amp;srv.wal)) &#123;</span><br><span class="line">            twarnx(<span class="string">"failed to lock wal dir %s"</span>, srv.wal.dir);</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">10</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">list</span>.prev = <span class="built_in">list</span>.next = &amp;<span class="built_in">list</span>;</span><br><span class="line">        walinit(&amp;srv.wal, &amp;<span class="built_in">list</span>);</span><br><span class="line">        r = prot_replay(&amp;srv, &amp;<span class="built_in">list</span>);</span><br><span class="line">        <span class="keyword">if</span> (!r) &#123;</span><br><span class="line">            twarnx(<span class="string">"failed to replay log"</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    srvserve(&amp;srv);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中 setlinebuf 用来设置文件流以换行为依据的无缓冲IO。optparse 解析命令行参数。make_server_socket 是新建一个 socket，prot_init 是做一些初始化的操作，比如，tubes 初始化。if (srv.wal.use) 里面是 job 持久化相关的，我们先不看了。最主要的在下面的 srvserve 函数。其实就是 server 的主线程。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span></span><br><span class="line">srvserve(<span class="built_in">Server</span> *s)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> r;</span><br><span class="line">    Socket *sock;</span><br><span class="line">    int64 period;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (sockinit() == <span class="number">-1</span>) &#123;</span><br><span class="line">        twarnx(<span class="string">"sockinit"</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    s-&gt;sock.x = s;</span><br><span class="line">    s-&gt;sock.f = (Handle)srvaccept;</span><br><span class="line">    s-&gt;conns.less = (Less)connless;</span><br><span class="line">    s-&gt;conns.rec = (Record)connrec;</span><br><span class="line"></span><br><span class="line">    r = <span class="built_in">listen</span>(s-&gt;sock.fd, <span class="number">1024</span>);</span><br><span class="line">    <span class="keyword">if</span> (r == <span class="number">-1</span>) &#123;</span><br><span class="line">        twarn(<span class="string">"listen"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    r = sockwant(&amp;s-&gt;sock, <span class="string">'r'</span>);</span><br><span class="line">    <span class="keyword">if</span> (r == <span class="number">-1</span>) &#123;</span><br><span class="line">        twarn(<span class="string">"sockwant"</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        period = prottick(s);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> rw = socknext(&amp;sock, period);</span><br><span class="line">        <span class="keyword">if</span> (rw == <span class="number">-1</span>) &#123;</span><br><span class="line">            twarnx(<span class="string">"socknext"</span>);</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (rw) &#123;</span><br><span class="line">            sock-&gt;f(sock-&gt;x, rw);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其实 beanstalkd 的主流程也是使用的异步非阻塞，通过 epoll/kqueue 来实现，不过代码中又封装了一层。可以看一下这三个函数：sockinit(), sockwant(), socknext()。darwin.c 文件中是对 kqueue 的封装，linux.c 文件中是对 epoll 的封装。我们看一下 epoll 的封装。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span></span><br><span class="line">sockinit(<span class="keyword">void</span>)</span><br><span class="line">&#123;</span><br><span class="line">    epfd = epoll_create(<span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span> (epfd == <span class="number">-1</span>) &#123;</span><br><span class="line">        twarn(<span class="string">"epoll_create"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">sockwant(Socket *s, <span class="keyword">int</span> rw)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> op;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">ev</span> = &#123;</span>&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!s-&gt;added &amp;&amp; !rw) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!s-&gt;added &amp;&amp; rw) &#123;</span><br><span class="line">        s-&gt;added = <span class="number">1</span>;</span><br><span class="line">        op = EPOLL_CTL_ADD;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!rw) &#123;</span><br><span class="line">        op = EPOLL_CTL_DEL;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        op = EPOLL_CTL_MOD;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (rw) &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'r'</span>:</span><br><span class="line">        ev.events = EPOLLIN;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">'w'</span>:</span><br><span class="line">        ev.events = EPOLLOUT;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ev.events |= EPOLLRDHUP | EPOLLPRI;</span><br><span class="line">    ev.data.ptr = s;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> epoll_ctl(epfd, op, s-&gt;fd, &amp;ev);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span></span><br><span class="line">socknext(Socket **s, int64 timeout)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> r;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">ev</span>;</span></span><br><span class="line"></span><br><span class="line">    r = epoll_wait(epfd, &amp;ev, <span class="number">1</span>, (<span class="keyword">int</span>)(timeout/<span class="number">1000000</span>));</span><br><span class="line">    <span class="keyword">if</span> (r == <span class="number">-1</span> &amp;&amp; errno != EINTR) &#123;</span><br><span class="line">        twarn(<span class="string">"epoll_wait"</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (r &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        *s = ev.data.ptr;</span><br><span class="line">        <span class="keyword">if</span> (ev.events &amp; (EPOLLHUP|EPOLLRDHUP)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">'h'</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ev.events &amp; EPOLLIN) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">'r'</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ev.events &amp; EPOLLOUT) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">'w'</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到这三个函数是对 epoll_create，epoll_ctl，epoll_wait 的封装。这是使用 epoll 时最基本的三个函数，这里就不再赘述。回到 srvserve 函数，for 循环里就是监听 socket 事件。</p>
+<p>这里提个问题：就是beanstalkd 本身是有定时功能的，那么怎么通过一个主线程来实现定时和 socket 监听呢？答案就是通过 epoll_wait 的 timeout 来实现定时功能。通过 epoll_wait 来实现定时器有一个弊端，因为 epoll_wait 的 timeout 的时间精度只到毫秒，也就是意味着 beanstalkd 的时间精度也只到毫秒。</p>
+<p>好了，让我们回到主题。通过 epoll_wait 的 timeout 来实现定时功能，也就是说 timeout 是下一个 job 到期的时间。代码里面对于的就是 prottick 函数，我们来简单看一下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line">int64</span><br><span class="line">prottick(<span class="built_in">Server</span> *s)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> r;</span><br><span class="line">    job j;</span><br><span class="line">    int64 now;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    tube t;</span><br><span class="line">    int64 period = <span class="number">0x34630B8A000</span>LL; <span class="comment">/* 1 hour in nanoseconds */</span></span><br><span class="line">    int64 d;</span><br><span class="line"></span><br><span class="line">    now = nanoseconds();</span><br><span class="line">    <span class="keyword">while</span> ((j = delay_q_peek())) &#123;</span><br><span class="line">        d = j-&gt;r.deadline_at - now;</span><br><span class="line">        <span class="keyword">if</span> (d &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            period = <span class="built_in">min</span>(period, d);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        j = delay_q_take();</span><br><span class="line">        r = enqueue_job(s, j, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">if</span> (r &lt; <span class="number">1</span>) bury_job(s, j, <span class="number">0</span>); <span class="comment">/* out of memory, so bury it */</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; tubes.used; i++) &#123;</span><br><span class="line">        t = tubes.items[i];</span><br><span class="line">        d = t-&gt;deadline_at - now;</span><br><span class="line">        <span class="keyword">if</span> (t-&gt;pause &amp;&amp; d &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            t-&gt;pause = <span class="number">0</span>;</span><br><span class="line">            process_queue();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (d &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            period = <span class="built_in">min</span>(period, d);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (s-&gt;conns.len) &#123;</span><br><span class="line">        Conn *c = s-&gt;conns.data[<span class="number">0</span>];</span><br><span class="line">        d = c-&gt;tickat - now;</span><br><span class="line">        <span class="keyword">if</span> (d &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            period = <span class="built_in">min</span>(period, d);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        heapremove(&amp;s-&gt;conns, <span class="number">0</span>);</span><br><span class="line">        conn_timeout(c);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    update_conns();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> period;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//delay_q_peek()</span></span><br><span class="line"><span class="keyword">static</span> job</span><br><span class="line">delay_q_peek()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    tube t;</span><br><span class="line">    job j = <span class="literal">NULL</span>, nj;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; tubes.used; i++) &#123;</span><br><span class="line">        t = tubes.items[i];</span><br><span class="line">        <span class="keyword">if</span> (t-&gt;<span class="built_in">delay</span>.len == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        nj = t-&gt;<span class="built_in">delay</span>.data[<span class="number">0</span>];</span><br><span class="line">        <span class="keyword">if</span> (!j || nj-&gt;r.deadline_at &lt; j-&gt;r.deadline_at) j = nj;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> j;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先看到 prottick 返回的 period 是由 delay_q_peek() 返回的 job 间接生成的。我下面把 delay_q_peek() 的代码也贴出来了。一目了然。delay_q_peek() 是筛选出最快到期的 job。这里有一点值得一说的就是筛选 job 的时候，beanstalkd 采用的是遍历所有的 tube 的方法，这也就意味这如果 beanstalkd 的 tube 特别多的话，这里可能是个性能瓶颈。</p>
+<p>上面还涉及到一些函数，像 process_queue()，heapremove()，都是对 job 的队列进行操作的，这里就不细说了。</p>
+<h2 id="4-参考"><a href="#4-参考" class="headerlink" title="4.参考"></a>4.参考</h2><ul>
+<li>《Unix 网络编程》</li>
+<li>《Unix 环境高级编程》</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/12/06/beanstalk-code-ds/" rel="next" title="beanstalkd 源码剖析：数据结构">
+                  <i class="fa fa-chevron-left"></i> beanstalkd 源码剖析：数据结构
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/12/22/git-good-practice-commit-msg/" rel="prev" title="git 最佳实践: commit msg">
+                  git 最佳实践: commit msg <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-引言"><span class="nav-number">1.</span> <span class="nav-text">1.引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-select、poll、epoll"><span class="nav-number">2.</span> <span class="nav-text">2.select、poll、epoll</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-I-O模型"><span class="nav-number">2.0.1.</span> <span class="nav-text">1.I/O模型</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#1-阻塞式-I-O"><span class="nav-number">2.0.1.0.1.</span> <span class="nav-text">1. 阻塞式 I/O</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#2-非阻塞式-I-O"><span class="nav-number">2.0.1.0.2.</span> <span class="nav-text">2.非阻塞式 I/O</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#3-I-O-复用"><span class="nav-number">2.0.1.0.3.</span> <span class="nav-text">3. I/O 复用</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#4-信号驱动式-I-O"><span class="nav-number">2.0.1.0.4.</span> <span class="nav-text">4.信号驱动式 I/O</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#5-异步I-O"><span class="nav-number">2.0.1.0.5.</span> <span class="nav-text">5.异步I/O</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-select"><span class="nav-number">2.0.2.</span> <span class="nav-text">2. select</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-poll"><span class="nav-number">2.0.3.</span> <span class="nav-text">3. poll</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-epoll"><span class="nav-number">2.0.4.</span> <span class="nav-text">4.epoll</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-beanstalkd-主流程"><span class="nav-number">3.</span> <span class="nav-text">3.beanstalkd 主流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-参考"><span class="nav-number">4.</span> <span class="nav-text">4.参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

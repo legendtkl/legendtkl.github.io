@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="再说锁之前，需要先说一下进程间通信。 1. 进程间通信（Inter Process Communication, IPC）竞争条件多个进程（线程）通过共享内存（或者共享文件）的方式进行通信就会出现竞争条件。竞争条件的意思是说两个或者多个进程读写某些共享数据，而最后的结果取决于进程运行的精确时序。下面用一个golang程序来模拟一下。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="当我们谈论锁，我们谈什么">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;10&#x2F;13&#x2F;about-lock&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="再说锁之前，需要先说一下进程间通信。 1. 进程间通信（Inter Process Communication, IPC）竞争条件多个进程（线程）通过共享内存（或者共享文件）的方式进行通信就会出现竞争条件。竞争条件的意思是说两个或者多个进程读写某些共享数据，而最后的结果取决于进程运行的精确时序。下面用一个golang程序来模拟一下。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;critical_zone.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;lock_granularity.jpg">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.915Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;critical_zone.png">
+
+<link rel="canonical" href="http://yoursite.com/2016/10/13/about-lock/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>当我们谈论锁，我们谈什么 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/10/13/about-lock/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          当我们谈论锁，我们谈什么
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-10-13 21:39:39" itemprop="dateCreated datePublished" datetime="2016-10-13T21:39:39+08:00">2016-10-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%BA%95%E5%B1%82%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">底层技术</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>再说锁之前，需要先说一下进程间通信。</p>
+<h2 id="1-进程间通信（Inter-Process-Communication-IPC）"><a href="#1-进程间通信（Inter-Process-Communication-IPC）" class="headerlink" title="1. 进程间通信（Inter Process Communication, IPC）"></a>1. 进程间通信（Inter Process Communication, IPC）</h2><h4 id="竞争条件"><a href="#竞争条件" class="headerlink" title="竞争条件"></a>竞争条件</h4><p>多个进程（线程）通过共享内存（或者共享文件）的方式进行通信就会出现竞争条件。竞争条件的意思是说两个或者多个进程读写某些共享数据，而最后的结果取决于进程运行的精确时序。下面用一个golang程序来模拟一下。</p>
+<a id="more"></a>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">    <span class="string">"runtime"</span></span><br><span class="line">    <span class="string">"sync"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    a := <span class="number">1</span></span><br><span class="line">    <span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line"></span><br><span class="line">    wg.Add(<span class="number">2</span>)</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;         <span class="comment">//goroutine1</span></span><br><span class="line">        <span class="keyword">defer</span> wg.Done()</span><br><span class="line">        a = a + <span class="number">1</span></span><br><span class="line">    &#125;()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;         <span class="comment">//goroutine2</span></span><br><span class="line">        <span class="keyword">defer</span> wg.Done()</span><br><span class="line">        <span class="keyword">if</span> a==<span class="number">1</span> &#123;</span><br><span class="line">            runtime.Gosched()</span><br><span class="line">            fmt.Println(<span class="string">"a=="</span>,a)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;()</span><br><span class="line"></span><br><span class="line">    runtime.Gosched()</span><br><span class="line">    wg.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这里起了两个goroutine来模拟线程，使用<code>runtime.Gosched()</code>来手动切换。goroutine1对a进行+1操作，goroutine2对a进行判断然后进行操作。如果goroutine2对a判断完进行操作的时候，goroutine1对a进行操作就会出问题。上面代码模拟的就是这种情况。举个栗子，火车站卖票。卖票前先检查有没有余票，假设现在还有一张余票，就在出票的时候另外一个窗口把票卖了，这个时候就会出票失败。</p>
+<h4 id="临界区"><a href="#临界区" class="headerlink" title="临界区"></a>临界区</h4><p>我们可以简单地把程序代码分成两部分：不会导致竞争条件的程序片段和会导致竞争条件的程序片段。会导致竞争条件的程序片段就叫做临界区。避免竞争条件只需要阻止多个进程同时读写共享的数据就可以了，也就是保证同时只有一个进程处于临界区内。</p>
+<p>我们可以用《现代操作系统》一书的配图来理解。</p>
+<p><img src="/img/uploads/2016/critical_zone.png" alt=""></p>
+<h2 id="2-锁是什么"><a href="#2-锁是什么" class="headerlink" title="2. 锁是什么"></a>2. 锁是什么</h2><blockquote>
+<p>In computer science, a lock or mutex (from mutual exclusion) is a synchronization mechanism for enforcing limits on access to a resource in an environment where there are many threads of execution. A lock is designed to enforce a mutual exclusion concurrency control policy.</p>
+</blockquote>
+<p>上面摘自维基百科。简单地来说，锁就是保证只有一个进程处于临界区一种机制。</p>
+<h4 id="1-操作系统的锁"><a href="#1-操作系统的锁" class="headerlink" title="1.操作系统的锁"></a>1.操作系统的锁</h4><h5 id="硬件"><a href="#硬件" class="headerlink" title="硬件"></a>硬件</h5><p>对于单处理器而言，临界区问题好解决：修改共享变量时禁止中断出现。但是屏蔽中断后，时钟中断也会被屏蔽。相当于这个时候我们把CPU交给了这个进程，他不会因为CPU时钟走完而切换，如果其不再打开中断，后果将是非常可怕的。总之，把屏蔽中断的权力交给用户级进程是很不明智的。</p>
+<p>对于多处理器而言，屏蔽中断只会对执行了中断指令的那个CPU有效，但是其他CPU还是有可能会改变共享内存中的数据的。许多现代计算机系统都提供了特殊硬件指令以允许能<strong>原子地</strong>（不可中断地）检查和修改字的内容或交换两个字的内容（比如CAS，compare and swap）。其实很多锁的软件方案都是通过调用<strong>原子操作</strong>来实现的。</p>
+<h5 id="软件"><a href="#软件" class="headerlink" title="软件"></a>软件</h5><p><strong>信号量</strong>。信号量是E. W. Dijkstra在1965年提出的一种方法，它使用一个整型变量来累计唤醒次数。一个信号量的取值可以为0（表示没有保存下来的唤醒次数）或者为正值（表示有一个或者多个唤醒操作）。信号量除了初始化外只能通过两个标准原子操作：wait()和signal()来访问。这些操作原来被称为P（荷兰语Proberen，测试）和V（荷兰语Verhogen，增加）。wait()和signal()的定义可表示如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">wait(S) &#123;</span><br><span class="line">    <span class="keyword">while</span>(S&lt;=<span class="number">0</span>)</span><br><span class="line">        ;   <span class="comment">//no-op</span></span><br><span class="line">    S--</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">signal(S) &#123;</span><br><span class="line">    S++</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里需要注意的是，在wait()和signal()操作中，对信号量整型值的修改必须不可分地执行。另外对于wait(S)，对S的整型值的测试（S&lt;=0）和对其可能的修改(S–)，也必须不被中断地执行。</p>
+<p><strong>互斥量</strong>。互斥量可以认为是取值只有0和1的信号量。我们经常使用就是这个。使用其来同步的代码如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    waiting(mutex);</span><br><span class="line">        <span class="comment">//critical section</span></span><br><span class="line">    signal(mutex);</span><br><span class="line">        <span class="comment">//remainder section</span></span><br><span class="line">&#125;<span class="keyword">while</span>(TRUE)</span><br></pre></td></tr></table></figure>
+
+<p><strong>实现</strong>。每个信号量关联一个等待进程链表。进程wait()的时候发现信号量不为正时，可以选择忙等待（信号量那儿的例子），也可以选择阻塞自己（下面的实现），进程加入等待链表。signal()时从等待链表中取出进程唤醒。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> value;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">process</span> *<span class="title">list</span>;</span></span><br><span class="line">&#125; semaphore;</span><br><span class="line"></span><br><span class="line">wait(semaphore *S) &#123;</span><br><span class="line">    S-&gt;value--;</span><br><span class="line">    <span class="keyword">if</span> (S-&gt;value &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        add <span class="keyword">this</span> <span class="built_in">process</span> to S-&gt;<span class="built_in">list</span>;</span><br><span class="line">        block()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">signal(semphore *S) &#123;</span><br><span class="line">    S-&gt;value++;</span><br><span class="line">    <span class="keyword">if</span> (S-&gt;value &lt;=<span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="built_in">remove</span> a <span class="built_in">process</span> P from S-&gt;<span class="built_in">list</span>;</span><br><span class="line">        wakeup(P)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-锁的种类"><a href="#2-锁的种类" class="headerlink" title="2.锁的种类"></a>2.锁的种类</h4><p>根据表现形式，常见的锁有互斥锁、自旋锁、读写锁。</p>
+<p><strong>互斥锁</strong>。只有取得互斥锁的进程才能进入临界区，无论读写。</p>
+<p><strong>自旋锁</strong>。自旋锁是指在进程试图取得锁失败的时候选择忙等待而不是阻塞自己。选择忙等待的优点在于如果该进程在其自身的CPU时间片内拿到锁（说明锁占用时间都比较短），则相比阻塞少了上下文切换。注意这里还有一个隐藏条件：多处理器。因为单个处理器的情况下，由于当前自旋进程占用着CPU，持有锁的进程只有等待自旋进程耗尽CPU时间才有机会执行，这样CPU就空转了。</p>
+<p><strong>读写锁</strong>。读写锁要根据进程进入临界区的具体行为（读，写）来决定锁的占用情况。这样锁的状态就有三种了：读模式加锁、写模式加锁、无锁。</p>
+<ol>
+<li>无锁。读/写进程都可以进入。</li>
+<li>读模式锁。读进程可以进入。写进程不可以进入。</li>
+<li>写模式锁。读/写进程都不可以进入。</li>
+</ol>
+<h2 id="3-为什么说锁慢？"><a href="#3-为什么说锁慢？" class="headerlink" title="3.为什么说锁慢？"></a>3.为什么说锁慢？</h2><p>我们写一个简单的go的性能测试用例如下，使用的是go提供的互斥锁。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> test</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"testing"</span></span><br><span class="line">    <span class="string">"sync"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Foo1</span><span class="params">()</span></span> &#123;</span><br><span class="line">    i:=<span class="number">0</span>;</span><br><span class="line">    i++</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Foo2</span><span class="params">()</span></span> &#123;</span><br><span class="line">    lock := <span class="built_in">new</span>(sync.Mutex)</span><br><span class="line">    i:=<span class="number">0</span></span><br><span class="line">    lock.Lock()</span><br><span class="line">    i++</span><br><span class="line">    lock.Unlock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BenchmarkFoo1</span><span class="params">(b *testing.B)</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i:=<span class="number">0</span>; i&lt;b.N; i++ &#123;</span><br><span class="line">        Foo1()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BenchmarkFoo2</span><span class="params">(b *testing.B)</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i:=<span class="number">0</span>; i&lt;b.N; i++ &#123;</span><br><span class="line">        Foo2()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ go <span class="built_in">test</span> -bench=<span class="string">'.'</span> lock_test.go</span><br><span class="line">testing: warning: no tests to run</span><br><span class="line">BenchmarkFoo1-8     2000000000           0.30 ns/op</span><br><span class="line">BenchmarkFoo2-8     50000000            35.7 ns/op</span><br><span class="line">PASS</span><br><span class="line">ok      <span class="built_in">command</span>-line-arguments  2.471s</span><br></pre></td></tr></table></figure>
+<p>看上去加锁比不加锁慢了两个数量级，在golang中加一次锁耗时大概在20~30ns。但是这并不能说明加锁慢，只能说明加锁和内存操作相比慢很多。那为什么在实际开发中，特别是多线程程序，加了锁之后程序慢了很多呢？</p>
+<p>比如我用go1.7做的一个测试，就不贴出来了。golang中的channel底层实现就是用的锁，单个goroutine对channel进行写操作一秒钟可以达到几千万次，而goroutine数量多起来之后性能直线下降。没错，锁竞争慢。</p>
+<p>关于锁竞争慢，可以参考这篇文章:<a href="http://preshing.com/20111118/locks-arent-slow-lock-contention-is/" target="_blank" rel="noopener">Locks Aren’t Slow; Lock Contention Is</a>。简短来说，频繁的锁竞争会导致CPU core中的进程上下文切换，同时还有缓存的失效。</p>
+<h2 id="4-锁的粒度"><a href="#4-锁的粒度" class="headerlink" title="4.锁的粒度"></a>4.锁的粒度</h2><p>关于锁的粒度，用下面一张图来表示比较直观:不可过细也不可过糙。<br><img src="/img/uploads/2016/lock_granularity.jpg" alt=""></p>
+<p>在各种大会上，我们经常会听到演讲者说锁应该是关联数据的，粒度要尽可能的小。但是实际上粒度过小对于代码的效率真的很有影响。比如下面代码片段。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//too-fine granularity</span></span><br><span class="line"><span class="keyword">for</span> condition</span><br><span class="line">    momery ops</span><br><span class="line">    lock</span><br><span class="line">    data access</span><br><span class="line">    unlock</span><br><span class="line"><span class="built_in">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//more throughput</span></span><br><span class="line">lock</span><br><span class="line"><span class="keyword">for</span> condition</span><br><span class="line">    momery ops</span><br><span class="line">    data access</span><br><span class="line"><span class="built_in">end</span></span><br><span class="line">unlock</span><br></pre></td></tr></table></figure>
+<p>锁的粒度一直是一个需要考虑和折中的问题。</p>
+<p>下一篇文章会以golang中锁为例子讲讲互斥锁和读写锁的具体实现。</p>
+<p>参考：</p>
+<ul>
+<li>《现代操作系统》</li>
+<li>《操作系统概念》</li>
+<li><a href="https://en.wikipedia.org/wiki/Lock_(computer_science)" target="_blank" rel="noopener">lock-wikipedia</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Readers–writer_lock" target="_blank" rel="noopener">Read/write lock</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Mutual_exclusion" target="_blank" rel="noopener">Mutual exclusion</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Semaphore_(programming)" target="_blank" rel="noopener">Semaphore(programming)</a></li>
+<li><a href="http://ecomputernotes.com/database-system/rdbms/lock-granularity" target="_blank" rel="noopener">lock granularity</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/09/22/beanstalk-job/" rel="next" title="使用beanstalk实现简单的任务调度系统">
+                  <i class="fa fa-chevron-left"></i> 使用beanstalk实现简单的任务调度系统
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/10/23/golang-mutex/" rel="prev" title="golang中的锁源码实现：Mutex">
+                  golang中的锁源码实现：Mutex <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-进程间通信（Inter-Process-Communication-IPC）"><span class="nav-number">1.</span> <span class="nav-text">1. 进程间通信（Inter Process Communication, IPC）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#竞争条件"><span class="nav-number">1.0.1.</span> <span class="nav-text">竞争条件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#临界区"><span class="nav-number">1.0.2.</span> <span class="nav-text">临界区</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-锁是什么"><span class="nav-number">2.</span> <span class="nav-text">2. 锁是什么</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-操作系统的锁"><span class="nav-number">2.0.1.</span> <span class="nav-text">1.操作系统的锁</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#硬件"><span class="nav-number">2.0.1.1.</span> <span class="nav-text">硬件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#软件"><span class="nav-number">2.0.1.2.</span> <span class="nav-text">软件</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-锁的种类"><span class="nav-number">2.0.2.</span> <span class="nav-text">2.锁的种类</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-为什么说锁慢？"><span class="nav-number">3.</span> <span class="nav-text">3.为什么说锁慢？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-锁的粒度"><span class="nav-number">4.</span> <span class="nav-text">4.锁的粒度</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="上一篇文章 中我提到了锁，准确地说是信号量（semaphore, mutext是semaphore的一种）的实现方式有两种：wait的时候忙等待或者阻塞自己。 1234567891011121314&#x2F;&#x2F;忙等待wait(S) &amp;#123;    while(S&amp;lt;=0)        ;   &#x2F;&#x2F;no-op    S--&amp;#125;&#x2F;&#x2F;阻塞wait(semaphore *S) &amp;#123;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="golang中的锁源码实现：Mutex">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;10&#x2F;23&#x2F;golang-mutex&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="上一篇文章 中我提到了锁，准确地说是信号量（semaphore, mutext是semaphore的一种）的实现方式有两种：wait的时候忙等待或者阻塞自己。 1234567891011121314&#x2F;&#x2F;忙等待wait(S) &amp;#123;    while(S&amp;lt;=0)        ;   &#x2F;&#x2F;no-op    S--&amp;#125;&#x2F;&#x2F;阻塞wait(semaphore *S) &amp;#123;">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.926Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/10/23/golang-mutex/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>golang中的锁源码实现：Mutex | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/10/23/golang-mutex/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          golang中的锁源码实现：Mutex
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-10-23 23:59:59" itemprop="dateCreated datePublished" datetime="2016-10-23T23:59:59+08:00">2016-10-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%BA%95%E5%B1%82%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">底层技术</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><a href="http://legendtkl.com/2016/10/13/about-lock/" target="_blank" rel="noopener">上一篇文章</a> 中我提到了锁，准确地说是信号量（semaphore, mutext是semaphore的一种）的实现方式有两种：wait的时候忙等待或者阻塞自己。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//忙等待</span></span><br><span class="line">wait(S) &#123;</span><br><span class="line">    <span class="keyword">while</span>(S&lt;=<span class="number">0</span>)</span><br><span class="line">        ;   <span class="comment">//no-op</span></span><br><span class="line">    S--</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//阻塞</span></span><br><span class="line">wait(semaphore *S) &#123;</span><br><span class="line">    S-&gt;value--;</span><br><span class="line">    <span class="keyword">if</span> (S-&gt;value &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        add <span class="keyword">this</span> <span class="built_in">process</span> to S-&gt;<span class="built_in">list</span>;</span><br><span class="line">        block()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<a id="more"></a>
+<p>忙等待和阻塞方式各有优劣：</p>
+<ul>
+<li>忙等待会使CPU空转，好处是如果在当前时间片内锁被其他进程释放，当前进程直接就能拿到锁而不需要CPU进行进程调度了。适用于锁占用时间较短的情况，且不适合于单处理器。</li>
+<li>阻塞不会导致CPU空转，但是进程切换也需要代价，比如上下文切换，CPU Cache Miss。</li>
+</ul>
+<p>下面看一下golang的源码里面是怎么实现锁的。golang里面的锁有两个特性：<br>1.不支持嵌套锁<br>2.可以一个goroutine lock，另一个goroutine unlock</p>
+<h2 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h2><p>golang中的互斥锁定义在<code>src/sync/mutex.go</code></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// A Mutex is a mutual exclusion lock.</span></span><br><span class="line"><span class="comment">// Mutexes can be created as part of other structures;</span></span><br><span class="line"><span class="comment">// the zero value for a Mutex is an unlocked mutex.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// A Mutex must not be copied after first use.</span></span><br><span class="line"><span class="keyword">type</span> Mutex <span class="keyword">struct</span> &#123;</span><br><span class="line">    state <span class="keyword">int32</span></span><br><span class="line">    sema  <span class="keyword">uint32</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">    mutexLocked = <span class="number">1</span> &lt;&lt; <span class="literal">iota</span> <span class="comment">// mutex is locked</span></span><br><span class="line">    mutexWoken</span><br><span class="line">    mutexWaiterShift = <span class="literal">iota</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>看上去也是使用信号量的方式来实现的。sema就是信号量，一个非负数；state表示Mutex的状态。mutexLocked表示锁是否可用（0可用，1被别的goroutine占用），mutexWoken=2表示mutex是否被唤醒，mutexWaiterShift=2表示统计阻塞在该mutex上的goroutine数目需要移位的数值。将3个常量映射到state上就是</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">state:   |<span class="number">32</span>|<span class="number">31</span>|...|<span class="number">3</span>|<span class="number">2</span>|<span class="number">1</span>|</span><br><span class="line">         \__________/ | |</span><br><span class="line">               |      | |</span><br><span class="line">               |      | mutex的占用状态（<span class="number">1</span>被占用，<span class="number">0</span>可用）</span><br><span class="line">               |      |</span><br><span class="line">               |      mutex的当前goroutine是否被唤醒</span><br><span class="line">               |</span><br><span class="line">               当前阻塞在mutex上的goroutine数</span><br></pre></td></tr></table></figure>
+
+<h4 id="1-Lock"><a href="#1-Lock" class="headerlink" title="1.Lock"></a>1.Lock</h4><p>下面看一下mutex的lock。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Mutex)</span> <span class="title">Lock</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">// Fast path: grab unlocked mutex.</span></span><br><span class="line">    <span class="keyword">if</span> atomic.CompareAndSwapInt32(&amp;m.state, <span class="number">0</span>, mutexLocked) &#123;</span><br><span class="line">        <span class="keyword">if</span> race.Enabled &#123;</span><br><span class="line">            race.Acquire(unsafe.Pointer(m))</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    awoke := <span class="literal">false</span></span><br><span class="line">    iter := <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">        old := m.state</span><br><span class="line">        <span class="built_in">new</span> := old | mutexLocked</span><br><span class="line">        <span class="keyword">if</span> old&amp;mutexLocked != <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> runtime_canSpin(iter) &#123;</span><br><span class="line">                <span class="comment">// Active spinning makes sense.</span></span><br><span class="line">                <span class="comment">// Try to set mutexWoken flag to inform Unlock</span></span><br><span class="line">                <span class="comment">// to not wake other blocked goroutines.</span></span><br><span class="line">                <span class="keyword">if</span> !awoke &amp;&amp; old&amp;mutexWoken == <span class="number">0</span> &amp;&amp; old&gt;&gt;mutexWaiterShift != <span class="number">0</span> &amp;&amp;</span><br><span class="line">                    atomic.CompareAndSwapInt32(&amp;m.state, old, old|mutexWoken) &#123;</span><br><span class="line">                    awoke = <span class="literal">true</span></span><br><span class="line">                &#125;</span><br><span class="line">                runtime_doSpin()</span><br><span class="line">                iter++</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="built_in">new</span> = old + <span class="number">1</span>&lt;&lt;mutexWaiterShift</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> awoke &#123;</span><br><span class="line">            <span class="comment">// The goroutine has been woken from sleep,</span></span><br><span class="line">            <span class="comment">// so we need to reset the flag in either case.</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">new</span>&amp;mutexWoken == <span class="number">0</span> &#123;</span><br><span class="line">                <span class="built_in">panic</span>(<span class="string">"sync: inconsistent mutex state"</span>)</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="built_in">new</span> &amp;^= mutexWoken</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> atomic.CompareAndSwapInt32(&amp;m.state, old, <span class="built_in">new</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> old&amp;mutexLocked == <span class="number">0</span> &#123;</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            &#125;</span><br><span class="line">            runtime_Semacquire(&amp;m.sema)</span><br><span class="line">            awoke = <span class="literal">true</span></span><br><span class="line">            iter = <span class="number">0</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> race.Enabled &#123;</span><br><span class="line">        race.Acquire(unsafe.Pointer(m))</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里要解释一下<code>atomic.CompareAndSwapInt32()</code>，<code>atomic</code>包是由golang提供的low-level的原子操作封装，主要用来解决进程同步为题，官方并不建议直接使用。我在上一篇文章中说过，操作系统级的锁的实现方案是提供原子操作，然后基本上所有锁相关都是通过这些原子操作来实现。<code>CompareAndSwapInt32()</code>就是int32型数字的<code>compare-and-swap</code>实现。cas(&amp;addr, old, new)的意思是<code>if *addr==old, *addr=new</code>。大部分操作系统支持CAS，x86指令集上的CAS汇编指令是<code>CMPXCHG</code>。下面我们继续看上面的lock函数。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> atomic.CompareAndSwapInt32(&amp;m.state, <span class="number">0</span>, mutexLocked) &#123;</span><br><span class="line">    <span class="keyword">if</span> race.Enabled &#123;</span><br><span class="line">        race.Acquire(unsafe.Pointer(m))</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先先忽略race.Enabled相关代码，这个是go做race检测时候用的，这个时候需要带上<code>-race</code>，则race.Enabled被置为true。Lock函数的入口处先调用CAS尝试去获得锁，如果m.state==0，则将其置为1，并返回。</p>
+<p>继续往下看，首先将m.state的值保存到old变量中，new=old|mutexLocked。直接看能让for退出的第三个if条件，首先调用CAS试图将m.state设置成new的值。然后看一下if里面，如果m.state之前的值也就是old如果没有被占用则表示当前goroutine拿到了锁，则break。我们先看一下new的值的变化，第一个if条件里面<code>new = old + 1&lt;&lt;mutexWaiterShift</code>，结合上面的mutex的state各个位的意义，这句话的意思表示mutex的等待goroutine数目加1。还有awoke为true的情况下，要将m.state的标志位取消掉，也就是这句<code>new &amp;^= mutexWoken</code>的作用。继续看第三个if条件里面，如果里面的if判断失败，则走到runtime_Semacquire()。</p>
+<p>看一下这个函数<code>runtime_Semacquire()</code>函数，由于golang1.5之后把之前C语言实现的代码都干掉了，所以现在很低层的代码都是go来实现的。通过源码中的定义我们可以知道这个其实就是信号量的wait操作：等待*s&gt;0，然后减1。编译器里使用的是<code>sync_runtime.semacquire()</code>函数。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Semacquire waits until *s &gt; 0 and then atomically decrements it.</span></span><br><span class="line"><span class="comment">// It is intended as a simple sleep primitive for use by the synchronization</span></span><br><span class="line"><span class="comment">// library and should not be used directly.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">runtime_Semacquire</span><span class="params">(s *<span class="keyword">uint32</span>)</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">//go:linkname sync_runtime_Semacquire sync.runtime_Semacquire</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sync_runtime_Semacquire</span><span class="params">(addr *<span class="keyword">uint32</span>)</span></span> &#123;</span><br><span class="line">    semacquire(addr, <span class="literal">true</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">semacquire</span><span class="params">(addr *<span class="keyword">uint32</span>, profile <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">    gp := getg()</span><br><span class="line">    <span class="keyword">if</span> gp != gp.m.curg &#123;</span><br><span class="line">        throw(<span class="string">"semacquire not on the G stack"</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Easy case.</span></span><br><span class="line">    <span class="keyword">if</span> cansemacquire(addr) &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Harder case:</span></span><br><span class="line">    <span class="comment">//  increment waiter count</span></span><br><span class="line">    <span class="comment">//  try cansemacquire one more time, return if succeeded</span></span><br><span class="line">    <span class="comment">//  enqueue itself as a waiter</span></span><br><span class="line">    <span class="comment">//  sleep</span></span><br><span class="line">    <span class="comment">//  (waiter descriptor is dequeued by signaler)</span></span><br><span class="line">    s := acquireSudog()</span><br><span class="line">    root := semroot(addr)</span><br><span class="line">    t0 := <span class="keyword">int64</span>(<span class="number">0</span>)</span><br><span class="line">    s.releasetime = <span class="number">0</span></span><br><span class="line">    <span class="keyword">if</span> profile &amp;&amp; blockprofilerate &gt; <span class="number">0</span> &#123;</span><br><span class="line">        t0 = cputicks()</span><br><span class="line">        s.releasetime = <span class="number">-1</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">        lock(&amp;root.lock)</span><br><span class="line">        <span class="comment">// Add ourselves to nwait to disable "easy case" in semrelease.</span></span><br><span class="line">        atomic.Xadd(&amp;root.nwait, <span class="number">1</span>)</span><br><span class="line">        <span class="comment">// Check cansemacquire to avoid missed wakeup.</span></span><br><span class="line">        <span class="keyword">if</span> cansemacquire(addr) &#123;</span><br><span class="line">            atomic.Xadd(&amp;root.nwait, <span class="number">-1</span>)</span><br><span class="line">            unlock(&amp;root.lock)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// Any semrelease after the cansemacquire knows we're waiting</span></span><br><span class="line">        <span class="comment">// (we set nwait above), so go to sleep.</span></span><br><span class="line">        root.queue(addr, s)</span><br><span class="line">        goparkunlock(&amp;root.lock, <span class="string">"semacquire"</span>, traceEvGoBlockSync, <span class="number">4</span>)</span><br><span class="line">        <span class="keyword">if</span> cansemacquire(addr) &#123;</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> s.releasetime &gt; <span class="number">0</span> &#123;</span><br><span class="line">        blockevent(s.releasetime-t0, <span class="number">3</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    releaseSudog(s)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面的代码有点多，我们只看和锁相关的代码。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root := semroot(addr)   <span class="comment">//seg 1</span></span><br><span class="line"></span><br><span class="line">atomic.Xadd(&amp;root.nwait, <span class="number">1</span>) <span class="comment">// seg 2</span></span><br><span class="line"></span><br><span class="line">root.queue(addr, s) <span class="comment">//seg 3</span></span><br></pre></td></tr></table></figure>
+<p>seg 1代码片段semroot()返回结构体semaRoot。存储方式是先对信号量的地址做移位，然后做哈希（对251取模，这个地方为什么是左移3位和对251取模不太明白）。semaRoot相当于和mutex.sema绑定。看一下semaRoot的结构：一个sudog链表和一个nwait整型字段。nwait字段表示该信号量上等待的goroutine数目。head和tail表示链表的头和尾巴，同时为了线程安全，需要使用一个互斥量来保护链表。这个时候细心的同学应该注意到一个问题，我们前面不是从Mutex跟过来的吗，相当于Mutex的实现了使用了Mutex本身？实际上semaRoot里面的mutex只是内部使用的一个简单版本，和sync.Mutex不是同一个。现在把这些倒推回去，<code>runtime_Semacquire()</code>的作用其实就是semaphore的wait(&amp;s)：如果*s&lt;0，则将当前goroutine塞入信号量s关联的goroutine waiting list，并休眠。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">semroot</span><span class="params">(addr *<span class="keyword">uint32</span>)</span> *<span class="title">semaRoot</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;semtable[(<span class="keyword">uintptr</span>(unsafe.Pointer(addr))&gt;&gt;<span class="number">3</span>)%semTabSize].root</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> semaRoot <span class="keyword">struct</span> &#123;</span><br><span class="line">    lock  mutex</span><br><span class="line">    head  *sudog</span><br><span class="line">    tail  *sudog</span><br><span class="line">    nwait <span class="keyword">uint32</span> <span class="comment">// Number of waiters. Read w/o the lock.</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Prime to not correlate with any user patterns.</span></span><br><span class="line"><span class="keyword">const</span> semTabSize = <span class="number">251</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> semtable [semTabSize]<span class="keyword">struct</span> &#123;</span><br><span class="line">    root semaRoot</span><br><span class="line">    pad  [sys.CacheLineSize - unsafe.Sizeof(semaRoot&#123;&#125;)]<span class="keyword">byte</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在<code>mutex.Lock()</code>还剩下<code>runtime_canSpin(iter)</code>这一段，这个地方其实就是锁的自旋版本。golang对于自旋锁的取舍做了一些限制：1.多核; 2.GOMAXPROCS&gt;1; 3.至少有一个运行的P并且local的P队列为空。golang的自旋尝试只会做几次，并不会一直尝试下去，感兴趣的可以跟一下源码。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sync_runtime_canSpin</span><span class="params">(i <span class="keyword">int</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="comment">// sync.Mutex is cooperative, so we are conservative with spinning.</span></span><br><span class="line">    <span class="comment">// Spin only few times and only if running on a multicore machine and</span></span><br><span class="line">    <span class="comment">// GOMAXPROCS&gt;1 and there is at least one other running P and local runq is empty.</span></span><br><span class="line">    <span class="comment">// As opposed to runtime mutex we don't do passive spinning here,</span></span><br><span class="line">    <span class="comment">// because there can be work on global runq on on other Ps.</span></span><br><span class="line">    <span class="keyword">if</span> i &gt;= active_spin || ncpu &lt;= <span class="number">1</span> || gomaxprocs &lt;= <span class="keyword">int32</span>(sched.npidle+sched.nmspinning)+<span class="number">1</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> p := getg().m.p.ptr(); !runqempty(p) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sync_runtime_doSpin</span><span class="params">()</span></span> &#123;</span><br><span class="line">    procyield(active_spin_cnt)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h4 id="Unlock"><a href="#Unlock" class="headerlink" title="Unlock"></a>Unlock</h4><p>Mutex的Unlock函数定义如下</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Unlock unlocks m.</span></span><br><span class="line"><span class="comment">// It is a run-time error if m is not locked on entry to Unlock.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// A locked Mutex is not associated with a particular goroutine.</span></span><br><span class="line"><span class="comment">// It is allowed for one goroutine to lock a Mutex and then</span></span><br><span class="line"><span class="comment">// arrange for another goroutine to unlock it.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Mutex)</span> <span class="title">Unlock</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> race.Enabled &#123;</span><br><span class="line">        _ = m.state</span><br><span class="line">        race.Release(unsafe.Pointer(m))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Fast path: drop lock bit.</span></span><br><span class="line">    <span class="built_in">new</span> := atomic.AddInt32(&amp;m.state, -mutexLocked)</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">new</span>+mutexLocked)&amp;mutexLocked == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(<span class="string">"sync: unlock of unlocked mutex"</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    old := <span class="built_in">new</span></span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">        <span class="comment">// If there are no waiters or a goroutine has already</span></span><br><span class="line">        <span class="comment">// been woken or grabbed the lock, no need to wake anyone.</span></span><br><span class="line">        <span class="keyword">if</span> old&gt;&gt;mutexWaiterShift == <span class="number">0</span> || old&amp;(mutexLocked|mutexWoken) != <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// Grab the right to wake someone.</span></span><br><span class="line">        <span class="built_in">new</span> = (old - <span class="number">1</span>&lt;&lt;mutexWaiterShift) | mutexWoken</span><br><span class="line">        <span class="keyword">if</span> atomic.CompareAndSwapInt32(&amp;m.state, old, <span class="built_in">new</span>) &#123;</span><br><span class="line">            runtime_Semrelease(&amp;m.sema)</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line">        old = m.state</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>函数入口处的四行代码和race detection相关，暂时不用管。接下来的四行代码是判断是否是嵌套锁。new是m.state-1之后的值。我们重点看for循环内部的代码。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> old&gt;&gt;mutexWaiterShift == <span class="number">0</span> || old&amp;(mutexLocked|mutexWoken) != <span class="number">0</span> &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这两句是说：如果阻塞在该锁上的goroutine数目为0或者mutex处于lock或者唤醒状态，则返回。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">new</span> = (old - <span class="number">1</span>&lt;&lt;mutexWaiterShift) | mutexWoken</span><br><span class="line"><span class="keyword">if</span> atomic.CompareAndSwapInt32(&amp;m.state, old, <span class="built_in">new</span>) &#123;</span><br><span class="line">    runtime_Semrelease(&amp;m.sema)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里先将阻塞在mutex上的goroutine数目减一，然后将mutex置于唤醒状态。<code>runtime_Semrelease</code>和<code>runtime_Semacquire</code>的作用刚好相反，将阻塞在信号量上goroutine唤醒。有人可能会问唤醒的是哪个goroutine，那么我们可以看一下goroutine wait list的入队列和出队列代码。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(root *semaRoot)</span> <span class="title">queue</span><span class="params">(addr *<span class="keyword">uint32</span>, s *sudog)</span></span> &#123;</span><br><span class="line">    s.g = getg()</span><br><span class="line">    s.elem = unsafe.Pointer(addr)</span><br><span class="line">    s.next = <span class="literal">nil</span></span><br><span class="line">    s.prev = root.tail</span><br><span class="line">    <span class="keyword">if</span> root.tail != <span class="literal">nil</span> &#123;</span><br><span class="line">        root.tail.next = s</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        root.head = s</span><br><span class="line">    &#125;</span><br><span class="line">    root.tail = s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(root *semaRoot)</span> <span class="title">dequeue</span><span class="params">(s *sudog)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> s.next != <span class="literal">nil</span> &#123;</span><br><span class="line">        s.next.prev = s.prev</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        root.tail = s.prev</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> s.prev != <span class="literal">nil</span> &#123;</span><br><span class="line">        s.prev.next = s.next</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        root.head = s.next</span><br><span class="line">    &#125;</span><br><span class="line">    s.elem = <span class="literal">nil</span></span><br><span class="line">    s.next = <span class="literal">nil</span></span><br><span class="line">    s.prev = <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如上所示，wait list入队是插在队尾，出队是从头出。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li>《Go语言学习笔记》</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/10/13/about-lock/" rel="next" title="当我们谈论锁，我们谈什么">
+                  <i class="fa fa-chevron-left"></i> 当我们谈论锁，我们谈什么
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/10/26/rwmutex/" rel="prev" title="读写锁以及golang的实现">
+                  读写锁以及golang的实现 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#互斥锁"><span class="nav-number">1.</span> <span class="nav-text">互斥锁</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-Lock"><span class="nav-number">1.0.1.</span> <span class="nav-text">1.Lock</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Unlock"><span class="nav-number">1.0.2.</span> <span class="nav-text">Unlock</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">2.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言如果看过我的上一篇关于 mesos 的文章，应该还记得 mesos 的资源调度策略写的泛化的 max-min fairness 算法，其实这个就是 DRF 算法。 DRF，全称 dominant resource fairness，由伯克利大学提出，论文链接在文末列出。论文中介绍 DRF 为 generaliztion of max-min fairness to multiple re">
+<meta property="og:type" content="article">
+<meta property="og:title" content="集群资源管理之 DRF">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2018&#x2F;07&#x2F;21&#x2F;drf&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言如果看过我的上一篇关于 mesos 的文章，应该还记得 mesos 的资源调度策略写的泛化的 max-min fairness 算法，其实这个就是 DRF 算法。 DRF，全称 dominant resource fairness，由伯克利大学提出，论文链接在文末列出。论文中介绍 DRF 为 generaliztion of max-min fairness to multiple re">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:26.006Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2018/07/21/drf/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>集群资源管理之 DRF | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/21/drf/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          集群资源管理之 DRF
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-07-21 23:38:16" itemprop="dateCreated datePublished" datetime="2018-07-21T23:38:16+08:00">2018-07-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:26" itemprop="dateModified" datetime="2019-11-08T11:09:26+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" itemprop="url" rel="index">
+                    <span itemprop="name">资源调度</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h2><p>如果看过我的上一篇关于 mesos 的文章，应该还记得 mesos 的资源调度策略写的泛化的 max-min fairness 算法，其实这个就是 DRF 算法。</p>
+<p>DRF，全称 dominant resource fairness，由伯克利大学提出，论文链接在文末列出。论文中介绍 DRF 为 generaliztion of max-min fairness to multiple resource types，所以下面先介绍一下 max-min fairness 算法。</p>
+<a id="more"></a>
+
+<h2 id="1-Max-min-fairness"><a href="#1-Max-min-fairness" class="headerlink" title="1. Max-min fairness"></a>1. Max-min fairness</h2><p>我们经常会遇到将稀缺资源分配给多个用户的情况，每个用户获得资源的权利都相同，但是需求数却可能不同，这个时候应该怎么办？一种常用的方法叫 max-min fairness share，中文可以叫最大最小化公平分配算法，也就是尽量满足用户中的最小的需求，然后将剩余的资源公平分配给剩下的用户。形式化定义如下：</p>
+<ol>
+<li>资源分配以需求递增的方式进行分配</li>
+<li>每个用户获得的资源不超过其需求</li>
+<li>未得到满足的用户等价平方剩下的资源</li>
+</ol>
+<p>更形象的表达如下，有用户 1, …, n，资源需求分别为 x1 , x2 ,  …, xn .不失一般性，假设 x1 &lt;= x2 &lt;= … &lt;= xn 。假设资源总数为 C。然后先给需求最小 x1 的用户分配资源数 C/n 。如果 x1 &lt; C/n，则用户 1 剩余资源 C/n - x1，则剩下的用户每人获取资源数为 C/n + (C/n - x1)/(n-1)，然后依次处理剩下的用户，直到资源数小于等于需求数或者所有用户分配完。举个例子如下：</p>
+<p>用户 1, 2, 3, 4 的需求分别为 2, 2.6, 4, 5，总资源数为 10。首先我们将资源数平分 4 等份，10/4 = 2.5。用户 1 需求是 2，则剩余 2.5 - 2 = 0.5，0.5 再平分给用户 2，3，4，0.5/3 = 0.1666…。然后用户 2 需求 2.6，剩余 2.5 + 0.1666 - 2.6 = 0.066…，再平分，0.066/2 = 0.033…，则用户 3 获得 2.5 + 0.66… + 0.033… = 2.7 ，此时不满足资源需求，结束。最终 4 个用户获得的资源数依次为 2, 2.6, 2.7, 2.7。</p>
+<h2 id="2-Weighted-max-min-fairness"><a href="#2-Weighted-max-min-fairness" class="headerlink" title="2. Weighted max-min fairness"></a>2. Weighted max-min fairness</h2><p>上面我们假设每个用户获得资源的权重一样，对于权重不一样的处理方式也就是 weighted max-min fairness share。用户 1,2,…,n 的权重分别为 w1, w2 , …, wn ，这也就意味我们第一次总资源切分以及之后多余资源切分不是等分，而是按权重来切分。举例如下。</p>
+<p>用户 1, 2, 3, 4 需要的资源数分别为 4, 2, 10, 4，权重分别为 2.5, 4, 0.5, 1，资源总数为 16。首先对权重做处理为 5, 8, 1, 2，然后将资源 16 按权重切分每个用户获得资源数：5, 8, 1, 2。我们先遍历可以满足需求的用户：用户 1 需要资源 4，得到 5， 剩余 1。用户需要资源 2，得到 8，剩余 6。用户 3 和 4 资源无法满足。总剩余资源数为 7，按权重分给用户 3 和 4，用户 4 得到资源 7 * 2/3 + 2 = 6.666 多于需求 4，剩下 2.666，分给用户 3。最后用户 3 获得资源数为 1 + 7 * 1/3 + 2.666 = 6。</p>
+<h2 id="3-DRF"><a href="#3-DRF" class="headerlink" title="3. DRF"></a>3. DRF</h2><p>max-min fairness 算法的最大问题是认为资源是单一的，但是现实情况中资源却不是单一的，CPU，RAM，I/O 等都是计算机资源。这个时候 DRF 应运而生。简单来说 DRF 就是 max-min fairness 算法的泛化版本，可以支持多种类型资源的 fairness。所谓多种资源的 fairness 是每个用户在主资源，也就是 DRF 中的 DR （Domain Resource），上是满足 max-min fairness 的。</p>
+<p>那么何谓 Dominant Resource 呢？简而言之，用户被分配的资源中占比总资源比重最大的资源就是 Dominant Resource。举个例子，系统拥有资源 9 CPUs, 18 GB RAM，用户 A 的 task 需要资源为 &lt;1 CPU，4 GB RAM&gt;，则用户 A 的资源占比分别为 CPU 1/9，RAM 2/9，则用户 A 的 Dominant Resource 就是 RAM。用户 B 的 task 需要资源 &lt;3 CPUs, 1 GB RAM&gt;，则用户 B 的 Dominant Resource 为 CPU。最后 DRF 最求的结果就是平等权利的用户的 Dominant Resource 占的份额是一样的：分配给 A &lt;3 CPUs, 12 GB RAM&gt;运行 3 个 task；分配给 B &lt;6 CPUs, 2GB&gt; 资源可以运行两个 task。这样 A 的 DR 占的份额为 12/18 = 2/3，B 的 DR 占比 6/9 = 2/3。</p>
+<p>我们看一下具体的计算的过程，继续使用上述的例子。设 x 和 y 为用户 A，B 所得资源可以运行的 task 个数，则可以得到下面的优化函数</p>
+<p>max(x,y)</p>
+<p>s.t</p>
+<p>x+3y\leq9 (CPU total)</p>
+<p>4x+y \leq 18 (RAM total)</p>
+<p>\cfrac{2x}{9} = \cfrac{y}{3}</p>
+<p>解得：x = 3, y = 2。</p>
+<p>需要注意的是，并不是说 Dominant Resource 占比一定要相同，和 max-min fairness 算法一样，当其中一个用户的需求已经得到满足，剩下的资源即可全部分配给其他用户。DRF 算法的形式化定义如下：</p>
+<h2 id="4-Weighted-DRF"><a href="#4-Weighted-DRF" class="headerlink" title="4. Weighted DRF"></a>4. Weighted DRF</h2><p>带权重的 DRF 算法可以认为是 DRF 算法和 weighted max-min fairness 算法的结合。每个用户都分配一个权重向量 W_i=&lt;w_i,_1 ,…, w_i,_m&gt; ，其中 w_i,_j 表示用户 i 对资源 j 的需求权重，什么意思呢？举个例子，用户对 &lt;CPU, RAM&gt; 的权重向量为 &lt;1, 2&gt; ，那么则意味着如果用户分到了 1 单位 CPU，则一定能分到 2 单位的 RAM。</p>
+<p>除此之外，u_i,_j 表示用户 i 对资源 j 的需求占比，则用户 i 的 dominant resource 计算方式为 s_i = max_j {u_i,_j / w_i,_j} ，也就是全局占比最大的资源，剩下的计算和 DRF 算法类似。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li>Dominant Resource Fairness: Fair Allocation of Multiple Resource Types</li>
+<li>max-min fair share</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/06/09/mesos/" rel="next" title="集群资源管理之 Mesos">
+                  <i class="fa fa-chevron-left"></i> 集群资源管理之 Mesos
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/09/23/spark-streaming-overview/" rel="prev" title="Spark Streaming Overview">
+                  Spark Streaming Overview <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Max-min-fairness"><span class="nav-number">2.</span> <span class="nav-text">1. Max-min fairness</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Weighted-max-min-fairness"><span class="nav-number">3.</span> <span class="nav-text">2. Weighted max-min fairness</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-DRF"><span class="nav-number">4.</span> <span class="nav-text">3. DRF</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Weighted-DRF"><span class="nav-number">5.</span> <span class="nav-text">4. Weighted DRF</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

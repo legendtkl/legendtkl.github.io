@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="链接（linking）就是将不同部分的代码和数据收集和组合成为一个单一文件的过程，在现代系统中，链接由叫做链接器（linker）的程序自动执行。典型的链接器把由编译器或汇编器生成的若干个目标模块整合成一个被称为载入模块或可执行文件的实体，其可以被操作系统直接执行。其中，某些目标模块是直接作为输入提供给链接器的；而另外一些目标模块则是根据链接过程的需要，从库文件中取得。 链接器使得分离编译（Sepa">
+<meta name="keywords" content="C语言,链接">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅析程序链接">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2013&#x2F;10&#x2F;25&#x2F;about-link&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="链接（linking）就是将不同部分的代码和数据收集和组合成为一个单一文件的过程，在现代系统中，链接由叫做链接器（linker）的程序自动执行。典型的链接器把由编译器或汇编器生成的若干个目标模块整合成一个被称为载入模块或可执行文件的实体，其可以被操作系统直接执行。其中，某些目标模块是直接作为输入提供给链接器的；而另外一些目标模块则是根据链接过程的需要，从库文件中取得。 链接器使得分离编译（Sepa">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.935Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2013/10/25/about-link/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>浅析程序链接 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/10/25/about-link/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          浅析程序链接
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2013-10-25 21:38:52" itemprop="dateCreated datePublished" datetime="2013-10-25T21:38:52+08:00">2013-10-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/c/" itemprop="url" rel="index">
+                    <span itemprop="name">c</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>链接（linking）就是将不同部分的代码和数据收集和组合成为一个单一文件的过程，在现代系统中，链接由叫做链接器（linker）的程序自动执行。典型的链接器把由编译器或汇编器生成的若干个目标模块整合成一个被称为载入模块或可执行文件的实体，其可以被操作系统直接执行。其中，某些目标模块是直接作为输入提供给链接器的；而另外一些目标模块则是根据链接过程的需要，从库文件中取得。</p>
+<p>链接器使得分离编译（Separate Complication）成为可能，即若干个源程序可以在不同的时候单独进行编译，然后在恰当的时候整合到一起。下面我们主要来讨论下从源文件翻译成可执行目标文件的过程，随后再来讨论下静态链接和动态链接。</p>
+<a id="more"></a>
+
+<p>###1.源文件到可执行文件</p>
+<p>大多数编译系统提供编译驱动程序，根据需求调用语言预处理器、编译器、汇编器和链接器。以C语言源文件main.c为例，驱动程序首先运行C预处理器（cpp），它将C的源程序main.c翻译成一个ASCII码的中间文件main.i。预处理主要进行一些文本性质的操作。主要任务包括删除注释、插入被#include指令包含的文件的内容、定义和替换由#define指令定义的符号以及确定代码的部分内容是否应该根据一些条件编译指令进行编译。接下来，驱动程序运行C编译器（ccl），它将main.i翻译成一个ASCII汇编语言文件为main.s。然后，驱动程序运行汇编器（as）,它将main.s翻译成一个可重定位目标文件main.o。最后它运行链接器程序ld，将main.o以及一些必要的系统目标文件组合起来，创建一个可执行的目标文件a.out。这时，shell可调用一个在操作系统中叫做加载器（loader）的函数，它拷贝可执行文件a.out中的代码和数据到存储器，然后将控制转移到这个程序的开头。运行时的内容在上一篇文章已经作了一些简要介绍。</p>
+<p>###2.静态链接</p>
+<p>像Unix ld程序这样的静态链接器（static linker）以一组可重定位目标文件和命令行参数作为输入，生成一个完全链接的可加载和运行的可执行目标文件作为输出。输入的可重定位目标文件由各种不同的代码和数据节组成。在这个过程中，链接器必须完成两个主要任务：一是符号解析（symbol resolution）。目的是将每个符号引用和一个符号定义联系起来。二是重定位（relocation）。链接器通过把每个符号定义与一个存储器位置联系起来，然后修改所有对这些符号的引用，使得它们指向这个存储器位置。东西比较多，还是展开说下吧。</p>
+<p>讨论符号解析之前，先来看下符号和符号表。对于每个可重定位目标模块m都有一个符号表，它包含m所定义和引用的符号的信息。在链接器的上下文中，有三种不同的符号：一是由m定义并能被其它模块引用的全局符号；二是由其它模块定义并被模块m引用的全局符号；三是只被模块m定义和引用的本地符号，有的本地符号对应于带static属性的C函数和全局变量。</p>
+<p>链接器解析符号引用的方法是将每个引用与它输入的可重定位目标文件的符号表中的一个确定的符号定义联系起来。对于那些和引用定义在相同模块中的本地符号的引用，符号解析是非常简单明了的。不过，对全局符号的引用解析就棘手得多。当编译器遇到一个不是在当前模块中定义的符号（变量或函数名）时，它会假设该符号是在其他某个模块中定义的，生成一个链接器符号表表目，并把它交给链接器，如果链接器在它的任何输入模块中都找不到这个符号，它就输出一条错误信息并终止。另外，对于多处定义的全局符号，已初始化的全局变量是强符号，未初始化的是弱符号，汇编器把这个信息隐含地编码在可重定位目标文件的符号表里。Unix链接器使用如规则来处理：不允许有多个强符号；如果有一个强符号和多个弱符号，选择强符号；如果有多个弱符号，任意选择一个。</p>
+<p>下面讨论重定位，一旦链接器完成了符号解析，它就把代码中的每个符号引用和确定的一个符号定义（也就是，它的一个输入目标模块中的一个符号表表目）联系盐业。此时，链接器就知道它的输入目标模块中的代码节和数据节的确切大小，就可以开始重定位了。在重定位过程中，将合并输入模块，并为每个符号分配运行时地址。由两步组成：一、重定位节和符号定义；二、重定位节中的符号引用。</p>
+<p>静态链接是由链接器在链接时将库的内容加入到可执行程序中的做法。下面讨论如何与静态库链接。</p>
+<p>将所有相关的目标模块打包为一个单独的文件，称为静态库（static library），可以用途链接器的输入。当链接器构造一个输出的可执行文件时，它只拷贝静态库里被应用程序引用的目标模块。如果不采用静态库的方法，可以让编译器辩认出标准函数的调用，并直接生成相应的代码，这样对编译器要求太高。除了这种方法，根据前面说的，我们提供给链接器每个函数的可重定位文件，显然这是不现实的。或者我们提供把所有的函数都放在一个可重定位目标模块中，这个方法的缺点也是不言而喻的，就是生成的可执行文件包含了太多没用的信息，对磁盘空间是很大的浪费。另外，当任何函数变动时，必将牵一发动全身。静态库的提出，相关函数被编译为独立的目标模块，然后封装成一个单独的静态文件。在链接时，链接器将只拷贝被程序引用的目标模块。在Unix系统中，静态库以一种称为存档的特殊文件格式存放在磁盘中。存档文件是一组连接起来的可重定位目标文件的集合，有一个头部描述每个成员目标文件的大小和位置。</p>
+<p>链接器如何使用静态库来解析引用？在符号解析阶段，链接器从左到右按照它们在命令行上出现的顺序来扫描目标文件的存档文件，维护一个符号表集合。对于存档文件，将试图解析符号表集合中的没有成功解析的符号。这种算法对命令行上的库和目标文件的顺序非常重要。如果在命令行中，定义一个符号的库出现在引用这个符号的目标文件之前，那么引用就不能被解析。</p>
+<p>###3.动态链接</p>
+<p>由于静态库的需要定期维护与更新等缺陷，共享库产生了。共享库是一个目标模块，在运行时，可以加载到任意的存储器地址，并在存储器中和一个程序链接起来。这个过程称为动态链接，是由一个叫做动态链接器的程序来执行的。共享库的“共享”在两个方面有所不同。首先，在任何给定的文件系统中，对于一个库只有一个.so文件。所有引用该库的可执行目标文件共享这个.so文件的代码和数据，而不是像静态库的内容那样被拷贝和嵌入到引用它们的可执行文件中。其次，在存储器中，一个共享库的.text节只有一个副本可以被不同正在运行的进程共享。这个在以后再细说。</p>
+<p>明天又周末了，周末愉快！</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C%E8%AF%AD%E8%A8%80/" rel="tag"># C语言</a>
+              <a href="/tags/%E9%93%BE%E6%8E%A5/" rel="tag"># 链接</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2013/10/21/c-runtime/" rel="next" title="浅析C语言运行时内存管理">
+                  <i class="fa fa-chevron-left"></i> 浅析C语言运行时内存管理
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2013/11/08/link-and-IPC/" rel="prev" title="再论链接之PIC">
+                  再论链接之PIC <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

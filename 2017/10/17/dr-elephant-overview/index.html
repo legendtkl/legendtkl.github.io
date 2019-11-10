@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言Dr. Elephant 由 LinkedIn 于 2016 年 4 月份开源，是一个 Hadoop 和 Spark 的性能监控和调优工具。Dr. Elephant 能自动化收集所有指标，进行数据分析，并以简单易用的方式进行呈现。Dr. Elephant 的目标是提高开发人员的开发效率和增加集群任务调试的高效性。Dr. Elephant 支持对 Hadoop 和 Spark 任务进行可插">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dr. Elephant 介绍">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;10&#x2F;17&#x2F;dr-elephant-overview&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言Dr. Elephant 由 LinkedIn 于 2016 年 4 月份开源，是一个 Hadoop 和 Spark 的性能监控和调优工具。Dr. Elephant 能自动化收集所有指标，进行数据分析，并以简单易用的方式进行呈现。Dr. Elephant 的目标是提高开发人员的开发效率和增加集群任务调试的高效性。Dr. Elephant 支持对 Hadoop 和 Spark 任务进行可插">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;dashboard.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;search.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;compare-page.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;flow-history.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;suggestions.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;drelephant-arch.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;heuristics.jpg">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.993Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;dashboard.png">
+
+<link rel="canonical" href="http://yoursite.com/2017/10/17/dr-elephant-overview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Dr. Elephant 介绍 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/17/dr-elephant-overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Dr. Elephant 介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-10-17 22:37:08" itemprop="dateCreated datePublished" datetime="2017-10-17T22:37:08+08:00">2017-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h3><p>Dr. Elephant 由 LinkedIn 于 2016 年 4 月份开源，是一个 Hadoop 和 Spark 的性能监控和调优工具。Dr. Elephant 能自动化收集所有指标，进行数据分析，并以简单易用的方式进行呈现。Dr. Elephant 的目标是提高开发人员的开发效率和增加集群任务调试的高效性。Dr. Elephant 支持对 Hadoop 和 Spark 任务进行可插拔式、配置化以及基于规则的启发式job性能分析，并且根据分析结果给出合适的建议来指导如何调优使任务更有效率。</p>
+<a id="more"></a>
+
+<h3 id="1-概览"><a href="#1-概览" class="headerlink" title="1. 概览"></a>1. 概览</h3><p>下面是 Dr.Elephant 的界面展示。</p>
+<p><img src="/img/uploads/2017/dashboard.png" alt=""></p>
+<p>Dashboard 按时间的由近到远展示出 Job 的诊断结果。下面的 Tab：Mapper Data Skew 等都对应到一条规则。蓝色表示规则诊断通过，其他颜色表示有问题。 Dr.Elephant 将诊断结果做了分级，分别对应不同的颜色。</p>
+<ul>
+<li>NONE: 不需要优化</li>
+<li>LOW: 有很小的优化空间</li>
+<li>MODERATE: 有优化空间</li>
+<li>SEVERE: 有更多的优化空间</li>
+<li>CRITICAL: 很有问题，必须优化</li>
+</ul>
+<p>Dr.Elephant 还提供了 job 的搜索和比较，界面如下图</p>
+<p><img src="/img/uploads/2017/search.png" alt=""></p>
+<p><img src="/img/uploads/2017/compare-page.png" alt=""></p>
+<p>针对单个 job 还可以看到 performance 的历史曲线图。</p>
+<p><img src="/img/uploads/2017/flow-history.png" alt=""></p>
+<p>优化建议。</p>
+<p><img src="/img/uploads/2017/suggestions.png" alt=""></p>
+<h3 id="2-系统架构"><a href="#2-系统架构" class="headerlink" title="2. 系统架构"></a>2. 系统架构</h3><p>Dr. Elephant 的系统架构如下图。主要包括三个部分：</p>
+<ul>
+<li>数据采集：数据源为 Job History</li>
+<li>诊断和建议：内置诊断系统</li>
+<li>存储和展示：MySQL 和 WebUI</li>
+</ul>
+<p><img src="/img/uploads/2017/drelephant-arch.png" alt=""></p>
+<h3 id="3-启发式算法"><a href="#3-启发式算法" class="headerlink" title="3. 启发式算法"></a>3. 启发式算法</h3><p>启发式算法也就是诊断规则，是 Dr.Elephant 的核心部分。工作流程如下：</p>
+<ul>
+<li>获取数据</li>
+<li>量化计算得到一个得分值</li>
+<li>将分值与不同诊断等级阈值进行比较</li>
+</ul>
+<p><img src="/img/uploads/2017/heuristics.jpg" alt=""></p>
+<p>下面简单介绍 Dr. Elephant 使用的规则：1~11 是 mapreduce job，剩下的是 spark 相关。</p>
+<ol>
+<li><p><strong>Mapper 数据倾斜</strong></p>
+<p>Mapper 作业中的数据可能会发生数据倾斜，这条规则就是用来检测是否发生数据倾斜。方法：将所有的 Mapper 分成两部分，然后比较这两部分的 task 数目以及其他一些相关的数据。具体的计算过程如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables,</span><br><span class="line"></span><br><span class="line">    deviation: the deviation in input bytes between two groups</span><br><span class="line">    num_of_tasks: the number of map tasks</span><br><span class="line">    file_size: the average input size of the larger group</span><br><span class="line"></span><br><span class="line">    num_tasks_severity: List of severity thresholds for the number of tasks. e.g., num_tasks_severity = &#123;10, 20, 50, 100&#125;</span><br><span class="line">    deviation_severity: List of severity threshold values for the deviation of input bytes between two groups. e.g., deviation_severity: &#123;2, 4, 8, 16&#125;</span><br><span class="line">    files_severity: The severity threshold values for the fraction of HDFS block size. e.g. files_severity = &#123; ⅛, ¼, ½, 1&#125;</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func avg(x): returns the average of a list x</span><br><span class="line">    func len(x): returns the length of a list x</span><br><span class="line">    func min(x,y): returns minimum of x and y</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">We’ll compute two groups recursively based on average memory consumed by them. </span><br><span class="line"></span><br><span class="line">Let us call the two groups: group_1 and group_2</span><br><span class="line"></span><br><span class="line">Without loss of generality, let us assume that,</span><br><span class="line">    avg(group_1) &gt; avg(group_2) and len(group_1)&lt; len(group_2) then,</span><br><span class="line"></span><br><span class="line">    deviation = avg(group_1) - avg(group_2) / min(avg(group_1)) - avg(group_2))</span><br><span class="line">    file_size = avg(group_1)</span><br><span class="line">    num_of_tasks = len(group_0)</span><br><span class="line"></span><br><span class="line">The overall severity of the heuristic can be computed as,</span><br><span class="line">    severity = min(</span><br><span class="line">        getSeverity(deviation, deviation_severity)</span><br><span class="line">        , getSeverity(file_size,files_severity)</span><br><span class="line">        , getSeverity(num_of_tasks,num_tasks_severity)</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>​</p>
+</li>
+<li><p><strong>Mapper GC</strong></p>
+<p>分析 job 的 GC 效率，也就是 GC 时间占所有 CPU 时间的比例，然后定义不同的等级。具体的计算过程如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables:</span><br><span class="line"></span><br><span class="line">    avg_gc_time: average time spent garbage collecting</span><br><span class="line">    avg_cpu_time: average cpu time of all the tasks</span><br><span class="line">    avg_runtime: average runtime of all the tasks</span><br><span class="line">    gc_cpu_ratio: avg_gc_time/ avg_cpu_time</span><br><span class="line"></span><br><span class="line">    gc_ratio_severity: List of severity threshold values for the ratio of  avg_gc_time to avg_cpu_time.</span><br><span class="line">    runtime_severity: List of severity threshold values for the avg_runtime.</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func min(x,y): returns minimum of x and y</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">The overall severity of the heuristic can then be computed as,</span><br><span class="line"></span><br><span class="line">    severity = min(getSeverity(avg_runtime, runtime_severity), getSeverity(gc_cpu_ratio, gc_ratio_severity)</span><br></pre></td></tr></table></figure>
+
+<p>​</p>
+</li>
+<li><p><strong>Mapper Memory</strong></p>
+<p>分析 mapper 的内存使用情况。计算方法：task 消耗内存 / container 内存。task 消耗内存是每一个 task 占用的最大内存的平均值，container 内存是配置 <strong><em>mapreduce.map/reduce.memory.mb</em></strong> 配置的。具体的计算过程如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables,</span><br><span class="line"></span><br><span class="line">    avg_physical_memory: Average of the physical memories of all tasks.</span><br><span class="line">    container_memory: Container memory</span><br><span class="line"></span><br><span class="line">    container_memory_severity: List of threshold values for the average container memory of the tasks.</span><br><span class="line">    memory_ratio_severity: List of threshold values for the ratio of avg_plysical_memory to container_memory</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func min(x,y): returns minimum of x and y</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">The overall severity can then be computed as,</span><br><span class="line"></span><br><span class="line">    severity = min(getSeverity(avg_physical_memory/container_memory, memory_ratio_severity)</span><br><span class="line">               , getSeverity(container_memory,container_memory_severity)</span><br><span class="line">              )</span><br></pre></td></tr></table></figure>
+
+<p>​</p>
+</li>
+<li><p><strong>Mapper Speed</strong></p>
+<p>分析 mapper 代码的运行效率，并找到受限的资源瓶颈，比如 CPU，或者处理的数据量太大。计算过程如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables,</span><br><span class="line"></span><br><span class="line">    median_speed: median of speeds of all the mappers. The speeds of mappers are found by taking the ratio of input bytes to runtime.</span><br><span class="line">    median_size: median of size of all the mappers</span><br><span class="line">    median_runtime: median of runtime of all the mappers.</span><br><span class="line"></span><br><span class="line">    disk_speed_severity: List of threshold values for the median_speed.</span><br><span class="line">    runtime_severity: List of severity threshold values for median_runtime.</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func min(x,y): returns minimum of x and y</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">The overall severity of the heuristic can then be computed as,</span><br><span class="line"></span><br><span class="line">    severity = min(getSeverity(median_speed, disk_speed_severity), getSeverity(median_runtime, median_runtime_severity)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Mapper Time</strong></p>
+<p>通过 mapper 的运行时间来分析 mapper 的数量是否合适。当出现下面俩种情况时就需要优化了。</p>
+<ul>
+<li>mapper 运行时间很短，可能原因<ul>
+<li>mapper 数量过多</li>
+<li>mapper 平均运行时间很短</li>
+<li>文件 size 较小</li>
+</ul>
+</li>
+<li>大文件块，可能原因<ul>
+<li>mapper 数量很少</li>
+<li>mapper 平均运行时间很长</li>
+<li>文件大小过大 （达 GB 级别）</li>
+</ul>
+</li>
+</ul>
+<p>计算过程如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables,</span><br><span class="line"></span><br><span class="line">    avg_size: average size of input data for all the mappers</span><br><span class="line">    avg_time: average of runtime of all the tasks.</span><br><span class="line">    num_tasks: total number of tasks.</span><br><span class="line"></span><br><span class="line">    short_runtime_severity: The list of threshold values for tasks with short runtime</span><br><span class="line">    long_runtime_severity: The list of threshold values for tasks with long runtime.</span><br><span class="line">    num_tasks_severity: The list of threshold values for number of tasks.</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func min(x,y): returns minimum of x and y</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">The overall severity of the heuristic can then be computed as,</span><br><span class="line"></span><br><span class="line">    short_task_severity = min(getSeverity(avg_time,short_runtime_severity), getSeverity(num_tasks, num_tasks_severity))</span><br><span class="line">    severity = max(getSeverity(avg_size, long_runtime_severity), short_task_severity)</span><br></pre></td></tr></table></figure>
+
+<p>​</p>
+</li>
+<li><p><strong>Mapper Spill</strong></p>
+<p>​Mapper spill 从磁盘 IO 的角度去评测 mapper 的性能。spill ratio (spilled records/output records) 是衡量 mapper 性能的一个很关键的指标：如果值接近 2，表示几乎每个记录都 spill 了，被写到磁盘两次。这时候一般都是因为 mapper 的输出太大了。计算过程如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following parameters,</span><br><span class="line"></span><br><span class="line">    total_spills: The sum of spills from all the map tasks.</span><br><span class="line">    total_output_records: The sum of output records from all the map tasks.</span><br><span class="line">    num_tasks: Total number of tasks.</span><br><span class="line">    ratio_spills: total_spills/ total_output_records</span><br><span class="line"></span><br><span class="line">    spill_severity: List of the threshold values for ratio_spills</span><br><span class="line">    num_tasks_severity: List of threshold values for total number of tasks.</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func min(x,y): returns minimum of x and y</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">The overall severity of the heuristic can then be computed as,</span><br><span class="line"></span><br><span class="line"> severity = min(getSeverity(ratio_spills, spill_severity), getSeverity(num_tasks, num_tasks_severity)</span><br></pre></td></tr></table></figure>
+
+<p>​</p>
+</li>
+<li><p><strong>Reducer Data Skew</strong></p>
+<p>类似 mapper data skew</p>
+</li>
+<li><p><strong>Reducer GC</strong></p>
+<p>类似 mapper gc</p>
+</li>
+<li><p><strong>Reducer Memory</strong></p>
+<p>类似  mapper memory</p>
+</li>
+<li><p><strong>Reducer Time</strong></p>
+<p>类似 mapper time，分析 reducer 的执行效率，可以帮助我们更好的配置 job 中 reducer 的数量。</p>
+</li>
+<li><p><strong>Shuffle and Sort</strong></p>
+<p>可以分析 shuffle 和 sort 过程的执行时间在整个 task 的 reducer 执行期间的占比，从而反映出 reducer 的执行效率。计算方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Let’s define following variables,</span><br><span class="line"></span><br><span class="line">    avg_exec_time: average time spent in execution by all the tasks.</span><br><span class="line">    avg_shuffle_time: average time spent in shuffling.</span><br><span class="line">    avg_sort_time: average time spent in sorting.</span><br><span class="line"></span><br><span class="line">    runtime_ratio_severity: List of threshold values for the ratio of twice of average shuffle or sort time to average execution time.</span><br><span class="line">    runtime_severity: List of threshold values for the runtime for shuffle or sort stages. </span><br><span class="line"></span><br><span class="line">The overall severity can then be found as,</span><br><span class="line"></span><br><span class="line"> severity = max(shuffle_severity, sort_severity)</span><br><span class="line"></span><br><span class="line"> where shuffle_severity and sort_severity can be found as: </span><br><span class="line"></span><br><span class="line"> shuffle_severity = min(getSeverity(avg_shuffle_time, runtime_severity), getSeverity(avg_shuffle_time*2/avg_exec_time, runtime_ratio_severity))</span><br><span class="line"></span><br><span class="line"> sort_severity = min(getSeverity(avg_sort_time, runtime_severity), getSeverity(avg_sort_time*2/avg_exec_time, runtime_ratio_severity))</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Spark Event Log Limit</strong></p>
+<p>为了处理方便，Dr.Elephant 将 spark event log 的最大设置为 100 M。如果日志超过限制，会使用另一个进程处理。</p>
+</li>
+<li><p><strong>Spark Executor Load Balance</strong></p>
+<p>和 MapReduce 任务的执行机制不同，Spark 应用在启动后会一次性分配它所需要的所有资源，直到整个任务结束才会释放这些资源。优化 spark 处理器的负载均衡就比较重要，可以避免对集群的过度使用。计算过程如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables:</span><br><span class="line">    </span><br><span class="line">    peak_memory: List of peak memories for all executors</span><br><span class="line">    durations: List of durations of all executors</span><br><span class="line">    inputBytes: List of input bytes of all executors</span><br><span class="line">    outputBytes: List of output bytes of all executors.</span><br><span class="line"></span><br><span class="line">    looser_metric_deviation_severity: List of threshold values for deviation severity, loose bounds.</span><br><span class="line">    metric_deviation_severity: List of threshold values for deviation severity, tight bounds. </span><br><span class="line"></span><br><span class="line">Let us define the following functions:</span><br><span class="line"></span><br><span class="line">    func getDeviation(x): returns max(|maximum-avg|, |minimum-avg|)/avg, where</span><br><span class="line">        x = list of values</span><br><span class="line">        maximum = maximum of values in x</span><br><span class="line">        minimum = minimum of values in x</span><br><span class="line">        avg = average of values in x</span><br><span class="line"></span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line">    func max(x,y): returns the maximum value of x and y.</span><br><span class="line">    func Min(l): returns the minimum of a list l.</span><br><span class="line"></span><br><span class="line">The overall severity can be found as,</span><br><span class="line"></span><br><span class="line">    severity = Min( getSeverity(getDeviation(peak_memory), looser_metric_deviation_severity), </span><br><span class="line">               getSeverity(getDeviation(durations),  metric_deviation_severity),</span><br><span class="line">               getSeverity(getDeviation(inputBytes), metric_deviation_severity),</span><br><span class="line">               getSeverity(getDeviation(outputBytes), looser_metric_deviation_severity). </span><br><span class="line">               )</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Spark Job Runtime</strong></p>
+<p>优化 Spark job 的运行时间。一个 Spark 应用可以拆分成多个 job，每个 Job 又可以拆分成多个 stage。计算过程如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables,</span><br><span class="line"></span><br><span class="line">    avg_job_failure_rate: Average job failure rate</span><br><span class="line">    avg_job_failure_rate_severity: List of threshold values for average job failure rate</span><br><span class="line"></span><br><span class="line">Let us define the following variables for each job,</span><br><span class="line"></span><br><span class="line">    single_job_failure_rate: Failure rate of a single job</span><br><span class="line">    single_job_failure_rate_severity: List of threshold values for single job failure rate.</span><br><span class="line"></span><br><span class="line">The severity of the job can be found as maximum of single_job_failure_rate_severity for all jobs and avg_job_failure_rate_severity.</span><br><span class="line"></span><br><span class="line">i.e. severity = max(getSeverity(single_job_failure_rate, single_job_failure_rate_severity),</span><br><span class="line">                    getSeverity(avg_job_failure_rate, avg_job_failure_rate_severity)</span><br><span class="line">                )</span><br><span class="line"></span><br><span class="line">where single_job_failure_rate is computed for all the jobs.</span><br></pre></td></tr></table></figure>
+
+<p>​</p>
+</li>
+<li><p><strong>Spark Memory Limit</strong></p>
+<p>目前 Spark 应用还不能进行动态资源分配。MapReduce任务在运行时，能够为每个map/reduce进程分配所需要的资源，并且在执行过程中逐步释放占用的资源。而Spark在应用程序执行时，会一次性的申请所需要的所有资源，直到任务结束才释放这些资源。过多的内存使用会对集群节点的稳定性产生影响。所以，我们需要限制Spark应用程序能使用的最大内存比例。计算过程如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variables,</span><br><span class="line"></span><br><span class="line">    total_executor_memory: total memory of all the executors</span><br><span class="line">    total_storage_memory: total memory allocated for storage by all the executors</span><br><span class="line">    total_driver_memory: total driver memory allocated</span><br><span class="line">    peak_memory: total memory used at peak</span><br><span class="line"></span><br><span class="line">    mem_utilization_severity: The list of threshold values for the memory utilization.</span><br><span class="line">    total_memory_severity_in_tb: The list of threshold values for total memory.</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func max(x,y): Returns maximum of x and y.</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">The overall severity can then be computed as,</span><br><span class="line"></span><br><span class="line">    severity = max(getSeverity(total_executor_memory,total_memory_severity_in_tb),</span><br><span class="line">                   getSeverity(peak_memory/total_storage_memory, mem_utilization_severity)</span><br><span class="line">               )</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>Spark Stage Runtime</strong></p>
+<p>类似 Spark Job Runtime，一个 Spark 应用可以拆分成多个 job，每个 job 可以拆分成多个 stage。计算过程如下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">Let us define the following variable for each spark job,</span><br><span class="line"></span><br><span class="line">    stage_failure_rate: The stage failure rate of the job</span><br><span class="line">    stagge_failure_rate_severity: The list of threshold values for stage failure rate.</span><br><span class="line"></span><br><span class="line">Let us define the following variables for each stage of a spark job,</span><br><span class="line"></span><br><span class="line">    task_failure_rate: The task failure rate of the stage</span><br><span class="line">    runtime: The runtime of a single stage</span><br><span class="line"></span><br><span class="line">    single_stage_tasks_failure_rate_severity: The list of threshold values for task failure of a stage</span><br><span class="line">    stage_runtime_severity_in_min: The list of threshold values for stage runtime.</span><br><span class="line"></span><br><span class="line">Let us define the following functions,</span><br><span class="line"></span><br><span class="line">    func max(x,y): returns the maximum value of x and y.</span><br><span class="line">    func getSeverity(x,y): Compares value x with severity threshold values in y and returns the severity.</span><br><span class="line"></span><br><span class="line">The overall severity can be found as:</span><br><span class="line"></span><br><span class="line">    severity_stage = max(getSeverity(task_failure_rate, single_stage_tasks_faioure_rate_severity),</span><br><span class="line">                   getSeverity(runtime, stage_runtime_severity_in_min)</span><br><span class="line">               )</span><br><span class="line">    severity_job = getSeverity(stage_failure_rate,stage_failure_rate_severity)</span><br><span class="line"></span><br><span class="line">    severity = max(severity_stage, severity_job)</span><br><span class="line"></span><br><span class="line">where task_failure_rate is computed for all the tasks.</span><br></pre></td></tr></table></figure>
+
+<p>​</p>
+</li>
+</ol>
+<h3 id="4-启发式算法代码组织"><a href="#4-启发式算法代码组织" class="headerlink" title="4. 启发式算法代码组织"></a>4. 启发式算法代码组织</h3><p>每个规则都是配置在配置文件中。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">heuristic</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">applicationtype</span>&gt;</span>mapreduce<span class="tag">&lt;/<span class="name">applicationtype</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">heuristicname</span>&gt;</span>Mapper GC<span class="tag">&lt;/<span class="name">heuristicname</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">classname</span>&gt;</span>com.linkedin.dre.mapreduce.heuristics.MapperGC<span class="tag">&lt;/<span class="name">classname</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">viewname</span>&gt;</span>views.html.help.mapreduce.helpGC<span class="tag">&lt;/<span class="name">viewname</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">params</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">num_tasks_severity</span>&gt;</span>10,50,100,200<span class="tag">&lt;/<span class="name">num_tasks_severity</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">deviation_severity</span>&gt;</span><span class="tag">&lt;/<span class="name">deviation_severity</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">params</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">heuristic</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>规则的具体实现在 classname 里面，实现方式是基于一个基类，然后实现指定的接口，比如载入阈值参数（因为是有多个等级，所以参数有多个）等。这么做的好处在于：</p>
+<ul>
+<li>不用将所有规则高度抽象成统一的模型，然后使用规则引擎来做</li>
+<li>阈值是配置在配置文件中的，也可以实现规则的热更新</li>
+</ul>
+<p>算法实现代码可以参考：<strong><em>com.linkedin.drelephant.mapreduce.heuristics</em></strong> 和 <strong><em>com.linkedin.drelephant.spark.heuristics</em></strong> 。</p>
+<h3 id="5-优化建议"><a href="#5-优化建议" class="headerlink" title="5.优化建议"></a>5.优化建议</h3><p>下面是一些常规优化建议。</p>
+<h5 id="1-Tuning-Each-Step-is-Important"><a href="#1-Tuning-Each-Step-is-Important" class="headerlink" title="1. Tuning Each Step is Important"></a>1. Tuning Each Step is Important</h5><p>对于Pig任务来说，如果使用默认参数来设置reducer的数量，这对任务的性能可能是致命的。一般来说，对每个Pig任务，都花一些时间来调优参数PARALLEL是非常值得做的。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">memberFeaturesGrouped = GROUP memberFeatures BY memberId PARALLEL 90;</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-File-Count-vs-Block-Count"><a href="#2-File-Count-vs-Block-Count" class="headerlink" title="2. File Count vs. Block Count"></a>2. File Count vs. Block Count</h5><p>由于 NameNode 的内存中要保存文件的 metadata，所以大文件要优于小文件。</p>
+<h5 id="3-Java-Task-Memory-Management"><a href="#3-Java-Task-Memory-Management" class="headerlink" title="3. Java Task Memory Management"></a>3. Java Task Memory Management</h5><p>map/reduce task 默认会分配 2G 内存。对于 Java job，2G 内存会被拆分为 1G heap 和 0.5 ~ 1G non-heap。然而这对于某些 job 来说并不是足够的。下面是一些能够减少内存使用的技巧。</p>
+<h6 id="UseCompressedOops"><a href="#UseCompressedOops" class="headerlink" title="UseCompressedOops"></a>UseCompressedOops</h6><p>32 系统的 JVM 使用 32bit 的无符号整型来定位内存区域，最大可表示的堆空间为 2^32 ，也就是 4G。64 位的 JVM 使用 64bit 的无符号 long 型来表示内存位置，最大可以表示的内存堆大小为 2^64。使用 long 代替 int，导致需要的内存增大。最新的 JVM 支持在使用时添加选项 CompressedOops，在一些情况下使用 32bit 的空间代替 64bit 空间来保存内存定位信息，这样也可以在一定程度上减少内存的使用。添加设置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Hadoop-inject.mapreduce.(map|reduce).java.opts=-Xmx1G -XX:+UseCompressedOops</span><br></pre></td></tr></table></figure>
+
+<h6 id="UseCompressedStrings"><a href="#UseCompressedStrings" class="headerlink" title="UseCompressedStrings"></a>UseCompressedStrings</h6><p>这样会将 String 类型转换为压缩的 byte[] 型。如果 String 类型变量使用的比较多，这样会节省非常多的内存。设置：添加 <code>-XX:+UseCompressedStrings</code> 到配置项 <code>mapreduce.(map|reduce).java.opts</code>。</p>
+<p>下面是一些重要的调优参数。</p>
+<h4 id="1-Mapper-相关"><a href="#1-Mapper-相关" class="headerlink" title="1. Mapper 相关"></a>1. Mapper 相关</h4><h6 id="mapreduce-input-fileinputformat-split-minsize"><a href="#mapreduce-input-fileinputformat-split-minsize" class="headerlink" title="mapreduce.input.fileinputformat.split.minsize"></a>mapreduce.input.fileinputformat.split.minsize</h6><p>map 输入的文件块的大小的最小值。增加这个参数的值就可以减少 mapper 的数量。</p>
+<h6 id="mapreduce-input-fileinputformat-split-maxsize"><a href="#mapreduce-input-fileinputformat-split-maxsize" class="headerlink" title="mapreduce.input.fileinputformat.split.maxsize"></a>mapreduce.input.fileinputformat.split.maxsize</h6><p>当使用 CombineFileInputFormat 或者 MultiFileInputFormat 时，map 输入的文件块的大小的最大值。相应的，缩小这个参数值就可以增加 mapper 的数量。值得注意的是，如果使用 CombineFileInputFormat 时，不设置最大的 split 大小，那么你的 job 会只使用一个 mapper。</p>
+<h4 id="2-Reducer-相关"><a href="#2-Reducer-相关" class="headerlink" title="2. Reducer 相关"></a>2. Reducer 相关</h4><h6 id="mapreduce-job-reduces"><a href="#mapreduce-job-reduces" class="headerlink" title="mapreduce.job.reduces"></a>mapreduce.job.reduces</h6><p>对工作流性能影响最大的一个因素就是 reducer 的数量。reducer 数量过少导致 task 执行时间过长；数量过多同样会导致问题。reducer 数量调整不是一个简单的事儿，下面是一些建议：</p>
+<ul>
+<li>reducer 数量多意味着 NameNode 上更多的文件。过多的文件可能造成 NameNode 挂掉。如果 reduce 的输出小于 512M 时，尽量使用较少的 reducer。</li>
+<li>reducer 数量多意味着每个 reducer 处理数据的时间更短。如果使用的reducer数量过少，每个reducer作业消耗的时间会显著增加。reducer运行速度变快，就能处理更多的任务。</li>
+</ul>
+<h6 id="mapreduce-job-reduce-slowstart-completedmaps"><a href="#mapreduce-job-reduce-slowstart-completedmaps" class="headerlink" title="mapreduce.job.reduce.slowstart.completedmaps"></a>mapreduce.job.reduce.slowstart.completedmaps</h6><p>这个参数是 reducer 开始执行前，至少有多少比例的 mapper 必须执行结束，默认值是 80%。但是 对于很多特定的 job，80% 不是最好的。下面是一些参数调整的参考。</p>
+<ul>
+<li>每个 reducer 接收数据多少</li>
+<li>剩下的 map 需要花费的时间</li>
+</ul>
+<p>如果 map 的输出数据量比较大，一般建议 reducer 提前开始执行以处理数据；反之 reducer 可以稍晚执行。一个估算的方法是先计算 shuffle 时间：所有的 map 执行完到第一个 reduce 开始执行中间的时间，然后 reducers 比较理想的执行时间是最后一个 map 结束时间减去 shuffle 时间。</p>
+<h4 id="3-Compression"><a href="#3-Compression" class="headerlink" title="3. Compression"></a>3. Compression</h4><h6 id="mapreduce-map-output-compress"><a href="#mapreduce-map-output-compress" class="headerlink" title="mapreduce.map.output.compress"></a>mapreduce.map.output.compress</h6><p>将该参数设置为 True 可以将 map 输出的数据进行压缩，从而可以减少节点之间的数据传输量。然而需要注意的是压缩和解压的时间要小于数据在节点之间的传输时间。如果 map 输出数据量很大，或者属于比较容易压缩的类型，这个参数设置为 True 则很有必要；反之设置为 False 则可以减少 CPU 的工作量。</p>
+<h4 id="4-Memory"><a href="#4-Memory" class="headerlink" title="4. Memory"></a>4. Memory</h4><h6 id="mapreduce-map-reduce-memory-mb"><a href="#mapreduce-map-reduce-memory-mb" class="headerlink" title="mapreduce.(map|reduce).memory.mb"></a>mapreduce.(map|reduce).memory.mb</h6><p>默认 2G，1G heap + 0.5~1G non-heap。一些情况下这个内存大小是不够用的。</p>
+<h4 id="5-Advanced"><a href="#5-Advanced" class="headerlink" title="5. Advanced"></a>5. Advanced</h4><h6 id="controlling-the-number-of-spills-io-sort-record-percent"><a href="#controlling-the-number-of-spills-io-sort-record-percent" class="headerlink" title="controlling the number of spills / io.sort.record.percent"></a>controlling the number of spills / io.sort.record.percent</h6><h6 id="mapreduce-map-reduce-speculative"><a href="#mapreduce-map-reduce-speculative" class="headerlink" title="mapreduce.(map|reduce).speculative"></a>mapreduce.(map|reduce).speculative</h6><p>将这个参数设置为 false 可以避免相同的 map 或者 reduce task 并发执行。</p>
+<p>还有一些是 Pig 和 Hive 相关的，这里就不再一一说明了。</p>
+<h3 id="6-值得借鉴的地方"><a href="#6-值得借鉴的地方" class="headerlink" title="6. 值得借鉴的地方"></a>6. 值得借鉴的地方</h3><p>Dr. Elephant 非常的简洁，我觉得我们可以借鉴几点的是：</p>
+<ol>
+<li>数据采集</li>
+<li>诊断规则</li>
+<li>优化建议</li>
+<li>UI 展示</li>
+</ol>
+<h3 id="7-参考"><a href="#7-参考" class="headerlink" title="7. 参考"></a>7. 参考</h3><ol>
+<li><a href="https://github.com/linkedin/dr-elephant" target="_blank" rel="noopener">dr.elephant repo — github</a></li>
+<li><a href="https://engineering.linkedin.com/blog/2016/04/dr-elephant-open-source-self-serve-performance-tuning-hadoop-spark" target="_blank" rel="noopener">Open Sourcing Dr. Elephant – LinkedIn Engineering Blog</a></li>
+<li><a href="http://hadoop.apache.org/docs/current/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html#Task_Execution__Environment" target="_blank" rel="noopener">MapReduce Tutorial – mapreduce 优化建议</a></li>
+<li><a href="https://www.slideshare.net/aksmlore/hadoop-spark-performance-tuning-using-dr-elephant" target="_blank" rel="noopener">hadoop spark performance tuning using dr.elephant  – slideshare</a></li>
+<li><a href="https://www.youtube.com/watch?v=xQ22h0dhlXM" target="_blank" rel="noopener">Dr Elephant @ LinkedIn – youtube</a></li>
+<li><a href="https://www.youtube.com/watch?v=aL3OJ4YoxPA" target="_blank" rel="noopener">Dr Elephant LinkedIn’s Self Serve System – youtube</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/09/03/ganglia-implement-gmetad/" rel="next" title="Ganglia 源码剖析之 gmetad">
+                  <i class="fa fa-chevron-left"></i> Ganglia 源码剖析之 gmetad
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/06/02/borg/" rel="prev" title="集群资源管理之 Borg">
+                  集群资源管理之 Borg <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-概览"><span class="nav-number">2.</span> <span class="nav-text">1. 概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-系统架构"><span class="nav-number">3.</span> <span class="nav-text">2. 系统架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-启发式算法"><span class="nav-number">4.</span> <span class="nav-text">3. 启发式算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-启发式算法代码组织"><span class="nav-number">5.</span> <span class="nav-text">4. 启发式算法代码组织</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-优化建议"><span class="nav-number">6.</span> <span class="nav-text">5.优化建议</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-Tuning-Each-Step-is-Important"><span class="nav-number">6.0.1.</span> <span class="nav-text">1. Tuning Each Step is Important</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-File-Count-vs-Block-Count"><span class="nav-number">6.0.2.</span> <span class="nav-text">2. File Count vs. Block Count</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-Java-Task-Memory-Management"><span class="nav-number">6.0.3.</span> <span class="nav-text">3. Java Task Memory Management</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#UseCompressedOops"><span class="nav-number">6.0.3.1.</span> <span class="nav-text">UseCompressedOops</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#UseCompressedStrings"><span class="nav-number">6.0.3.2.</span> <span class="nav-text">UseCompressedStrings</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-Mapper-相关"><span class="nav-number">6.1.</span> <span class="nav-text">1. Mapper 相关</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#mapreduce-input-fileinputformat-split-minsize"><span class="nav-number">6.1.0.1.</span> <span class="nav-text">mapreduce.input.fileinputformat.split.minsize</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#mapreduce-input-fileinputformat-split-maxsize"><span class="nav-number">6.1.0.2.</span> <span class="nav-text">mapreduce.input.fileinputformat.split.maxsize</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-Reducer-相关"><span class="nav-number">6.2.</span> <span class="nav-text">2. Reducer 相关</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#mapreduce-job-reduces"><span class="nav-number">6.2.0.1.</span> <span class="nav-text">mapreduce.job.reduces</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#mapreduce-job-reduce-slowstart-completedmaps"><span class="nav-number">6.2.0.2.</span> <span class="nav-text">mapreduce.job.reduce.slowstart.completedmaps</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-Compression"><span class="nav-number">6.3.</span> <span class="nav-text">3. Compression</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#mapreduce-map-output-compress"><span class="nav-number">6.3.0.1.</span> <span class="nav-text">mapreduce.map.output.compress</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-Memory"><span class="nav-number">6.4.</span> <span class="nav-text">4. Memory</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#mapreduce-map-reduce-memory-mb"><span class="nav-number">6.4.0.1.</span> <span class="nav-text">mapreduce.(map|reduce).memory.mb</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-Advanced"><span class="nav-number">6.5.</span> <span class="nav-text">5. Advanced</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#controlling-the-number-of-spills-io-sort-record-percent"><span class="nav-number">6.5.0.1.</span> <span class="nav-text">controlling the number of spills / io.sort.record.percent</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#mapreduce-map-reduce-speculative"><span class="nav-number">6.5.0.2.</span> <span class="nav-text">mapreduce.(map|reduce).speculative</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-值得借鉴的地方"><span class="nav-number">7.</span> <span class="nav-text">6. 值得借鉴的地方</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-参考"><span class="nav-number">8.</span> <span class="nav-text">7. 参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

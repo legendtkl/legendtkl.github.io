@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Go struct拷贝在用Go做orm相关操作的时候，经常会有struct之间的拷贝。比如下面两个struct之间要拷贝共同成员B,C。这个在struct不是很大的时候从来都不是问题，直接成员拷贝即可。但是当struct的大小达到三四十个成员的时候，就要另辟蹊径了。 12345678910111213type A struct &amp;#123;    A   int    B   int    C">
+<meta property="og:type" content="article">
+<meta property="og:title" content="go反射实践及剖析">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;08&#x2F;03&#x2F;go-reflect-value&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="Go struct拷贝在用Go做orm相关操作的时候，经常会有struct之间的拷贝。比如下面两个struct之间要拷贝共同成员B,C。这个在struct不是很大的时候从来都不是问题，直接成员拷贝即可。但是当struct的大小达到三四十个成员的时候，就要另辟蹊径了。 12345678910111213type A struct &amp;#123;    A   int    B   int    C">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.996Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/08/03/go-reflect-value/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>go反射实践及剖析 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/08/03/go-reflect-value/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          go反射实践及剖析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-08-03 00:03:54" itemprop="dateCreated datePublished" datetime="2016-08-03T00:03:54+08:00">2016-08-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Go-struct拷贝"><a href="#Go-struct拷贝" class="headerlink" title="Go struct拷贝"></a>Go struct拷贝</h2><p>在用Go做orm相关操作的时候，经常会有struct之间的拷贝。比如下面两个struct之间要拷贝共同成员B,C。这个在struct不是很大的时候从来都不是问题，直接成员拷贝即可。但是当struct的大小达到三四十个成员的时候，就要另辟蹊径了。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> A <span class="keyword">struct</span> &#123;</span><br><span class="line">    A   <span class="keyword">int</span></span><br><span class="line">    B   <span class="keyword">int</span></span><br><span class="line">    C   <span class="keyword">string</span></span><br><span class="line">    E   <span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> B <span class="keyword">struct</span> &#123;</span><br><span class="line">    B   <span class="keyword">int</span></span><br><span class="line">    C   <span class="keyword">string</span></span><br><span class="line">    D   <span class="keyword">int</span></span><br><span class="line">    E   <span class="keyword">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<a id="more"></a>
+<h4 id="做法一-反射"><a href="#做法一-反射" class="headerlink" title="做法一. 反射"></a>做法一. 反射</h4><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">CopyStruct</span><span class="params">(src, dst <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">	sval := reflect.ValueOf(src).Elem()</span><br><span class="line">	dval := reflect.ValueOf(dst).Elem()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; sval.NumField(); i++ &#123;</span><br><span class="line">		value := sval.Field(i)</span><br><span class="line">		name := sval.Type().Field(i).Name</span><br><span class="line"></span><br><span class="line">		dvalue := dval.FieldByName(name)</span><br><span class="line">		<span class="keyword">if</span> dvalue.IsValid() == <span class="literal">false</span> &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		dvalue.Set(value)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="做法二-json"><a href="#做法二-json" class="headerlink" title="做法二. json"></a>做法二. json</h4><p>先encode成json，再decode，其实golang的json包内部实现也是使用的反射，所以再大型项目中可以考虑使用ffjson来作为替代方案。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	a := &amp;A&#123;<span class="number">1</span>, <span class="string">"a"</span>, <span class="number">1</span>&#125;</span><br><span class="line">	<span class="comment">//	b := &amp;B&#123;"b",2,2&#125;</span></span><br><span class="line"></span><br><span class="line">	aj, _ := json.Marshal(a)</span><br><span class="line">	b := <span class="built_in">new</span>(B)</span><br><span class="line">	_ = json.Unmarshal(aj, b)</span><br><span class="line"></span><br><span class="line">	fmt.Printf(<span class="string">"%+v"</span>, b)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关于golang中的反射机制一直是大家诟病挺多的。因为反射中使用了类型的枚举，所以效率比较低，在高性能场景中应该尽量规避，但是，对于大部分应用场景来说，牺牲一点性能来极大减少代码行数，或者说提高开发效率都是值得的。</p>
+<h2 id="Reflect"><a href="#Reflect" class="headerlink" title="Reflect"></a>Reflect</h2><p>关于Reflect的接口可以参考golang的文档，也可以直接看go的源码。reflect的核心是两个，一个是Type，一个是Value。reflect的使用一般都是以下面语句开始。</p>
+<h3 id="Value"><a href="#Value" class="headerlink" title="Value"></a>Value</h3><p>Value的定义很简单，如下。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Value <span class="keyword">struct</span> &#123;</span><br><span class="line">    typ  *rtype</span><br><span class="line">    ptr  unsafe.Pointer     <span class="comment">//pointer-valued data or pointer to data</span></span><br><span class="line">    flag    <span class="comment">//metedata </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面针对object的类型不同来看一下reflect提供的方法。</p>
+<h4 id="built-in-type"><a href="#built-in-type" class="headerlink" title="built-in type"></a>built-in type</h4><p>reflect针对基本类型提供了如下方法，以Float()为例展开。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//读</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Float</span><span class="params">()</span> <span class="title">float64</span></span> &#123;</span><br><span class="line">	k := v.kind()</span><br><span class="line">	<span class="keyword">switch</span> k &#123;</span><br><span class="line">	<span class="keyword">case</span> Float32:</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">float64</span>(*(*<span class="keyword">float32</span>)(v.ptr))</span><br><span class="line">	<span class="keyword">case</span> Float64:</span><br><span class="line">		<span class="keyword">return</span> *(*<span class="keyword">float64</span>)(v.ptr)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">panic</span>(&amp;ValueError&#123;<span class="string">"reflect.Value.Float"</span>, v.kind()&#125;)</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Bool</span><span class="params">()</span> <span class="title">bool</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Bytes</span><span class="params">()</span> []<span class="title">byte</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Int</span><span class="params">()</span> <span class="title">int64</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Uint</span><span class="params">()</span> <span class="title">uint64</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">String</span><span class="params">()</span> <span class="title">string</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Complex</span><span class="params">()</span> <span class="title">complex128</span></span></span><br><span class="line"><span class="comment">//写</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Set</span><span class="params">(x Value)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetBool</span><span class="params">(x <span class="keyword">bool</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetBytes</span><span class="params">(x []<span class="keyword">byte</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetCap</span><span class="params">(n <span class="keyword">int</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetComplex</span><span class="params">(x <span class="keyword">complex128</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetFloat</span><span class="params">(x <span class="keyword">float64</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetInt</span><span class="params">(x <span class="keyword">int64</span>)</span></span> &#123;</span><br><span class="line">    v.mustBeAssignable()</span><br><span class="line">	<span class="keyword">switch</span> k := v.kind(); k &#123;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="built_in">panic</span>(&amp;ValueError&#123;<span class="string">"reflect.Value.SetInt"</span>, v.kind()&#125;)</span><br><span class="line">	<span class="keyword">case</span> Int:</span><br><span class="line">		*(*<span class="keyword">int</span>)(v.ptr) = <span class="keyword">int</span>(x)</span><br><span class="line">	<span class="keyword">case</span> Int8:</span><br><span class="line">		*(*<span class="keyword">int8</span>)(v.ptr) = <span class="keyword">int8</span>(x)</span><br><span class="line">	<span class="keyword">case</span> Int16:</span><br><span class="line">		*(*<span class="keyword">int16</span>)(v.ptr) = <span class="keyword">int16</span>(x)</span><br><span class="line">	<span class="keyword">case</span> Int32:</span><br><span class="line">		*(*<span class="keyword">int32</span>)(v.ptr) = <span class="keyword">int32</span>(x)</span><br><span class="line">	<span class="keyword">case</span> Int64:</span><br><span class="line">		*(*<span class="keyword">int64</span>)(v.ptr) = x</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetLen</span><span class="params">(n <span class="keyword">int</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetMapIndex</span><span class="params">(key, val Value)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetPointer</span><span class="params">(x unsafe.Pointer)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetString</span><span class="params">(x <span class="keyword">string</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">SetUint</span><span class="params">(x <span class="keyword">uint64</span>)</span></span></span><br></pre></td></tr></table></figure>
+<p>可以看到内部Float内部实现先通过kind()判断value的类型，然后通过指针取数据并做类型转换。kind()的定义如下</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f flag)</span> <span class="title">kind</span><span class="params">()</span> <span class="title">Kind</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> Kind(f &amp; flagKindMask)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>flag是Value的内部成员，所以方法也被继承过来。通过实现不难猜到reflect对不同的类型是通过一个整数来实现的。我们来验证一下，在type.go文件中找到Kind定义，注意这个地方Kind()只是一个类型转换。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Kind <span class="keyword">uint</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">    Invalid Kind = <span class="literal">iota</span></span><br><span class="line">    Bool</span><br><span class="line">    Int</span><br><span class="line">    Int8</span><br><span class="line">    Int16</span><br><span class="line">    Int32</span><br><span class="line">    ...</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>紧挨着Kind定义的下面就是各种类型的表示：Bool=1, Int=2，…再来看一下<code>f &amp; flagKindMask</code>的意思。再<code>value.go</code>文件中找到<code>flagKindMask</code>的定义:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> (</span><br><span class="line">	flagKindWidth        = <span class="number">5</span> <span class="comment">// there are 27 kinds</span></span><br><span class="line">	flagKindMask    flag = <span class="number">1</span>&lt;&lt;flagKindWidth - <span class="number">1</span></span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以这句<code>f &amp; flagKindMask</code> 的意思就是最f的低5位，也就是对应了上面的各种类型。</p>
+<p>上面说完了数据的读接口，其实写接口也很类似。唯一的区别在于reflect还提供了一个Set()方法，就是说我们自己去保证数据的类型正确性。</p>
+<h4 id="Struct"><a href="#Struct" class="headerlink" title="Struct"></a>Struct</h4><p>其实使用反射的很多场景都是struct。reflect针对struct提供的函数方法如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Elem</span><span class="params">()</span> <span class="title">Value</span>     //返回指针或者<span class="title">interface</span>包含的值</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Field</span><span class="params">(i <span class="keyword">int</span>)</span> <span class="title">Value</span>       //返回<span class="title">struct</span>的第<span class="title">i</span>个<span class="title">field</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">FieldByIndex</span><span class="params">(index []<span class="keyword">int</span>)</span> <span class="title">Value</span>      //返回嵌套<span class="title">struct</span>的成员</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">FieldByName</span><span class="params">(name <span class="keyword">string</span>)</span> <span class="title">Value</span>       //通过成员名称返回对应的成员</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">FieldByNameFunc</span><span class="params">(match <span class="keyword">func</span>(<span class="keyword">string</span>)</span> <span class="title">bool</span>) <span class="title">Value</span>   //只返回满足函数<span class="title">match</span>的第一个<span class="title">field</span></span></span><br></pre></td></tr></table></figure>
+
+
+<p>通过上面的方法不出意外就可以取得对应是struct field了。</p>
+<h4 id="其他类型：Array-Slice-String"><a href="#其他类型：Array-Slice-String" class="headerlink" title="其他类型：Array, Slice, String"></a>其他类型：Array, Slice, String</h4><p>对于其他类型，reflect也提供了获得其内部成员的方法。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Len</span><span class="params">()</span> <span class="title">int</span>    //<span class="title">Array</span>, <span class="title">Chan</span>, <span class="title">Map</span>, <span class="title">Slice</span>, <span class="title">or</span> <span class="title">String</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Index</span><span class="params">(i <span class="keyword">int</span>)</span> <span class="title">Value</span>   //<span class="title">Array</span>, <span class="title">Slice</span>, <span class="title">String</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Cap</span><span class="params">()</span> <span class="title">int</span>            //<span class="title">Array</span>, <span class="title">Chan</span>, <span class="title">Slice</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Close</span><span class="params">()</span>              //<span class="title">Chan</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">MapIndex</span><span class="params">(key Value)</span> <span class="title">Value</span>    //<span class="title">Map</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">MapKeys</span><span class="params">()</span> []<span class="title">Value</span>            //<span class="title">Map</span></span></span><br></pre></td></tr></table></figure>
+
+<h4 id="函数调用"><a href="#函数调用" class="headerlink" title="函数调用"></a>函数调用</h4><p>reflect当然也可以实现函数调用，下面是一个简单的例子。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">var</span> f = <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        fmt.Println(<span class="string">"hello world"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    fun := reflect.ValueOf(f)</span><br><span class="line">    fun.Call(<span class="literal">nil</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//Output</span></span><br><span class="line">hello world</span><br></pre></td></tr></table></figure>
+<p>当然我们还可以通过struct来调用其方法，需要注意的一点是通过反射调用的函数必须是外部可见的（首字母大写）。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> S <span class="keyword">struct</span> &#123;</span><br><span class="line">    A <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s S)</span> <span class="title">Method1</span><span class="params">()</span></span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"method 1"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s S)</span> <span class="title">Method2</span><span class="params">()</span></span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"method 2"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">var</span> a S</span><br><span class="line">    S := reflect.ValueOf(a)</span><br><span class="line"></span><br><span class="line">    fmt.Println(S.NumMethod())</span><br><span class="line"></span><br><span class="line">    m1 :=S.Method(<span class="number">0</span>)</span><br><span class="line">    m1.Call(<span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line">    m2 := S.MethodByName(<span class="string">"Method2"</span>)</span><br><span class="line">    m2.Call(<span class="literal">nil</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>总结一下reflect提供了函数调用的相关接口如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Call</span><span class="params">(in []Value)</span> []<span class="title">Value</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">CallSlice</span><span class="params">(in []Value)</span> []<span class="title">Value</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">Method</span><span class="params">(i <span class="keyword">int</span>)</span> <span class="title">Value</span>      //<span class="title">v</span>'<span class="title">s</span> <span class="title">ith</span> <span class="title">function</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">NumMethod</span><span class="params">()</span> <span class="title">int</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v Value)</span> <span class="title">MethodByName</span><span class="params">(name <span class="keyword">string</span>)</span> <span class="title">Value</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Type"><a href="#Type" class="headerlink" title="Type"></a>Type</h3><p>Type是反射中另外重要的一部分。Type是一个接口，里面包含很多方法，通常我们可以通过<code>reflect.TypeOf(obj)</code>取得obj的类型对应的Type接口。接口中很多方法都是对应特定类型的，所以调用的时候需要注意。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Type <span class="keyword">interface</span> &#123;</span><br><span class="line">	Align() <span class="keyword">int</span></span><br><span class="line">	FieldAlign() <span class="keyword">int</span></span><br><span class="line">	Method(<span class="keyword">int</span>) Method</span><br><span class="line">	MethodByName(<span class="keyword">string</span>) (Method, <span class="keyword">bool</span>)</span><br><span class="line">	NumMethod() <span class="keyword">int</span></span><br><span class="line">	...</span><br></pre></td></tr></table></figure>
+<p>另外reflect包还为我们提供了几个生成特定类型的Type接口的方法。这里就不一一列举了。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>关于reflect提供的接口需要注意的一点就是，一定要保证类型是匹配的，如果不匹配将导致panic。关于Value的主要接口都在这，本来还想写一下Type以及内部的实现机制的，只能放到下篇再写了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/06/30/kafka-in-action/" rel="next" title="kafka实战">
+                  <i class="fa fa-chevron-left"></i> kafka实战
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/08/06/reflect-inside/" rel="prev" title="reflect为什么慢">
+                  reflect为什么慢 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Go-struct拷贝"><span class="nav-number">1.</span> <span class="nav-text">Go struct拷贝</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#做法一-反射"><span class="nav-number">1.0.1.</span> <span class="nav-text">做法一. 反射</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#做法二-json"><span class="nav-number">1.0.2.</span> <span class="nav-text">做法二. json</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reflect"><span class="nav-number">2.</span> <span class="nav-text">Reflect</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Value"><span class="nav-number">2.1.</span> <span class="nav-text">Value</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#built-in-type"><span class="nav-number">2.1.1.</span> <span class="nav-text">built-in type</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Struct"><span class="nav-number">2.1.2.</span> <span class="nav-text">Struct</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#其他类型：Array-Slice-String"><span class="nav-number">2.1.3.</span> <span class="nav-text">其他类型：Array, Slice, String</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#函数调用"><span class="nav-number">2.1.4.</span> <span class="nav-text">函数调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Type"><span class="nav-number">2.2.</span> <span class="nav-text">Type</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

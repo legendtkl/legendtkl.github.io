@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言gmond 是 ganglia 中最核心的组成部分，负责指标的采集、发送、收集等，这篇文章就来看看 gmond 的重要特性。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解 Ganglia 之 gmond">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;08&#x2F;19&#x2F;understanding-ganglia-gmond&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言gmond 是 ganglia 中最核心的组成部分，负责指标的采集、发送、收集等，这篇文章就来看看 gmond 的重要特性。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.936Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/08/19/understanding-ganglia-gmond/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>深入理解 Ganglia 之 gmond | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/19/understanding-ganglia-gmond/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入理解 Ganglia 之 gmond
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-08-19 16:19:38" itemprop="dateCreated datePublished" datetime="2017-08-19T16:19:38+08:00">2017-08-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/" itemprop="url" rel="index">
+                    <span itemprop="name">大数据</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h2><p>gmond 是 ganglia 中最核心的组成部分，负责指标的采集、发送、收集等，这篇文章就来看看 gmond 的重要特性。</p>
+<a id="more"></a>
+<h2 id="1-指标采集"><a href="#1-指标采集" class="headerlink" title="1. 指标采集"></a>1. 指标采集</h2><p>gmond 有两种重要功能：采集指标和收集指标。所谓采集指标就是 gmond 运行具体的代码去计算指标的具体值，收集指标是说 gmond 接收来自其他 gmond 或者其他程序（比如 Hadoop 相关进程）的值。</p>
+<p>每台需要采集指标的机器上都需要安装 gmond。gmond 本身可以采集的指标多达两百多个，具体可以通过命令 <strong><em>gmond -m</em></strong> 查看。除此之后 gmond 还可以收集 Hadoop 相关指标，只需要在 Hadoop 配置文件中配置一下 gmond 的 host 和 port。gmond 原生的指标都是通过每台机器上的 gmond 进程采集的，Hadoop 相关的指标是 Hadoop 相关进程（NameNode, DataNode, ResourceManager, NodeManager）发送给 gmond 的。</p>
+<h2 id="2-自定义指标"><a href="#2-自定义指标" class="headerlink" title="2. 自定义指标"></a>2. 自定义指标</h2><p>除了 gmond 的原生指标，还支持用户自定义一些指标。自定指标有两种方式：</p>
+<ol>
+<li>自定义 module ( C/C++/Python)</li>
+<li>gmetric</li>
+</ol>
+<p>这两种方式各有各的好处。使用 module 的方式有点像侵入式。而使用 gmetric 的方式可以更快的添加一种指标。</p>
+<h5 id="2-1-gmetric"><a href="#2-1-gmetric" class="headerlink" title="2.1 gmetric"></a>2.1 gmetric</h5><p>gmetric 的方式就是通过命令行工具，可以非常便捷的添加。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gmetric -n test_string -v <span class="string">'hello value'</span> -t string -d 10 -c /etc/ganglia/gmond.conf.bkeep -S <span class="string">'2.2.2.2:web'</span></span><br></pre></td></tr></table></figure>
+
+<p>关于参数可以参考 <strong><em>gmetric -h</em></strong> 输出。</p>
+<h5 id="2-2-module"><a href="#2-2-module" class="headerlink" title="2.2 module"></a>2.2 module</h5><p>使用 module 方式添加指标的方式可以自定义 C/C++/Python 的 module。gmond 启动的时候会根据 conf 文件加载需要使用的 module。对于 C/C++ 是 so 动态库，对于 Python 是 pyo 和 pyc 文件。如果我们需要自定义指标只需要提供 module 文件和 conf 即可。这里以 Python module 为例子说明一下。module 文件的框架如下。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># metric's handle</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">handler</span><span class="params">(name)</span>:</span></span><br><span class="line">    <span class="comment"># compute metric(metric name is name) value</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">metric_init</span><span class="params">(parameter)</span>:</span></span><br><span class="line">    <span class="keyword">global</span> descriptor</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># init descriptor, binding the metric with corresponding handler</span></span><br><span class="line">    descriptors = [&#123;<span class="string">'name'</span>: <span class="string">"metric_name"</span>,</span><br><span class="line">                    <span class="string">'call_back'</span>: handler,</span><br><span class="line">                    <span class="string">'value_type'</span>: <span class="string">'float'</span>,</span><br><span class="line">                    <span class="string">'format'</span>: <span class="string">'%f'</span>&#125;]</span><br><span class="line">    <span class="keyword">return</span> descriptors</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">metric_cleanup</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>module 文件中主要包括 metric_init() 函数，gmond 启动的时候载入 module，然后会调用 metric_init 函数得到 metric 和对应的 handler 函数。之后 metric 采集的时候直接调用相应的 handler 函数。除了 module 文件，还需要定义相应的 pyconf 文件。pyconf 文件中会定义需要采集的 metric name 和对应的采集 module。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">modules &#123;</span><br><span class="line">	module &#123;</span><br><span class="line">		name	= <span class="string">"custom_disk_metric"</span>	<span class="comment"># module name，gmond 根据这个进行加载对应的 module</span></span><br><span class="line">		language	= <span class="string">"python"</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">collection_group &#123;</span><br><span class="line">	collect_every = 15</span><br><span class="line">	time_threshold = 45</span><br><span class="line"></span><br><span class="line">	metric &#123;</span><br><span class="line">		name_match = <span class="string">"part_max_(.+)"</span>	</span><br><span class="line">		<span class="comment"># metric name 可以使用正则。对应 module 中 metric_init 定义的指标会和这个地方比对，match 就会采集。</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-Deaf-amp-Mute"><a href="#3-Deaf-amp-Mute" class="headerlink" title="3. Deaf &amp; Mute"></a>3. Deaf &amp; Mute</h2><p>在 gmond conf 文件中有两个配置项为 mute 和 deaf。</p>
+<h4 id="1-mute"><a href="#1-mute" class="headerlink" title="1. mute"></a>1. mute</h4><p>一旦 gmond 的 mute 参数被设置为 true，则它自身不进行指标收集且不发送。但是会收集来自其他节点的指标信息。</p>
+<h4 id="2-Deaf"><a href="#2-Deaf" class="headerlink" title="2. Deaf"></a>2. Deaf</h4><p>deaf node 其实很形象的，不接受其他 node 的指标数据。</p>
+<h2 id="4-data-flow"><a href="#4-data-flow" class="headerlink" title="4. data flow"></a>4. data flow</h2><p>在 gmond conf 中有几个选项如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">udp_send_channel</span><br><span class="line">udp_recv_channel</span><br><span class="line">tcp_accept_channel</span><br></pre></td></tr></table></figure>
+
+<p>其中 <strong><em>udp_send_channel</em></strong> 是 gmond 用来发送数据的，一般简单的配置如下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">udp_send_channel &#123;</span><br><span class="line">    <span class="comment"># bind_hostname = yes 用来控制数据源</span></span><br><span class="line">    host = host_name <span class="comment"># 如果指定 host，则将 gmond 的采集数据发送这台 host 上。也就是单播模式</span></span><br><span class="line">    mcast_join = 239.2.17.45  <span class="comment"># multicast 模式，不和 host 同时使用</span></span><br><span class="line">    port = 8649</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>gmond 给其他的 gmond 发送数据，接收源就需要指定 <strong><em>udp_recv_channel</em></strong>。可以定义多个接收端口。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">udp_recv_channel &#123;</span><br><span class="line">    port = 8649</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong><em>tcp_accept_channel</em></strong> 用来开启一个 tcp server，通过指定的端口可以取到 gmond 采集的集群监控数据。一般 gmetad 就是通过这种方式来收集 gmond 的数据的。我们可以指定多个 <strong><em>tcp_accept_channel</em></strong> ，不同端口返回的数据其实来自同一份数据源，也就是 gmond 收集到的集群的最新状态信息的 xml 格式。如果我们也想获得 gmond 监控的集群数据，那么我们完全可以使用 8649 或者重新开一个端口，比如 8659。读取数据示例如下。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">read_gmond_data</span><span class="params">(host, port)</span>:</span></span><br><span class="line">    sock = create_socket(host, port)</span><br><span class="line">    xml_data = <span class="string">''</span></span><br><span class="line">    buf = sock.recv(<span class="number">4096</span>)</span><br><span class="line">    <span class="keyword">while</span> len(buf):</span><br><span class="line">        xml_data += buf</span><br><span class="line">        buf = sock.recv(<span class="number">4096</span>)</span><br><span class="line">    sock.close()</span><br><span class="line">    <span class="keyword">return</span> xml_data</span><br></pre></td></tr></table></figure>
+
+<p>注意如果你要一直持续读取端口的数据，每次读取的时候都需要建立一次连接。</p>
+<h2 id="5-XDR"><a href="#5-XDR" class="headerlink" title="5. XDR"></a>5. XDR</h2><p>gmond 之间的数据交互使用 XDR (eXternal Data Representation) 协议，一种二进制传输协议。除此之外，外部应用也可以通过 XDR 协议将指标数据发送给 gmond，gmetric 实现自定义指标就是这种机制。关于 XDR 更详细的资料可以参考：<a href="http://ics.upjs.sk/~novotnyr/home/programovanie/c/books/cpc/ch4_xdr.htm" target="_blank" rel="noopener">eXternal Data Representation</a>。</p>
+<h2 id="6-参考"><a href="#6-参考" class="headerlink" title="6. 参考"></a>6. 参考</h2><ol>
+<li><a href="http://ics.upjs.sk/~novotnyr/home/programovanie/c/books/cpc/ch4_xdr.htm" target="_blank" rel="noopener">eXternal Data Representation</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/08/12/understanding-ganglia-1/" rel="next" title="深入理解 Ganglia 之 Overview">
+                  <i class="fa fa-chevron-left"></i> 深入理解 Ganglia 之 Overview
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/08/26/ganglia-implement-gmond/" rel="prev" title="Ganglia 源码剖析之 gmond">
+                  Ganglia 源码剖析之 gmond <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-指标采集"><span class="nav-number">2.</span> <span class="nav-text">1. 指标采集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-自定义指标"><span class="nav-number">3.</span> <span class="nav-text">2. 自定义指标</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#2-1-gmetric"><span class="nav-number">3.0.0.1.</span> <span class="nav-text">2.1 gmetric</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-2-module"><span class="nav-number">3.0.0.2.</span> <span class="nav-text">2.2 module</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Deaf-amp-Mute"><span class="nav-number">4.</span> <span class="nav-text">3. Deaf &amp; Mute</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-mute"><span class="nav-number">4.0.1.</span> <span class="nav-text">1. mute</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-Deaf"><span class="nav-number">4.0.2.</span> <span class="nav-text">2. Deaf</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-data-flow"><span class="nav-number">5.</span> <span class="nav-text">4. data flow</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-XDR"><span class="nav-number">6.</span> <span class="nav-text">5. XDR</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-参考"><span class="nav-number">7.</span> <span class="nav-text">6. 参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

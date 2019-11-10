@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="在前一篇文章的结尾中提到了动态规划算法，这里再简要的说下吧。网上关于动态规划的讨论也比较多，看来看去，大部分人还是充当了搬运工。还是建议《算法导论》吧。下面简要总结一下。 动态规划的思想是对于每个子问题只求解一次，将其结果保存在一张表中，从而避免每次遇到各个子问题时重新计算答案（这个描述感觉有点像搜索）。动态规划算法的两个要素：最优子结构和重叠子问题。如何判断呢？简单来说，如果问题的一个最优解中包">
+<meta name="keywords" content="动态规划,01背包,完全背包">
+<meta property="og:type" content="article">
+<meta property="og:title" content="动态规划背包问题浅析">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2014&#x2F;05&#x2F;11&#x2F;dp-bag-problem&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="在前一篇文章的结尾中提到了动态规划算法，这里再简要的说下吧。网上关于动态规划的讨论也比较多，看来看去，大部分人还是充当了搬运工。还是建议《算法导论》吧。下面简要总结一下。 动态规划的思想是对于每个子问题只求解一次，将其结果保存在一张表中，从而避免每次遇到各个子问题时重新计算答案（这个描述感觉有点像搜索）。动态规划算法的两个要素：最优子结构和重叠子问题。如何判断呢？简单来说，如果问题的一个最优解中包">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.926Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2014/05/11/dp-bag-problem/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>动态规划背包问题浅析 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/05/11/dp-bag-problem/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          动态规划背包问题浅析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-05-11 10:36:42" itemprop="dateCreated datePublished" datetime="2014-05-11T10:36:42+08:00">2014-05-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index">
+                    <span itemprop="name">算法设计</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在前一篇文章的结尾中提到了动态规划算法，这里再简要的说下吧。网上关于动态规划的讨论也比较多，看来看去，大部分人还是充当了搬运工。还是建议《算法导论》吧。下面简要总结一下。</p>
+<p>动态规划的思想是对于每个子问题只求解一次，将其结果保存在一张表中，从而避免每次遇到各个子问题时重新计算答案（这个描述感觉有点像搜索）。动态规划算法的两个要素：最优子结构和重叠子问题。如何判断呢？简单来说，如果问题的一个最优解中包含了子问题的最优解，则该问题具有最优子结构。注意这时候一般来说也可以用贪心算法来解，但是贪心算法与动态规划算法有一个本质的区别：贪心算法的思想是局部最优解，而动态规划算法的思想是全局最优解。那么重叠子问题是什么意思呢？用来解决原问题的递归算法可反复地解同样的子问题。典型地，不同的子问题数是输入规模的一个多项式。当一个递归算法不断地调用同一问题时，我们说该最优问题包含重叠子问题。下面主要来讨论一下典型的动态规划问题——背包问题以及一点扩展。</p>
+<a id="more"></a>首先来看01背包问题。有n个重量和价值分别为w[i]，v[i]的物品。从这些物品中挑选出总重量不超过W的物品，求所有挑选方案中价值总和的最大值。如果看了上一篇文章的话，第一反应应该是状态搜索。其实很多问题都可以有搜索来解决，但是状态搜索的复杂度极高，主要是因为对很多状态重复计算。这时候在想一想上面说的，很容易可以想到，将所有状态都求解出来放到一张表里来避免重复计算，这就是动态规划了。
+
+<p>动态规划的求解思路一般是找到状态转移方程，定义初始状态，然后就可以递归的计算其它状态了。那么01背包的状态转移方程应该怎样来求解呢？定义状态函数dp[i]+1[j]表示从前i种物品中挑选总重量不超过j时总价值的最大值。初始化dp[0][j]=0。对于第i件物品，有两个选择，选或者不选，这时候状态转移方程为dp[i+1][j]=max(dp[i][j], dp[i][j-w[i]]+v[i])，前面的对应不选。除此之外还要注意一种情况，就是当前物品的重量比j要大，这时就肯定不能选了。这些推导出来代码就很好写了。dp[n][W]即为所求。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;n; i++)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>; j&amp;lt;=W; j++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(j&amp;lt;W[i])</span><br><span class="line">            dp[i+<span class="number">1</span>][j] = dp[i][j];</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            dp[i+<span class="number">1</span>][j] = <span class="built_in">max</span>(dp[i][j], dp[i][j-W[i]]+v[i]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面再来看一下完全背包问题。有n种重量和价值分别为w[i]，v[i]的物品。从这些物品中挑选总重量不超过W的物品，求出挑选物品价值总和的最大值。在这里，每种物品可以挑选任意多件。这时候同一各类的物品可以选择任意多件了。像01背包一样定义状态函数dp[i+1][j]表示从前i种物品中挑选总重量不超过j时的总价值的最大值。初始化dp[0][j]=0。对于每种物品可以先任意多次，那么状态转移方程类似可以写出来：dp[i+1][j] =max{dp[i][j-k<em>w[i]]+k</em>v[i] | 0&lt;=k}。则dp表可以如下求出来。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;n; i++)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>; j&amp;lt;=W; j++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> k=<span class="number">0</span>; k*w[i]&amp;lt;=j; k++)</span><br><span class="line">            dp[i+<span class="number">1</span>][j] = <span class="built_in">max</span>(dp[i+<span class="number">1</span>][j], dp[i][j-k*w[i]]+k*v[i]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>仔细分析一下，我们就会发现上面还是存在重复计算，在dp[i+1][j]的计算中选择k（k&gt;=1）个的情况，与在dp[i+1][j-w[i]]的计算中选择k-1个的情况是相同的，所以dp[i+1][j]的递推中k&gt;=1部分的计算已经在dp[i+1][j-w[i]]的计算中完成了。那么可以推出：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">max</span>&#123;dp[i][j-k*w[i]]+k*v[i] | k&amp;gt;=<span class="number">0</span>&#125; = <span class="built_in">max</span>&#123;dp[i][j], <span class="built_in">max</span>&#123;dp[i][j-k*w[i]]+k*v[i]|k&amp;gt;=<span class="number">1</span>&#125;&#125;=<span class="built_in">max</span>&#123;dp[i][j], <span class="built_in">max</span>&#123;dp[i][j-w[i]-k*w[i]]+k*v[i]|k&amp;gt;=<span class="number">0</span>&#125;+v[i]&#125;=<span class="built_in">max</span>&#123;dp[i][j], dp[i+<span class="number">1</span>][j-w[i]]+v[i]&#125;。</span><br></pre></td></tr></table></figure>
+<p>这样一来就不需要关于k的循环了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;n; i++)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>; j&amp;lt;=W; j++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(j&amp;lt;w[i])</span><br><span class="line">            dp[i+<span class="number">1</span>][j] = dp[i][j];</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            dp[i+<span class="number">1</span>][j] = <span class="built_in">max</span>(dp[i][j], dp[i+<span class="number">1</span>][j-w[i]]+v[i]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>扩展，上面的问题中的空间复杂度都是O(nW),其实可以通过不断得利利用一个数组来实现。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> dp[W+<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">//01背包</span></span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;n; i++)</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=W; j&amp;gt;=w[i]; j--)</span><br><span class="line">        dp[j]=<span class="built_in">max</span>(dp[j], dp[j-w[i]]+v[i]);</span><br><span class="line"></span><br><span class="line"><span class="comment">//完全背包</span></span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;n; i++)</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=w[i]; j&amp;lt;=W; j++)</span><br><span class="line">        dp[j] = <span class="built_in">max</span>(dp[j], dp[j-w[i]]+v[i]);</span><br></pre></td></tr></table></figure>
+<p>另外topcoder上面的动态规划教程也很不错，推荐。<a href="http://community.topcoder.com/tc?module=Static&d1=tutorials&d2=dynProg" target="_blank" rel="noopener">Dynamic Programing</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/" rel="tag"># 动态规划</a>
+              <a href="/tags/01%E8%83%8C%E5%8C%85/" rel="tag"># 01背包</a>
+              <a href="/tags/%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/" rel="tag"># 完全背包</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/04/30/array-problem-trick2/" rel="next" title="关于部分数组固定和的一类问题解析续">
+                  <i class="fa fa-chevron-left"></i> 关于部分数组固定和的一类问题解析续
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/05/19/bat-apply/" rel="prev" title="批处理的一个简单应用">
+                  批处理的一个简单应用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

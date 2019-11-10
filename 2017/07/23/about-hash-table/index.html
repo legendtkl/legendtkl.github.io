@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0. 引言hash table，中文可以称作哈希表。简单来说就是提供 (key, value) 的存取，当然只存 key 也是可以的。一般来说哈希表的插入和查找的平均时间复杂度都为 O(1)，因此在日常工作中使用也较为广泛。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="聊一聊哈希表">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;07&#x2F;23&#x2F;about-hash-table&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0. 引言hash table，中文可以称作哈希表。简单来说就是提供 (key, value) 的存取，当然只存 key 也是可以的。一般来说哈希表的插入和查找的平均时间复杂度都为 O(1)，因此在日常工作中使用也较为广泛。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https:&#x2F;&#x2F;upload.wikimedia.org&#x2F;wikipedia&#x2F;commons&#x2F;b&#x2F;bf&#x2F;Hash_table_5_0_1_1_1_1_0_SP.svg">
+<meta property="og:image" content="https:&#x2F;&#x2F;upload.wikimedia.org&#x2F;wikipedia&#x2F;commons&#x2F;5&#x2F;5a&#x2F;Hash_table_5_0_1_1_1_1_0_LL.svg">
+<meta property="og:image" content="https:&#x2F;&#x2F;upload.wikimedia.org&#x2F;wikipedia&#x2F;commons&#x2F;d&#x2F;d0&#x2F;Hash_table_5_0_1_1_1_1_1_LL.svg">
+<meta property="og:image" content="http:&#x2F;&#x2F;redisbook.com&#x2F;_images&#x2F;graphviz-4c43eaf38cbca10d8d368a5144db6f3c69ab3d84.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;redisbook.com&#x2F;_images&#x2F;graphviz-b91705b0d7a6c7fd5e37332a930534e0e136ae73.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;redisbook.com&#x2F;_images&#x2F;graphviz-3b31e4e08cc3e212f986039eb08ae77224cdeec9.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;redisbook.com&#x2F;_images&#x2F;graphviz-86f810ac65c4e6ee58b17105dfeaa06973d8dd16.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;upload.wikimedia.org&#x2F;wikipedia&#x2F;commons&#x2F;a&#x2F;ac&#x2F;Bloom_filter.svg">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2017&#x2F;cuckoo_hash.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.923Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;upload.wikimedia.org&#x2F;wikipedia&#x2F;commons&#x2F;b&#x2F;bf&#x2F;Hash_table_5_0_1_1_1_1_0_SP.svg">
+
+<link rel="canonical" href="http://yoursite.com/2017/07/23/about-hash-table/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>聊一聊哈希表 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/23/about-hash-table/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          聊一聊哈希表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-07-23 17:34:41" itemprop="dateCreated datePublished" datetime="2017-07-23T17:34:41+08:00">2017-07-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构与算法</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h2><p>hash table，中文可以称作哈希表。简单来说就是提供 (key, value) 的存取，当然只存 key 也是可以的。一般来说哈希表的插入和查找的平均时间复杂度都为 O(1)，因此在日常工作中使用也较为广泛。</p>
+<a id="more"></a>
+
+<h2 id="1-General-Hash-Table"><a href="#1-General-Hash-Table" class="headerlink" title="1. General Hash Table"></a>1. General Hash Table</h2><h4 id="1-1-实现"><a href="#1-1-实现" class="headerlink" title="1.1 实现"></a>1.1 实现</h4><p>为了保证插入和查找的平均复杂度为 O(1)，hash table 底层一般都是使用数组来实现。对于给定的 key，一般先进行 hash 操作，然后相对哈希表的长度取模，将 key 映射到指定的地方。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">index = hash(key) % hash_table_size  <span class="comment">// index 就是 key 存储位置的索引</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的核心在于如何选取合适的 hash 函数，如果提前知道 key 的一些相关信息，往往可以选取一个不错的 hash 函数。常用的 hash 函数有 SHA-1，SHA-256，SHA-512，这里就不再赘述了。</p>
+<h4 id="1-2-冲突处理"><a href="#1-2-冲突处理" class="headerlink" title="1.2 冲突处理"></a>1.2 冲突处理</h4><p>冲突，也叫做碰撞，意思是两个或者多个 key 映射到了哈希表的同一个位置。冲突处理一般有两种方法：开放定址（open addressing）和开链（separate chaining）。</p>
+<p>开放定址的意思是当发生冲突时，我们从当前位置向后按某种策略遍历哈希表。当发现可用的空间的时候，则插入元素。开放地址有一次探测、二次探测和双重哈希。一次探测是指我们的遍历策略是一个线性函数，比如依次遍历冲突位置之后的第 1，2，3…N 位置。如果直接遍历 1，4（=2^2），9 (=3^2)，这就是二次探测的一个例子。双重哈希就是遍历策略间隔由另一个哈希函数来确定。</p>
+<p>下图是开放地址解决冲突问题的一个例子。key “John Smith” 和 “Sandra Dee” 在 index = 152 位置出现冲突，使用开放地址的方法将 “Sandra Dee” 存放在 index = 153 的位置。之后 key “Ted Baker” 的映射位置为 index = 153，又出现冲突，则将其存放在 index = 154 的位置。由这个例子我们可以看出这种处理方法的一个缺点：解决旧问题的同时会引入新的问题。</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/b/bf/Hash_table_5_0_1_1_1_1_0_SP.svg" alt=""></p>
+<p>开链的思想是哈希表中的每个元素都是一个类似链表或者其他数据结构的 head。当出现冲突时，我们就在链表后面添加元素。这也就意味着，如果某一个位置冲突过多的话，插入的时间复杂段将退化为 O(N)。补充一点，如果哈希表的每个元素都是一个链表头的，那么又可以分为头存储元素和不存储元素两种，如下图所示。</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/Hash_table_5_0_1_1_1_1_0_LL.svg" alt=""></p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Hash_table_5_0_1_1_1_1_1_LL.svg" alt=""></p>
+<p>简单比较一下这两种处理方法的优劣：开放定址在解决当前冲突的情况下同时可能会导致新的冲突，而开链不会有这种问题。同时开链相比于开放定址局部性较差，在程序运行过程中可能引起操作系统的缺页中断，从而导致系统颠簸。</p>
+<h4 id="1-3-Rehash"><a href="#1-3-Rehash" class="headerlink" title="1.3 Rehash"></a>1.3 Rehash</h4><p>很多语言或者工具包哈希表的内部实现都使用了两个数组，其中一个作为备用。如果当前哈希表的负载因子（元素个数/哈希表容量大小）过大或者过小时，就需要将数据切换到备用数组里面，这个过程就是 rehash。新的哈希表的大小可以有很多种方案，比如 redis 里面的哈希表（字典的底层实现）扩展时，新的哈希表的大小为大于当前哈希表里面存放元素的 2 倍的最小的 2 的 n 次幂。</p>
+<p>Rehash 过程也很有讲究，这个过程不应该影响当前系统的运行，所以比较推崇的一种方法是渐进式 rehash。渐进式 rehash 的主要思想是在 rehash 阶段对于新的写请求，并不会写入老的哈希表里面，而是直接写入到新的哈希表里；对于读请求，优先读取新的哈希表，如果不存在，则去读老的的哈希表同时将这条数据迁移到新的哈希表里面来。</p>
+<p>Rehash 有一个问题需要讨论一下：如何鉴定 rehash 阶段的开始与结束？开始很简单，每次写操作或者定期检测一下负载因子，当满足条件则开始 rehash。那么如何鉴定结束呢？一种比较常规的方法是定期检测，但是这涉及到很多问题，比如如何界定检测的时间粒度。另一种是记录下迁移过程。还是以 Redis 为例来说明，Redis 使用的是 1.2 介绍的哈希表元素作为链表头不存储元素的方式，这样数据迁移的时候只需要从原链表将节点删除，然后插入到新的哈希表对应的位置就好了。同时哈希表结构有一个字段记录了老的哈希表残留的数据，这样我们只需要检测这个变量（代价很小）就知道 rehash 有没有完成了。rehash 过程如下图所示（来自 《Redis 设计与实现》）</p>
+<p><img src="http://redisbook.com/_images/graphviz-4c43eaf38cbca10d8d368a5144db6f3c69ab3d84.png" alt=""></p>
+<p><img src="http://redisbook.com/_images/graphviz-b91705b0d7a6c7fd5e37332a930534e0e136ae73.png" alt=""></p>
+<p>迁移索引 1 和 2 上的过程图略去。</p>
+<p><img src="http://redisbook.com/_images/graphviz-3b31e4e08cc3e212f986039eb08ae77224cdeec9.png" alt=""></p>
+<p><img src="http://redisbook.com/_images/graphviz-86f810ac65c4e6ee58b17105dfeaa06973d8dd16.png" alt=""></p>
+<h2 id="2-Bloom-Filter"><a href="#2-Bloom-Filter" class="headerlink" title="2. Bloom Filter"></a>2. Bloom Filter</h2><p>哈希表的问题在于空间利用率不够高。对于某些我们需要排重场景（存储的只有一个 key，不是&lt;key,value&gt;），比如写爬虫的时候我们需要做网址排重，这个时候使用 Bloom Filter（中文又称作布隆过滤器） 就比较高效。</p>
+<p>Bloom filter 的主要思想是使用位图+多个哈希函数。省空间的常用方法就是使用位图；单个哈希函数容易导致冲突，所以采用多个哈希函数。具体方法是预先分配一个大数组用作位图，对于每个 key 的写入，使用多个哈希函数映射到位图上的不同位置。对于 key 的查找，位图上的所有映射位置都为 1 时才表示 key 存在。用伪代码描述如下。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> bitmap</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">insert</span><span class="params">(key)</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> h := <span class="keyword">range</span> hashs &#123;</span><br><span class="line">        bitmap.setone(h(key))</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">lookup</span><span class="params">(key)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> h := <span class="keyword">range</span> hashs &#123;</span><br><span class="line">        <span class="keyword">if</span> bitmap.get(h(key)) != <span class="number">1</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下面看一个具体的例子，如下图。插入 x, y, z 分别将多个 hash 函数计算出来的位置 bit 置为 1。这时候集合包含了三个元素 {x, y, z}，此时要查找 w，通过 hash 函数计算出来的位置如下图所示，由于有一个 bit 不是 1，所以可以确定 w 不再集合里面。</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/a/ac/Bloom_filter.svg" alt=""></p>
+<p>上面只说到了插入和查找，那么删除呢？bloom filter 是不支持删除的。除此之后 bloom filter 对于不存在的 key  的查找是存在误判率的，但是这个概率对于大部分使用场景来说都是可接受的。关于误判率的具体推算可以参考其他资料，比如 wikipedia，这里就不细说了。</p>
+<p>这里是我实现的一个简单的 bloom filter：<a href="https://github.com/legendtkl/bloomfilter" target="_blank" rel="noopener">https://github.com/legendtkl/bloomfilter</a></p>
+<h2 id="3-Cuckoo-Filter"><a href="#3-Cuckoo-Filter" class="headerlink" title="3. Cuckoo Filter"></a>3. Cuckoo Filter</h2><p>Bloom Filter 的最大缺点在于不支持删除操作。如果要实现删除操作的话则需要进行计数，这样就不满足空间效率高这一条初衷了。一种替代方案是使用 Cuckoo Filter，当然前提是也是可以容忍一定的误判率的。</p>
+<h4 id="3-1-简介"><a href="#3-1-简介" class="headerlink" title="3.1 简介"></a>3.1 简介</h4><p>Cuckoo 是布谷鸟的意思，也就是我们常说的杜鹃。“鸠占鹊巢”里面的“鸠”的就是类似杜鹃这种鸟类。而 Cuckoo Hash 的就是采自“鸠占鹊巢”的意思。和普通的哈希表不同，在 Cuckoo Hash 表中，每个元素在 bucket list 中有两个位置可以存放。如果两个位置都被其他元素占了，则随机选择一个位置将其踢走。被踢走的元素被移动到它的备用位置，如果也被其他元素占了则也将其踢走，如此反复。下图是 Cuckoo Hash 的示例。</p>
+<p><img src="/img/uploads/2017/cuckoo_hash.png" alt=""></p>
+<p>如上图所示，(a) 表示插入元素 x 之前已经存在的元素 a, b, c。通过计算 x 的两个可用位置分别被 a, b 占用了，随机选择一个位置，也就是元素 a 存放的位置。然后元素 a 被迁移到它的备用位置，也就是元素 c 现在的位置。类似的 c 再做迁移。(c) 表示 Cuckoo Hash 的一种实现，每个 bucket 有四个 slot。对于 (a) 的情形，则直接把 x 插入到元素 a 或 b 所在的 bucket 的空的 slot 里面即可。</p>
+<p>Cuckoo Filter 是 Cuckoo Hash 的一种更节省空间的变体，它在 bucket 中存放的不是元素本书，而是 fingerprint(x) 值，也是类似于一种哈希值。</p>
+<h4 id="3-2-插入-x"><a href="#3-2-插入-x" class="headerlink" title="3.2 插入 x"></a>3.2 插入 x</h4><p>假设对于 x 的两个可用位置为 i1, i2。当出现 x 需要迁移的时候，我们怎么得到它的另一个位置呢？因为 bucket 里面存放的是 f = fingerprint 值，所以 i1，i2 不能简单的通过两个哈希函数计算得到。这里使用异或运算达到 i1，i2 可以互相转化的目的。具体算法如下。</p>
+<p>另外在我们为元素再分配地址（下面简称  reallocate）的时候，如果一直找不到空闲的位置（比如 x, y 的两个可用位置 i1, i2 完全相同），或者可以找到但是需要的时间出于性能方面的考虑不能忍受，这个时候就需要我们做一个限制，比如设置一个最大的 reallocate 的次数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">f = fingerprint(x);</span><br><span class="line">i1 = hash(x)</span><br><span class="line">i2 = i1 xor hash(f)</span><br><span class="line">if bucket[i1] or bucket[i2] has an empty entry then</span><br><span class="line">    add f to that bucket;</span><br><span class="line">    return Done</span><br><span class="line">// relocate existing items</span><br><span class="line">i = randomly pick i1 or i2</span><br><span class="line">for n = 0; n &lt; MaxNumKicks; n++ do</span><br><span class="line">    randomly select an entry e from bucket[i]</span><br><span class="line">    swap f and the fingerprint stored in entry e;</span><br><span class="line">    i = i xor hash(f)</span><br><span class="line">    if bucket[i] has an empty entry then</span><br><span class="line">        add f to bucket[i]</span><br><span class="line">        return Done</span><br><span class="line">return Failure</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-3-查找-x"><a href="#3-3-查找-x" class="headerlink" title="3.3 查找 x"></a>3.3 查找 x</h4><p>查找很简单，但是需要注意的是存在误判的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">f = fingerprint(x)</span><br><span class="line">i1 = hash(x)</span><br><span class="line">i2 = i1 xor hash(f)</span><br><span class="line">if bucket[i1] or bucket[i2] has f then</span><br><span class="line">    return True</span><br><span class="line">return False</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-4-删除"><a href="#3-4-删除" class="headerlink" title="3.4 删除"></a>3.4 删除</h4><p>删除也是删除的元素 fingerprint 值，存在误删的情况。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">f = fingerprint(x)</span><br><span class="line">i1 = hash(x)</span><br><span class="line">i2 = i1 xor hash(f)</span><br><span class="line">if bucket[i1] or bucket[i2] has f then</span><br><span class="line">    remove a copy of f from this bucket</span><br><span class="line">    return True</span><br><span class="line">return False</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-5-关于-fingerprint"><a href="#3-5-关于-fingerprint" class="headerlink" title="3.5 关于 fingerprint"></a>3.5 关于 fingerprint</h4><p>前面说到 Cuckoo Filter 是存储了元素 x 的 fingerprint(x) 值从而达到节省空间的目标的。那么这里就有一个问题肯定会有多个元素计算得到的 fingerprint 值相同，其实问题不大，以为元素还有一个备用位置，两个备用位置都相同的概率就比较小了。那么如果我们插入相同的元素呢？在我们实现的时候每个 bucket 可以有多个 slot，那么我们最多则可以插入 2 * slot.size() 个相同的元素。</p>
+<p>关于 Cuckoo Filter 的性能冲突等的讨论可以查看附录里面的论文: cuckoo filter: practically better than bloom。关于 Cuckoo Filter 的实现可以看 Coolshell 上面的那篇文章 <a href="http://coolshell.cn/articles/17225.html" target="_blank" rel="noopener">Cuckoo Filter：设计与实现</a>。</p>
+<h2 id="4-总结"><a href="#4-总结" class="headerlink" title="4. 总结"></a>4. 总结</h2><p>哈希表由于其性能较好，在日常工作中经常使用到，各个语言也都实现了这种数据结构。关于哈希表其实还有很多可以讨论的，比如分布式哈希表（DHT），但是限于篇幅有限，这里就不再赘述了。</p>
+<h2 id="5-参考"><a href="#5-参考" class="headerlink" title="5. 参考"></a>5. 参考</h2><ol>
+<li><a href="https://en.wikipedia.org/wiki/Hash_table" target="_blank" rel="noopener">Hash Table – wikipedia</a></li>
+<li>《Redis 设计与实现》</li>
+<li><a href="https://en.wikipedia.org/wiki/Bloom_filter" target="_blank" rel="noopener">Bloom Filter – wikipedia</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Cuckoo_hashing" target="_blank" rel="noopener">cuckoo hash – wikipedia</a></li>
+<li><a href="https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf" target="_blank" rel="noopener">cuckoo filter: practically better than bloom</a></li>
+<li><a href="https://www.ietf.org/proceedings/65/slides/plenaryt-2.pdf" target="_blank" rel="noopener">Introduction to Distributed Hash Table</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/07/01/golang-interface-implement/" rel="next" title="Go Interface 源码剖析">
+                  <i class="fa fa-chevron-left"></i> Go Interface 源码剖析
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/07/30/understanding-golang-channel/" rel="prev" title="深入理解 Go Channel">
+                  深入理解 Go Channel <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-General-Hash-Table"><span class="nav-number">2.</span> <span class="nav-text">1. General Hash Table</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-实现"><span class="nav-number">2.0.1.</span> <span class="nav-text">1.1 实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-冲突处理"><span class="nav-number">2.0.2.</span> <span class="nav-text">1.2 冲突处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-Rehash"><span class="nav-number">2.0.3.</span> <span class="nav-text">1.3 Rehash</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Bloom-Filter"><span class="nav-number">3.</span> <span class="nav-text">2. Bloom Filter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Cuckoo-Filter"><span class="nav-number">4.</span> <span class="nav-text">3. Cuckoo Filter</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-简介"><span class="nav-number">4.0.1.</span> <span class="nav-text">3.1 简介</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-插入-x"><span class="nav-number">4.0.2.</span> <span class="nav-text">3.2 插入 x</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-查找-x"><span class="nav-number">4.0.3.</span> <span class="nav-text">3.3 查找 x</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-4-删除"><span class="nav-number">4.0.4.</span> <span class="nav-text">3.4 删除</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-5-关于-fingerprint"><span class="nav-number">4.0.5.</span> <span class="nav-text">3.5 关于 fingerprint</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-总结"><span class="nav-number">5.</span> <span class="nav-text">4. 总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-参考"><span class="nav-number">6.</span> <span class="nav-text">5. 参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

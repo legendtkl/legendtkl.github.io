@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="引言fasthttp是一个非常优秀的web server框架，号称比官方的net&#x2F;http快10倍以上。fasthttp用了很多黑魔法。俗话说，源码面前，了无秘密，我们今天通过源码来看一看她的goroutine pool的实现。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="fasthttp的goroutine pool实现探究">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;09&#x2F;09&#x2F;fasthttp-inside&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="引言fasthttp是一个非常优秀的web server框架，号称比官方的net&#x2F;http快10倍以上。fasthttp用了很多黑魔法。俗话说，源码面前，了无秘密，我们今天通过源码来看一看她的goroutine pool的实现。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.931Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2016/09/09/fasthttp-inside/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>fasthttp的goroutine pool实现探究 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/09/09/fasthttp-inside/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          fasthttp的goroutine pool实现探究
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-09-09 20:43:23" itemprop="dateCreated datePublished" datetime="2016-09-09T20:43:23+08:00">2016-09-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>fasthttp是一个非常优秀的web server框架，号称比官方的net/http快10倍以上。fasthttp用了很多黑魔法。俗话说，源码面前，了无秘密，我们今天通过源码来看一看她的goroutine pool的实现。</p>
+<a id="more"></a>
+<h2 id="热身"><a href="#热身" class="headerlink" title="热身"></a>热身</h2><p>fasthttp写server和原生的net/http写法上基本没有区别，这里就不举例子。直接找到入口函数，在根目录下的server.go文件中，我们从函数<code>ListenAndServe()</code>跟踪进去。从端口监听到处理请求的函数调用链如下。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ListenAndServe</span><span class="params">(addr <span class="keyword">string</span>, handler RequestHandler)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    s := &amp;Server&#123;</span><br><span class="line">        Handler: handler,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> s.ListenAndServe(addr)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ListenAndServe serves HTTP requests from the given TCP addr.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Server)</span> <span class="title">ListenAndServe</span><span class="params">(addr <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    ln, err := net.Listen(<span class="string">"tcp"</span>, addr)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> err</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> s.Serve(ln)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Serve blocks until the given listener returns permanent error.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Server)</span> <span class="title">Serve</span><span class="params">(ln net.Listener)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    wp := &amp;workerPool&#123;</span><br><span class="line">        WorkerFunc:      s.serveConn,</span><br><span class="line">        MaxWorkersCount: maxWorkersCount,</span><br><span class="line">        LogAllErrors:    s.LogAllErrors,</span><br><span class="line">        Logger:          s.logger(),</span><br><span class="line">    &#125;</span><br><span class="line">    wp.Start()  <span class="comment">//启动worker pool</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> c, err = acceptConn(s, ln, &amp;lastPerIPErrorTime); err != <span class="literal">nil</span> &#123;</span><br><span class="line">            wp.Stop()</span><br><span class="line">            <span class="keyword">if</span> err == io.EOF &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> err</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> !wp.Serve(c) &#123;</span><br><span class="line">            s.writeFastError(c, StatusServiceUnavailable,</span><br><span class="line">                <span class="string">"The connection cannot be served because Server.Concurrency limit exceeded"</span>)</span><br><span class="line">            c.Close()</span><br><span class="line">            <span class="keyword">if</span> time.Since(lastOverflowErrorTime) &gt; time.Minute &#123;</span><br><span class="line">                s.logger().Printf(<span class="string">"The incoming connection cannot be served, because %d concurrent connections are served. "</span>+</span><br><span class="line">                    <span class="string">"Try increasing Server.Concurrency"</span>, maxWorkersCount)</span><br><span class="line">                lastOverflowErrorTime = time.Now()</span><br><span class="line">            &#125;</span><br><span class="line">            time.Sleep(<span class="number">100</span> * time.Millisecond)</span><br><span class="line">        &#125;</span><br><span class="line">        c = <span class="literal">nil</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面代码中workerPool就是一个线程池。相关代码在server.go文件的同级目录下的workerpool.go文件中。我们从上面代码涉及到的往下看。首先是<code>workerPool struct</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> workerPool <span class="keyword">struct</span> &#123;</span><br><span class="line">    WorkerFunc <span class="function"><span class="keyword">func</span><span class="params">(c net.Conn)</span> <span class="title">error</span></span></span><br><span class="line">    MaxWorkersCount <span class="keyword">int</span></span><br><span class="line">    LogAllErrors <span class="keyword">bool</span></span><br><span class="line">    MaxIdleWorkerDuration time.Duration</span><br><span class="line">    Logger Logger</span><br><span class="line">    lock         sync.Mutex</span><br><span class="line">    workersCount <span class="keyword">int</span></span><br><span class="line">    mustStop     <span class="keyword">bool</span></span><br><span class="line">    ready []*workerChan</span><br><span class="line"></span><br><span class="line">    stopCh <span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line">    workerChanPool sync.Pool</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> workerChan <span class="keyword">struct</span> &#123;</span><br><span class="line">    lastUseTime time.Time</span><br><span class="line">    ch          <span class="keyword">chan</span> net.Conn</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>workerPool sturct</code>中的<code>WorkerFunc</code>是conn的处理函数，类似<code>net/http</code>包中的<code>ServeHTTP</code>。因为所有conn的处理都是一样的，所以<code>WorkerFunc</code>不需要和传入的每个conn绑定，整个worker pool共用一个。<code>workerChanPool</code>是sync.Pool对象池。MaxIdleWorkerDuration是worker空闲的最长时间，超过就将worker关闭。workersCount是worker的数量。ready是可用的worker列表，也就是说所有goroutine worker是存放在一个数组里面的。这个数组模拟一个类似栈的FILO队列，也就是说我们每次使用的worker都从队列的尾部开始取。<code>wp.Start()</code>启动worker pool。<code>wp.Stop()</code>是出错处理。<code>wp.Serve(c)</code>是对conn进行处理的函数。我们先看一下<code>wp.Start()</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(wp *workerPool)</span> <span class="title">Start</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> wp.stopCh != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(<span class="string">"BUG: workerPool already started"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    wp.stopCh = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line">    stopCh := wp.stopCh</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">var</span> scratch []*workerChan</span><br><span class="line">        <span class="keyword">for</span> &#123;</span><br><span class="line">            wp.clean(&amp;scratch)</span><br><span class="line">            <span class="keyword">select</span> &#123;</span><br><span class="line">            <span class="keyword">case</span> &lt;-stopCh:</span><br><span class="line">                <span class="keyword">return</span></span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                time.Sleep(wp.getMaxIdleWorkerDuration())</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(wp *workerPool)</span> <span class="title">Stop</span><span class="params">()</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="built_in">close</span>(wp.stopCh)</span><br><span class="line">    wp.stopCh = <span class="literal">nil</span></span><br><span class="line"></span><br><span class="line">    wp.lock.Lock()</span><br><span class="line">    ready := wp.ready</span><br><span class="line">    <span class="keyword">for</span> i, ch := <span class="keyword">range</span> ready &#123;</span><br><span class="line">        ch.ch &lt;- <span class="literal">nil</span></span><br><span class="line">        ready[i] = <span class="literal">nil</span></span><br><span class="line">    &#125;</span><br><span class="line">    wp.ready = ready[:<span class="number">0</span>]</span><br><span class="line">    wp.mustStop = <span class="literal">true</span></span><br><span class="line">    wp.lock.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>简单来说，<code>wp.Start()</code>启动了一个goroutine，负责定期清理worker pool中过期worker(过期=未使用时间超过MaxIdleWorkerDuration)。清理操作都在<code>wp.clean()</code>函数中完成，这里就不继续往下看了。<code>stopCh</code>是一个标示worker pool停止的chan。上面的for-select-stop是很常用的方式。<code>wp.Stop()</code>负责停止worker pool的处理工作，包括关闭stopCh，清理闲置的worker列表（这时候还有一部分worker在处理conn，待其处理完成通过判断wp.mustStop来停止）。这里需要注意的一点是做资源清理的时候，对于channel需要置nil。下面看看最重要的函数<code>wp.Serve()</code>。</p>
+<h2 id="核心"><a href="#核心" class="headerlink" title="核心"></a>核心</h2><p>下面是<code>wp.Serve()</code>函数的调用链。<code>wp.Serve()</code>负责处理来自client的每一条连接。其中比较关键的函数是<code>wp.getCh()</code>，她从worker pool的可用空闲worker列表尾部取出一个可用的worker。这里有几个逻辑需要注意的是：1.如果没有可用的worker（比如处理第一个conn是，worker pool还是空的）则新建；2.如果worker达到上限，则直接不处理（这个地方感觉略粗糙啊！）。<code>go func()</code>那几行代码就是新建worker，我们放到下面说。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(wp *workerPool)</span> <span class="title">Serve</span><span class="params">(c net.Conn)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">    ch := wp.getCh()</span><br><span class="line">    <span class="keyword">if</span> ch == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    ch.ch &lt;- c</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(wp *workerPool)</span> <span class="title">getCh</span><span class="params">()</span> *<span class="title">workerChan</span></span> &#123;</span><br><span class="line">    <span class="keyword">var</span> ch *workerChan</span><br><span class="line">    createWorker := <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">    wp.lock.Lock()</span><br><span class="line">    ready := wp.ready</span><br><span class="line">    n := <span class="built_in">len</span>(ready) - <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> n &lt; <span class="number">0</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> wp.workersCount &lt; wp.MaxWorkersCount &#123;</span><br><span class="line">            createWorker = <span class="literal">true</span></span><br><span class="line">            wp.workersCount++</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ch = ready[n]</span><br><span class="line">        ready[n] = <span class="literal">nil</span></span><br><span class="line">        wp.ready = ready[:n]</span><br><span class="line">    &#125;</span><br><span class="line">    wp.lock.Unlock()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ch == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> !createWorker &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">        &#125;</span><br><span class="line">        vch := wp.workerChanPool.Get()</span><br><span class="line">        <span class="keyword">if</span> vch == <span class="literal">nil</span> &#123;</span><br><span class="line">            vch = &amp;workerChan&#123;</span><br><span class="line">                ch: <span class="built_in">make</span>(<span class="keyword">chan</span> net.Conn, workerChanCap),</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        ch = vch.(*workerChan)</span><br><span class="line">        <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">            wp.workerFunc(ch)</span><br><span class="line">            wp.workerChanPool.Put(vch)</span><br><span class="line">        &#125;()</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ch</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>workerFunc()</code>函数定义如下(去掉了很多不影响主线的逻辑)，结合上一篇《如何裸写一个goroutine pool》，还是熟悉的配方，熟悉的味道。这里要看的<code>wp.release()</code>是干啥的。因为前面的<code>wp.Serve()</code>函数只处理一个conn，所以for循环执行一次我们就可以把worker放到空闲队列中去等待下一次conn过来，从代码中可以看出来放回果然是放到空闲队列的末尾（可算和上面呼应上了）。还有上面提到的<code>mustStop</code>，如果worker pool停止了，<code>mustStop</code>就为true，那么<code>workerFunc</code>就要跳出循环，也就是goroutine结束了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">func (wp *workerPool) workerFunc(ch *workerChan) &#123;</span><br><span class="line">    var c net.Conn</span><br><span class="line"></span><br><span class="line">    var err error</span><br><span class="line">    for c = range ch.ch &#123;</span><br><span class="line">        if c == nil &#123;</span><br><span class="line">            break</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ...</span><br><span class="line">        c = nil</span><br><span class="line"></span><br><span class="line">        if !wp.release(ch) &#123;</span><br><span class="line">            break</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    wp.lock.Lock()</span><br><span class="line">    wp.workersCount--</span><br><span class="line">    wp.lock.Unlock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func (wp *workerPool) release(ch *workerChan) bool &#123;</span><br><span class="line">    ch.lastUseTime = time.Now()</span><br><span class="line">    wp.lock.Lock()</span><br><span class="line">    if wp.mustStop &#123;</span><br><span class="line">        wp.lock.Unlock()</span><br><span class="line">        return false</span><br><span class="line">    &#125;</span><br><span class="line">    wp.ready = append(wp.ready, ch)</span><br><span class="line">    wp.lock.Unlock()</span><br><span class="line">    return true</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>除了fasthttp，我还看了github上其他开源且star数在100以上的goroutine pool的实现，基本核心原理都在我上一篇文章中说的那些。fasthttp的实现多了一层goroutine回收机制，不得不说确实挺巧妙。fasthttp性能这么好一定是有其原因的，源码之后再慢慢读。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/09/06/go-pool/" rel="next" title="如何裸写一个goroutine pool">
+                  <i class="fa fa-chevron-left"></i> 如何裸写一个goroutine pool
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/09/19/beanstalk-intro/" rel="prev" title="beanstalk初探">
+                  beanstalk初探 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#热身"><span class="nav-number">2.</span> <span class="nav-text">热身</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心"><span class="nav-number">3.</span> <span class="nav-text">核心</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

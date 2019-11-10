@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="0.引言在上一篇文章 《深入理解 Go Interface》中从设计和使用的角度介绍了 Golang 的 interface，作为补充，这篇文章将从源码级别来看看 interface 的具体实现。所有源码分析都是基于 Go 1.8.3。在开始之前，我们先看一个例子。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go Interface 源码剖析">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2017&#x2F;07&#x2F;01&#x2F;golang-interface-implement&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="0.引言在上一篇文章 《深入理解 Go Interface》中从设计和使用的角度介绍了 Golang 的 interface，作为补充，这篇文章将从源码级别来看看 interface 的具体实现。所有源码分析都是基于 Go 1.8.3。在开始之前，我们先看一个例子。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:26.003Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2017/07/01/golang-interface-implement/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Go Interface 源码剖析 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/01/golang-interface-implement/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Go Interface 源码剖析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2017-07-01 18:12:38" itemprop="dateCreated datePublished" datetime="2017-07-01T18:12:38+08:00">2017-07-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:26" itemprop="dateModified" datetime="2019-11-08T11:09:26+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/golang/" itemprop="url" rel="index">
+                    <span itemprop="name">golang</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0.引言"></a>0.引言</h2><p>在上一篇文章 <a href="http://legendtkl.com/2017/06/12/understanding-golang-interface/" target="_blank" rel="noopener">《深入理解 Go Interface》</a>中从设计和使用的角度介绍了 Golang 的 interface，作为补充，这篇文章将从源码级别来看看 interface 的具体实现。所有源码分析都是基于 Go 1.8.3。在开始之前，我们先看一个例子。</p>
+<a id="more"></a>
+
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Foo</span><span class="params">(x <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> x == <span class="literal">nil</span> &#123;</span><br><span class="line">        fmt.Println(<span class="string">"empty interface"</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    fmt.Println(<span class="string">"non-empty interface"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">var</span> x *<span class="keyword">int</span> = <span class="literal">nil</span></span><br><span class="line">    Foo(x)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的例子的输出结果如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ go run test_interface.go</span><br><span class="line">non-empty interface</span><br></pre></td></tr></table></figure>
+
+<p>如果你对于上面的输出结果有疑惑，那么不妨带着疑问来看这篇文章。</p>
+<h2 id="1-interface-底层结构"><a href="#1-interface-底层结构" class="headerlink" title="1. interface 底层结构"></a>1. interface 底层结构</h2><p>根据 interface 是否包含有 method，底层实现上用两种 struct 来表示：iface 和 eface。<code>eface</code>表示不含 method 的 interface 结构，或者叫 empty interface。对于 Golang 中的大部分数据类型都可以抽象出来 <code>_type</code> 结构，同时针对不同的类型还会有一些其他信息。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> eface <span class="keyword">struct</span> &#123;</span><br><span class="line">    _type *_type</span><br><span class="line">    data  unsafe.Pointer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> _type <span class="keyword">struct</span> &#123;</span><br><span class="line">    size       <span class="keyword">uintptr</span> <span class="comment">// type size</span></span><br><span class="line">    ptrdata    <span class="keyword">uintptr</span> <span class="comment">// size of memory prefix holding all pointers</span></span><br><span class="line">    hash       <span class="keyword">uint32</span>  <span class="comment">// hash of type; avoids computation in hash tables</span></span><br><span class="line">    tflag      tflag   <span class="comment">// extra type information flags</span></span><br><span class="line">    align      <span class="keyword">uint8</span>   <span class="comment">// alignment of variable with this type</span></span><br><span class="line">    fieldalign <span class="keyword">uint8</span>   <span class="comment">// alignment of struct field with this type</span></span><br><span class="line">    kind       <span class="keyword">uint8</span>   <span class="comment">// enumeration for C</span></span><br><span class="line">    alg        *typeAlg  <span class="comment">// algorithm table</span></span><br><span class="line">    gcdata    *<span class="keyword">byte</span>    <span class="comment">// garbage collection data</span></span><br><span class="line">    str       nameOff  <span class="comment">// string form</span></span><br><span class="line">    ptrToThis typeOff  <span class="comment">// type for pointer to this type, may be zero</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>iface</code> 表示 non-empty interface 的底层实现。相比于 empty interface，non-empty 要包含一些 method。method 的具体实现存放在 itab.fun 变量里。如果 interface 包含多个 method，这里只有一个 fun 变量怎么存呢？这个下面再细说。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> iface <span class="keyword">struct</span> &#123;</span><br><span class="line">    tab  *itab</span><br><span class="line">    data unsafe.Pointer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// layout of Itab known to compilers</span></span><br><span class="line"><span class="comment">// allocated in non-garbage-collected memory</span></span><br><span class="line"><span class="comment">// Needs to be in sync with</span></span><br><span class="line"><span class="comment">// ../cmd/compile/internal/gc/reflect.go:/^func.dumptypestructs.</span></span><br><span class="line"><span class="keyword">type</span> itab <span class="keyword">struct</span> &#123;</span><br><span class="line">    inter  *interfacetype</span><br><span class="line">    _type  *_type</span><br><span class="line">    link   *itab</span><br><span class="line">    bad    <span class="keyword">int32</span></span><br><span class="line">    inhash <span class="keyword">int32</span>      <span class="comment">// has this itab been added to hash?</span></span><br><span class="line">    fun    [<span class="number">1</span>]<span class="keyword">uintptr</span> <span class="comment">// variable sized</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们使用实际程序来看一下。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> MyInterface <span class="keyword">interface</span> &#123;</span><br><span class="line">    Print()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> MyStruct <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ms MyStruct)</span> <span class="title">Print</span><span class="params">()</span></span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    x := <span class="number">1</span></span><br><span class="line">    <span class="keyword">var</span> y <span class="keyword">interface</span>&#123;&#125; = x</span><br><span class="line">    <span class="keyword">var</span> s MyStruct</span><br><span class="line">    <span class="keyword">var</span> t MyInterface = s</span><br><span class="line">    fmt.Println(y, z)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>查看汇编代码。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ go build -gcflags <span class="string">'-l'</span> -o interface11 interface11.go</span><br><span class="line">$ go tool objdump -s <span class="string">"main\.main"</span> interface11</span><br><span class="line">TEXT main.main(SB) /Users/kltao/code/go/examples/interface11.go</span><br><span class="line">    interface11.go:15   0x10870f0   65488b0c25a0080000  GS MOVQ GS:0x8a0, CX</span><br><span class="line">    interface11.go:15   0x10870f9   483b6110        CMPQ 0x10(CX), SP</span><br><span class="line">    interface11.go:15   0x10870fd   0f86de000000        JBE 0x10871e1</span><br><span class="line">    interface11.go:15   0x1087103   4883ec70        SUBQ <span class="variable">$0x70</span>, SP</span><br><span class="line">    interface11.go:15   0x1087107   48896c2468      MOVQ BP, 0x68(SP)</span><br><span class="line">    interface11.go:15   0x108710c   488d6c2468      LEAQ 0x68(SP), BP</span><br><span class="line">    interface11.go:17   0x1087111   48c744243001000000  MOVQ <span class="variable">$0x1</span>, 0x30(SP)</span><br><span class="line">    interface11.go:17   0x108711a   488d057fde0000      LEAQ 0xde7f(IP), AX</span><br><span class="line">    interface11.go:17   0x1087121   48890424        MOVQ AX, 0(SP)</span><br><span class="line">    interface11.go:17   0x1087125   488d442430      LEAQ 0x30(SP), AX</span><br><span class="line">    interface11.go:17   0x108712a   4889442408      MOVQ AX, 0x8(SP)</span><br><span class="line">    interface11.go:17   0x108712f   e87c45f8ff      CALL runtime.convT2E(SB)</span><br><span class="line">    interface11.go:17   0x1087134   488b442410      MOVQ 0x10(SP), AX</span><br><span class="line">    interface11.go:17   0x1087139   4889442438      MOVQ AX, 0x38(SP)</span><br><span class="line">    interface11.go:17   0x108713e   488b4c2418      MOVQ 0x18(SP), CX</span><br><span class="line">    interface11.go:17   0x1087143   48894c2440      MOVQ CX, 0x40(SP)</span><br><span class="line">    interface11.go:19   0x1087148   488d15b1000800      LEAQ 0x800b1(IP), DX</span><br><span class="line">    interface11.go:19   0x108714f   48891424        MOVQ DX, 0(SP)</span><br><span class="line">    interface11.go:19   0x1087153   488d542430      LEAQ 0x30(SP), DX</span><br><span class="line">    interface11.go:19   0x1087158   4889542408      MOVQ DX, 0x8(SP)</span><br><span class="line">    interface11.go:19   0x108715d   e8fe45f8ff      CALL runtime.convT2I(SB)</span><br></pre></td></tr></table></figure>
+
+<p>代码 17 行 <code>var y interface{} = x</code> 调用了函数 <code>runtime.convT2E</code> ，将 int 类型的 x 转换成 empty interface。代码 19 行 <code>var t MyInterface = s</code> 将 MyStruct 类型转换成 non-empty interface: MyInterface。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">convT2E</span><span class="params">(t *_type, elem unsafe.Pointer)</span> <span class="params">(e eface)</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">  </span><br><span class="line">    x := newobject(t)</span><br><span class="line">    typedmemmove(t, x, elem)</span><br><span class="line">    e._type = t</span><br><span class="line">    e.data = x</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">convT2I</span><span class="params">(tab *itab, elem unsafe.Pointer)</span> <span class="params">(i iface)</span></span> &#123;</span><br><span class="line">    t := tab._type</span><br><span class="line">    </span><br><span class="line">    ...</span><br><span class="line">  </span><br><span class="line">    x := newobject(t)</span><br><span class="line">    typedmemmove(t, x, elem)</span><br><span class="line">    i.tab = tab</span><br><span class="line">    i.data = x</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看上面的函数原型，可以看出中间过程编译器将根据我们的转换目标类型的 empty interface 还是 non-empty interface，来对原数据类型进行转换（转换成 &lt;*_type, unsafe.Pointer&gt; 或者 &lt;*itab, unsafe.Pointer&gt;）。这里对于 struct 满不满足 interface 的类型要求（也就是 struct 是否实现了 interface 的所有 method），是由编译器来检测的。</p>
+<h2 id="2-itab"><a href="#2-itab" class="headerlink" title="2. itab"></a>2. itab</h2><p>iface 结构中最重要的是 itab 结构。itab 可以理解为 pair&lt;interface type, concrete type&gt; 。当然 itab 里面还包含一些其他信息，比如 interface 里面包含的 method 的具体实现。下面细说。itab 的结构如下。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> itab <span class="keyword">struct</span> &#123;</span><br><span class="line">    inter  *interfacetype</span><br><span class="line">    _type  *_type</span><br><span class="line">    link   *itab</span><br><span class="line">    bad    <span class="keyword">int32</span></span><br><span class="line">    inhash <span class="keyword">int32</span>      <span class="comment">// has this itab been added to hash?</span></span><br><span class="line">    fun    [<span class="number">1</span>]<span class="keyword">uintptr</span> <span class="comment">// variable sized</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中 interfacetype 包含了一些关于 interface 本身的信息，比如 package path，包含的 method。上面提到的 iface 和 eface 是数据类型（built-in 和 type-define）转换成 interface 之后的实体的 struct 结构，而这里的 interfacetype 是我们定义 interface 时候的一种抽象表示。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> interfacetype <span class="keyword">struct</span> &#123;</span><br><span class="line">    typ     _type</span><br><span class="line">    pkgpath name</span><br><span class="line">    mhdr    []imethod</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> imethod <span class="keyword">struct</span> &#123;   <span class="comment">//这里的 method 只是一种函数声明的抽象，比如  func Print() error</span></span><br><span class="line">    name nameOff</span><br><span class="line">    ityp typeOff</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>_type 表示 concrete type。fun 表示的 interface 里面的 method 的具体实现。比如 interface type 包含了 method A, B，则通过 fun 就可以找到这两个 method 的具体实现。这里有个问题 fun 是长度为 1 的 uintptr 数组，那么怎么表示多个 method 呢？看一下测试程序。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> MyInterface <span class="keyword">interface</span> &#123;</span><br><span class="line">    Print()</span><br><span class="line">    Hello()</span><br><span class="line">    World()</span><br><span class="line">    AWK()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Foo</span><span class="params">(me MyInterface)</span></span> &#123;</span><br><span class="line">    me.Print()</span><br><span class="line">    me.Hello()</span><br><span class="line">    me.World()</span><br><span class="line">    me.AWK()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> MyStruct <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(me MyStruct)</span> <span class="title">Print</span><span class="params">()</span></span> &#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(me MyStruct)</span> <span class="title">Hello</span><span class="params">()</span></span> &#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(me MyStruct)</span> <span class="title">World</span><span class="params">()</span></span> &#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(me MyStruct)</span> <span class="title">AWK</span><span class="params">()</span></span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">var</span> me MyStruct</span><br><span class="line">    Foo(me)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看一下函数调用对应的汇编代码。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="keyword">go</span> build -gcflags <span class="string">'-l'</span> -o interface8 interface8.<span class="keyword">go</span></span><br><span class="line">$ <span class="keyword">go</span> tool objdump -s <span class="string">"main\.Foo"</span> interface8</span><br><span class="line">TEXT main.Foo(SB) /Users/kltao/code/<span class="keyword">go</span>/examples/interface8.<span class="keyword">go</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c060</span>   <span class="number">65488</span>b0c25a0080000  GS MOVQ GS:<span class="number">0x8a0</span>, CX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c069</span>   <span class="number">483</span>b6110        CMPQ <span class="number">0x10</span>(CX), SP</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c06d</span>   <span class="number">7668</span>            JBE <span class="number">0x104c0d7</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c06f</span>   <span class="number">4883</span>ec10        SUBQ $<span class="number">0x10</span>, SP</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c073</span>   <span class="number">48896</span>c2408      MOVQ BP, <span class="number">0x8</span>(SP)</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c078</span>   <span class="number">488</span>d6c2408      LEAQ <span class="number">0x8</span>(SP), BP</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">11</span>    <span class="number">0x104c07d</span>   <span class="number">488</span>b442418      MOVQ <span class="number">0x18</span>(SP), AX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">11</span>    <span class="number">0x104c082</span>   <span class="number">488</span>b4830        MOVQ <span class="number">0x30</span>(AX), CX <span class="comment">//取得 Print 函数地址</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">11</span>    <span class="number">0x104c086</span>   <span class="number">488</span>b542420      MOVQ <span class="number">0x20</span>(SP), DX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">11</span>    <span class="number">0x104c08b</span>   <span class="number">48891424</span>        MOVQ DX, <span class="number">0</span>(SP)</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">11</span>    <span class="number">0x104c08f</span>   ffd1            CALL CX     <span class="comment">// 调用 Print()</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">12</span>    <span class="number">0x104c091</span>   <span class="number">488</span>b442418      MOVQ <span class="number">0x18</span>(SP), AX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">12</span>    <span class="number">0x104c096</span>   <span class="number">488</span>b4828        MOVQ <span class="number">0x28</span>(AX), CX <span class="comment">//取得 Hello 函数地址</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">12</span>    <span class="number">0x104c09a</span>   <span class="number">488</span>b542420      MOVQ <span class="number">0x20</span>(SP), DX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">12</span>    <span class="number">0x104c09f</span>   <span class="number">48891424</span>        MOVQ DX, <span class="number">0</span>(SP)</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">12</span>    <span class="number">0x104c0a3</span>   ffd1            CALL CX           <span class="comment">//调用 Hello()</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">13</span>    <span class="number">0x104c0a5</span>   <span class="number">488</span>b442418      MOVQ <span class="number">0x18</span>(SP), AX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">13</span>    <span class="number">0x104c0aa</span>   <span class="number">488</span>b4838        MOVQ <span class="number">0x38</span>(AX), CX <span class="comment">//取得 World 函数地址</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">13</span>    <span class="number">0x104c0ae</span>   <span class="number">488</span>b542420      MOVQ <span class="number">0x20</span>(SP), DX </span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">13</span>    <span class="number">0x104c0b3</span>   <span class="number">48891424</span>        MOVQ DX, <span class="number">0</span>(SP)</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">13</span>    <span class="number">0x104c0b7</span>   ffd1            CALL CX           <span class="comment">//调用 World()</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">14</span>    <span class="number">0x104c0b9</span>   <span class="number">488</span>b442418      MOVQ <span class="number">0x18</span>(SP), AX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">14</span>    <span class="number">0x104c0be</span>   <span class="number">488</span>b4020        MOVQ <span class="number">0x20</span>(AX), AX <span class="comment">//取得 AWK 函数地址</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">14</span>    <span class="number">0x104c0c2</span>   <span class="number">488</span>b4c2420      MOVQ <span class="number">0x20</span>(SP), CX</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">14</span>    <span class="number">0x104c0c7</span>   <span class="number">48890</span>c24        MOVQ CX, <span class="number">0</span>(SP)</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">14</span>    <span class="number">0x104c0cb</span>   ffd0            CALL AX           <span class="comment">//调用 AWK()</span></span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">15</span>    <span class="number">0x104c0cd</span>   <span class="number">488</span>b6c2408      MOVQ <span class="number">0x8</span>(SP), BP</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">15</span>    <span class="number">0x104c0d2</span>   <span class="number">4883</span>c410        ADDQ $<span class="number">0x10</span>, SP</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">15</span>    <span class="number">0x104c0d6</span>   c3          RET</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c0d7</span>   e8f48bffff      CALL runtime.morestack_noctxt(SB)</span><br><span class="line">    interface8.<span class="keyword">go</span>:<span class="number">10</span>    <span class="number">0x104c0dc</span>   eb82            JMP main.Foo(SB)</span><br></pre></td></tr></table></figure>
+
+<p>其中 0x18(SP) 对应的 itab 的值。fun 在 x86-64 机器上对应 itab 内的地址偏移为 8+8+8+4+4 = 32 = 0x20，也就是 0x20(AX) 对应的 fun 的值，此时存放的 AWK 函数地址。然后 0x28(AX) = &amp;Hello，0x30(AX) = &amp;Print，0x38(AX) = &amp;World。对的，每次函数是按字典序排序存放的。</p>
+<p>我们再来看一下函数地址究竟是怎么写入的？首先 Golang 中的 uintptr 一般用来存放指针的值，这里对应的就是函数指针的值（也就是函数的调用地址）。但是这里的 fun 是一个长度为 1 的 uintptr 数组。我们看一下 runtime  包的 additab 函数。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">additab</span><span class="params">(m *itab, locked, canfail <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    *(*unsafe.Pointer)(add(unsafe.Pointer(&amp;m.fun[<span class="number">0</span>]), <span class="keyword">uintptr</span>(k)*sys.PtrSize)) = ifn</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码的意思是在 fun[0] 的地址后面依次写入其他 method 对应的函数指针。熟悉 C++ 的同学可以类比 C++ 的虚函数表指针来看。</p>
+<p>剩下的还有 bad，link，inhash。其中 bad 是一个表征 itab 状态的变量。而这里的 link 是 *itab 类型，是不是表示 interface 的嵌套呢？并不是，interface 的嵌套也是把 method 平铺而已。link 要和 inhash 一起来说。在 runtime 包里面有一个 hash 表，通过 hash[hashitab(interface_type, concrete_type)] 可以取得 itab，这是出于性能方面的考虑。主要代码如下，这里就不再赘述了。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> (</span><br><span class="line">    hashSize = <span class="number">1009</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> (</span><br><span class="line">    ifaceLock mutex <span class="comment">// lock for accessing hash</span></span><br><span class="line">    hash      [hashSize]*itab</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">itabhash</span><span class="params">(inter *interfacetype, typ *_type)</span> <span class="title">uint32</span></span> &#123;</span><br><span class="line">    <span class="comment">// compiler has provided some good hash codes for us.</span></span><br><span class="line">    h := inter.typ.hash</span><br><span class="line">    h += <span class="number">17</span> * typ.hash</span><br><span class="line">    <span class="comment">// TODO(rsc): h += 23 * x.mhash ?</span></span><br><span class="line">    <span class="keyword">return</span> h % hashSize</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">additab</span><span class="params">(...)</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    h := itabhash(inter, typ)</span><br><span class="line">    m.link = hash[h]</span><br><span class="line">    m.inhash = <span class="number">1</span></span><br><span class="line">    atomicstorep(unsafe.Pointer(&amp;hash[h]), unsafe.Pointer(m))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-Type-Assertion"><a href="#3-Type-Assertion" class="headerlink" title="3. Type Assertion"></a>3. Type Assertion</h2><p>我们知道使用 interface type assertion (中文一般叫断言) 的时候需要注意，不然很容易引入 panic。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">do</span><span class="params">(v <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">    n := v.(<span class="keyword">int</span>)    <span class="comment">// might panic</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">do</span><span class="params">(v <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">    n, ok := v.(<span class="keyword">int</span>)</span><br><span class="line">    <span class="keyword">if</span> !ok &#123;</span><br><span class="line">        <span class="comment">// 断言失败处理</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个过程体现在下面的几个函数上。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The assertXXX functions may fail (either panicking or returning false,</span></span><br><span class="line"><span class="comment">// depending on whether they are 1-result or 2-result).</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">assertI2I</span><span class="params">(inter *interfacetype, i iface)</span> <span class="params">(r iface)</span></span> &#123;</span><br><span class="line">    tab := i.tab</span><br><span class="line">    <span class="keyword">if</span> tab == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="comment">// explicit conversions require non-nil interface value.</span></span><br><span class="line">        <span class="built_in">panic</span>(&amp;TypeAssertionError&#123;<span class="string">""</span>, <span class="string">""</span>, inter.typ.<span class="keyword">string</span>(), <span class="string">""</span>&#125;)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> tab.inter == inter &#123;</span><br><span class="line">        r.tab = tab</span><br><span class="line">        r.data = i.data</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    r.tab = getitab(inter, tab._type, <span class="literal">false</span>)</span><br><span class="line">    r.data = i.data</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">assertI2I2</span><span class="params">(inter *interfacetype, i iface)</span> <span class="params">(r iface, b <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">    tab := i.tab</span><br><span class="line">    <span class="keyword">if</span> tab == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> tab.inter != inter &#123;</span><br><span class="line">        tab = getitab(inter, tab._type, <span class="literal">true</span>)</span><br><span class="line">        <span class="keyword">if</span> tab == <span class="literal">nil</span> &#123;</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    r.tab = tab</span><br><span class="line">    r.data = i.data</span><br><span class="line">    b = <span class="literal">true</span></span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 类似</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">assertE2I</span><span class="params">(inter *interfacetype, e eface)</span> <span class="params">(r iface)</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">assertE2I2</span><span class="params">(inter *interfacetype, e eface)</span> <span class="params">(r iface, b <span class="keyword">bool</span>)</span></span></span><br></pre></td></tr></table></figure>
+
+<h2 id="4-总结"><a href="#4-总结" class="headerlink" title="4. 总结"></a>4. 总结</h2><p>从某种意义上来说，Golang 的 interface 也是一种多态的体现。对比其他支持多态特性的语言，实现还是略有差异，很难说谁好谁坏。</p>
+<h2 id="5-参考"><a href="#5-参考" class="headerlink" title="5. 参考"></a>5. 参考</h2><ol>
+<li><a href="https://research.swtch.com/interfaces" target="_blank" rel="noopener">Go Data Structure: Interfaces</a> (注：09 年的文章)</li>
+<li><a href="https://golang.org/doc/asm" target="_blank" rel="noopener">A Quick Guide to Go’s Assembler</a></li>
+<li><a href="https://github.com/golang/go/issues/20505" target="_blank" rel="noopener">runtime: need a better itab table #20505</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/06/12/understanding-golang-interface/" rel="next" title="深入理解 Go Interface">
+                  <i class="fa fa-chevron-left"></i> 深入理解 Go Interface
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2017/07/23/about-hash-table/" rel="prev" title="聊一聊哈希表">
+                  聊一聊哈希表 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0.引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-interface-底层结构"><span class="nav-number">2.</span> <span class="nav-text">1. interface 底层结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-itab"><span class="nav-number">3.</span> <span class="nav-text">2. itab</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Type-Assertion"><span class="nav-number">4.</span> <span class="nav-text">3. Type Assertion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-总结"><span class="nav-number">5.</span> <span class="nav-text">4. 总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-参考"><span class="nav-number">6.</span> <span class="nav-text">5. 参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

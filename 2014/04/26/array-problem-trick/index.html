@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="前面写过2sum问题，回顾一下：给定一个数组，求其中和等于给定和的两个数。思想很简单，双指针的思想：对于排序数组，一个头指针一个尾指针，不断向中间压缩。如果数组是排序的，则时间复杂度为O(n)，空间复杂度为O(1)。由此可以K sum问题，如果看过《算法引论》这本书，我们可以把K sum问题归约到K-1 sum。举个例子，3 sum问题归约到2sum 问题。对于数组中的每一个数A[i]，对数组A[">
+<meta name="keywords" content="双指针,数组部分和">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于部分数组固定和的一类问题解析">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2014&#x2F;04&#x2F;26&#x2F;array-problem-trick&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="前面写过2sum问题，回顾一下：给定一个数组，求其中和等于给定和的两个数。思想很简单，双指针的思想：对于排序数组，一个头指针一个尾指针，不断向中间压缩。如果数组是排序的，则时间复杂度为O(n)，空间复杂度为O(1)。由此可以K sum问题，如果看过《算法引论》这本书，我们可以把K sum问题归约到K-1 sum。举个例子，3 sum问题归约到2sum 问题。对于数组中的每一个数A[i]，对数组A[">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.923Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2014/04/26/array-problem-trick/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>关于部分数组固定和的一类问题解析 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/04/26/array-problem-trick/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          关于部分数组固定和的一类问题解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-04-26 22:57:04" itemprop="dateCreated datePublished" datetime="2014-04-26T22:57:04+08:00">2014-04-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index">
+                    <span itemprop="name">算法设计</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>前面写过2sum问题，回顾一下：给定一个数组，求其中和等于给定和的两个数。思想很简单，双指针的思想：对于排序数组，一个头指针一个尾指针，不断向中间压缩。如果数组是排序的，则时间复杂度为O(n)，空间复杂度为O(1)。由此可以K sum问题，如果看过《算法引论》这本书，我们可以把K sum问题归约到K-1 sum。举个例子，3 sum问题归约到2sum 问题。对于数组中的每一个数A[i]，对数组A[i+1…n]进行2sum求解，则时间复杂度为O(n^2)。类似的我们知道K sum问题的时间复杂度为O(n^k-1)。然而我们今天要讨论的却是另外一类问题。</p>
+<a id="more"></a>
+
+<p>问题一，给定一个只包含正数数组，求连续子数组和等于给定目标值的区间。和2 sum问题有点相同，也是双指针或者叫快慢指针，但是这里双指针初始化都指向头部。快指针先移动，当快慢指针区间内的和小于给定值时，移动快指针；否则移动慢指针。时间复杂度O(n)，值得注意的是，此时并没有数组排序好的要求。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">subArraySum</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n, <span class="keyword">int</span> target)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(n==<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> head=<span class="number">0</span>, tail=<span class="number">0</span>, sum=A[<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(tail&amp;lt;n)&#123;</span><br><span class="line">        <span class="keyword">if</span>(sum==target)&#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"%d\t%d\n"</span>, head, tail);</span><br><span class="line">            sum -= A[head++];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(sum &amp;lt; target)&#123;</span><br><span class="line">            ++tail;</span><br><span class="line">            <span class="keyword">if</span>(tail==n)</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            sum += A[tail];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            sum -= A[head++];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>问题二、给定数组，包含正数、负数和0。求连续子数组和为0的最大区间。仔细比较问题一和问题二，可以发现此时数组的元素属性改变了。那么对应的方法也就不好用了。仔细分析，我们很容易想到方法，整体思想是类似的。首先对于数组A[1…n]定义数组sum[1…n]，sum[i]=A[0]+A[1]+…+A[i]=sum[i-1]+A[i]。所以我们可以在O(n)的时间内求得数组sum[1…n]。则很显然可以想到，对于区间[i,j]，如果其和为0，则有sum[j]=sum[i-1]。具体处理则只需要将数组sum[1…n]排序并且保持原下标不变，值得注意的是，由于数组sum[1…n]的值大小上下界是确定的，所以可以采用O(n)的桶排序，最后再遍历一遍桶就OK了。这里有一点可以说的就是桶排序的应用。其实我们并不需要将sum数组排好序，只要把sum数组放到对应的桶中，就可以了，然后处理每一个桶。对于桶i中的元素j，k,意义如下：sum[j]=sum[k]=i，而且桶中的元素是递增的（这个容易理解，因为我们是按sum从前到尾遍历的）。看下代码就都明白了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//用map实现桶排序</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">BucketSort</span><span class="params">(<span class="keyword">int</span> sum[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">int</span>, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &gt;bucket;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;n; ++n)</span><br><span class="line">        bucket[sum[i]].push_back(i);</span><br><span class="line">    <span class="keyword">int</span> maxInterval=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="built_in">map</span>&lt;<span class="keyword">int</span>,<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &gt;::iterator iter=bucket.<span class="built_in">begin</span>(); iter!=bucket.<span class="built_in">end</span>(); ++iter)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">int</span> sizev = iter-&amp;gt;second.<span class="built_in">size</span>();</span><br><span class="line">        maxInterval = <span class="built_in">max</span>(iter-&amp;gt;second[sizev<span class="number">-1</span>]-iter-&amp;gt;second[<span class="number">0</span>], maxInterval);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> maxInterval;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">subArraySum0</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(n==<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> *sum = <span class="keyword">new</span> <span class="keyword">int</span> [n];</span><br><span class="line"></span><br><span class="line">    sum[<span class="number">0</span>] = A[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&amp;lt;n; ++i)</span><br><span class="line">        sum[i] = sum[i<span class="number">-1</span>]+A[i];</span><br><span class="line">    <span class="keyword">int</span> ret = BucketSort(sum, n);</span><br><span class="line">    <span class="keyword">delete</span> [] sum;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">``</span><br><span class="line">问题三、问题二的变体，&lt;span style=<span class="string">"font-size: small;"</span>&gt;当&lt;/span&gt;追求的和不是<span class="number">0</span>而是target的时候怎么办？前面的思路都是一样，后面的怎么处理呢？前面提到桶排序，则我们可以在桶上直接来求。比如对于buck[i]就是表示和为i的sum区间，则只要考查buck[i-target]和buck[i+target]就行了。处理的时候，我们可以从一个确界开始，比如下界就考察buck[i]和buck[i+target]，上界就考察buck[i]和buck[i-target]。</span><br><span class="line">```c++</span><br><span class="line"><span class="comment">//用map实现桶排序</span></span><br><span class="line"><span class="keyword">int</span> BucketSort(<span class="keyword">int</span> sum[], <span class="keyword">int</span> n, <span class="keyword">int</span> target)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="keyword">int</span>, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &gt;bucket;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;n; ++n)</span><br><span class="line">        bucket[sum[i]].push_back(i);</span><br><span class="line">    <span class="keyword">int</span> maxInterval=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="built_in">map</span>&amp;lt;<span class="keyword">int</span>,<span class="built_in">vector</span>&amp;lt;<span class="keyword">int</span>&amp;gt; &amp;gt;::iterator iter=bucket.<span class="built_in">begin</span>(); iter!=bucket.<span class="built_in">end</span>(); ++iter)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">map</span>&lt;<span class="keyword">int</span>,<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &gt;::iterator pos=bucket.<span class="built_in">find</span>(iter-&gt;first+target);</span><br><span class="line">        <span class="keyword">if</span>(pos != bucket.<span class="built_in">end</span>())</span><br><span class="line">        &#123;</span><br><span class="line">            maxInterval = <span class="built_in">max</span>(maxInterval, pos-&gt;second.back()-iter-&gt;second.front());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> maxInterval;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">subArraySumN</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n, <span class="keyword">int</span> target)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(n==<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> *sum = <span class="keyword">new</span> <span class="keyword">int</span> [n];</span><br><span class="line"></span><br><span class="line">    sum[<span class="number">0</span>] = A[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&amp;lt;n; ++i)</span><br><span class="line">        sum[i] = sum[i<span class="number">-1</span>]+A[i];</span><br><span class="line">    <span class="keyword">int</span> ret = BucketSort(sum, n, target);</span><br><span class="line">    <span class="keyword">delete</span> [] sum;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>问题四、输入数组A[]，包含正数、负数、0。求正数与负数个数相同的最长的子数组。如果能把这题和上面的联系起来的话，也可以很快想出解决方案。把sum数组换成diff[1…n]，diff[i]表示数组A[1…i]中正数比负数多的个数。这种方法说起来也简单，而且也不难理解。再或者，我们思维偷个懒，直接把正数替换成1，负数替换成-1，那么不就变成求子数组区间为0的问题了吗？想法很简单，代码也很简单，只需要遍历一遍数组，替换，然后调用上面的subArraySumN()函数就可以。</p>
+<p>问题五、输入数组A[]，只包含0，1，求一个最长且0和1个数相等的子串。类似于问题四的替换思想，把0换成-1，又变成子数组和为0的区间问题了。</p>
+<p>问题六、输入数组A[]，只包含数字1、2、3，不进行比较，求1，2，3的个数？运用上面的替换思想，可以有个很巧妙的解法。也就是把1替换成第一个素数也就是2，2替换成第二个素数3，3替换成第3个素数5。求个积，然后不断模+除就行了。这个也很容易理解，考虑到素数的性质：只能被自身和1整除。另外，任何一个整数的乘法因子都是素数。（如果不是素数，则可以继续分解）。下面看一个替换后的处理代码，替换的代码就不上了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">primeFunc</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum=<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;n; ++i)</span><br><span class="line">        sum *= A[i];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> factor[] = &#123;<span class="number">2</span>,<span class="number">3</span>,<span class="number">5</span>&#125;;</span><br><span class="line">    <span class="keyword">int</span> num[] = &#123;<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>&#125;;</span><br><span class="line">    <span class="keyword">int</span> pos=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(sum&gt;<span class="number">1</span> &amp;&amp; pos&lt;<span class="number">3</span>)&#123;</span><br><span class="line">        <span class="keyword">while</span>(sum%factor[pos] == <span class="number">0</span>)&#123;</span><br><span class="line">            ++num[pos];</span><br><span class="line">            sum /= factor[pos];</span><br><span class="line">        &#125;</span><br><span class="line">        ++pos;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&amp;lt;<span class="number">3</span>; ++i)</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; num[i] &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里只考虑了本题的情况，所以代码中出现了很多的幻数。正常设计成这样的接口void primeFunc(int A[], int n, int m)会好很多，m表示数组里有多少个不同的素数。另外还应该考虑到数的溢出问题，对于有些语言可能就需要自己构造大数类了。</p>
+<p>对于代码中对于前置表达式++i的偏爱作一个说明：前置表达式直接在i上加1，然后再返回i。而后置表达式是先作一个i的副本，然后在i上加1，最后返回前面的副本。这个区别是很重要的。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%8F%8C%E6%8C%87%E9%92%88/" rel="tag"># 双指针</a>
+              <a href="/tags/%E6%95%B0%E7%BB%84%E9%83%A8%E5%88%86%E5%92%8C/" rel="tag"># 数组部分和</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2014/03/21/coder-gospel/" rel="next" title="预防颈椎DIY">
+                  <i class="fa fa-chevron-left"></i> 预防颈椎DIY
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2014/04/30/array-problem-trick2/" rel="prev" title="关于部分数组固定和的一类问题解析续">
+                  关于部分数组固定和的一类问题解析续 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

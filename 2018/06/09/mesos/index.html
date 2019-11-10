@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="简而言之，mesos 是一个在多种计算框架之间协调集群资源的平台。通过 mesos，我们可以提高集群的资源利用率。mesos 的调度机制叫 resource offer，是一种 two-level 调度策略：1. mesos 决定分配给 framework 多少资源；2. framework 决定是否接受以及用来运行哪些 task。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="集群资源管理之 Mesos">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2018&#x2F;06&#x2F;09&#x2F;mesos&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="简而言之，mesos 是一个在多种计算框架之间协调集群资源的平台。通过 mesos，我们可以提高集群的资源利用率。mesos 的调度机制叫 resource offer，是一种 two-level 调度策略：1. mesos 决定分配给 framework 多少资源；2. framework 决定是否接受以及用来运行哪些 task。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2018&#x2F;mesos_arch.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2018&#x2F;resource_offer.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.914Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2018&#x2F;mesos_arch.png">
+
+<link rel="canonical" href="http://yoursite.com/2018/06/09/mesos/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>集群资源管理之 Mesos | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/09/mesos/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          集群资源管理之 Mesos
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-06-09 17:34:41" itemprop="dateCreated datePublished" datetime="2018-06-09T17:34:41+08:00">2018-06-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" itemprop="url" rel="index">
+                    <span itemprop="name">资源调度</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>简而言之，mesos 是一个在多种计算框架之间协调集群资源的平台。通过 mesos，我们可以提高集群的资源利用率。mesos 的调度机制叫 resource offer，是一种 two-level 调度策略：1. mesos 决定分配给 framework 多少资源；2. framework 决定是否接受以及用来运行哪些 task。</p>
+<a id="more"></a>
+
+<h3 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. 引言</h3><p>随着计算框架越来越多，如果每个计算框架分配一个集群会导致某些集群的资源得不到充分利用。所以，多个计算框架共享集群资源显得非常有必要，mesos 应运而生。</p>
+<p>设计 mesos 的一个核心问题是如何设计一个可以支持众多 framework（包括现存和未来的）的高扩展和高性能的系统。主要原因如下：</p>
+<ol>
+<li>每个 framework 都会有自己特有的调度需求</li>
+<li>调度系统要能够支持数以千计的节点以及数百万的 task</li>
+<li>高可用和高容错。</li>
+</ol>
+<p>上诉问题的一种解决方案是设计一个中心话的调度器，通过收集 framework 对资源的需求，集群的可用资源，以及各种策略，然后为所有的 task 做全局调度。这种方式看上去可能是全局最优的，但是有下面几个问题：</p>
+<ol>
+<li>复杂度。scheduler 需要提供足够表现力的 API 去支持多种 framework。</li>
+<li>Framework 及其调度策略一直在变化。</li>
+<li>对于已经有了成熟调度策略的框架，将他们的调度算法转移到全局的调度器代价非常大。</li>
+</ol>
+<p>另一个解决方案是将控制权交给框架本身，这个设计抽象叫 resource offer。resource offer 将许多资源打包提供给框架，然后框架决定要不要接受这些资源以及分配哪些 task 运行。Resource offer 模型足够简单，实现起来也比较高效，这使得 mesos 具有高度的扩展性和健壮性。除此之外，这样设计还有其他好处:</p>
+<ol>
+<li>可以使用多个版本的框架。</li>
+<li>接入新框架简单。</li>
+</ol>
+<h3 id="2-Architecture"><a href="#2-Architecture" class="headerlink" title="2. Architecture"></a>2. Architecture</h3><h4 id="2-1-Design-Philosophy"><a href="#2-1-Design-Philosophy" class="headerlink" title="2.1 Design Philosophy"></a>2.1 Design Philosophy</h4><p>mesos 的初衷是让多种框架高效地共享集群资源。因为各种框架本身的高度不统一，mesos 最重要的设计思想是定义最小化接口助力框架之间资源共享和将 task 的调度赋权给框架本身。控制权下沉到框架有两个好处：1.每个框架可以根据自己的需要实现自己的调度算法；2.这使得 mesos 本身足够简单。</p>
+<p>尽管 mesos 提供了 low-level 的接口，我们还是需要能在 higher-level 实现一些公共功能，比如错误处理。</p>
+<h4 id="2-2-Overview"><a href="#2-2-Overview" class="headerlink" title="2.2 Overview"></a>2.2 Overview</h4><p>mesos 是 master/slave 架构，架构图如下图。</p>
+<p><img src="/img/uploads/2018/mesos_arch.png" alt=""></p>
+<p>master 通过 resource offer 实现了框架之间细粒度的资源共享。resource offer 是 slave 节点上的空闲资源的 list。master 根据资源调度策略决定给每个框架分配多少资源。为了支持各种框架的资源分配策略，mesos 可以以可插拔的方式让用户自定义自己的策略。</p>
+<p>运行在 mesos 之上的框架包括两个组件：scheduler，注册到 master 上用来接收资源；executor，负责运行 task。master 决定给 framework 分配多少资源，然后 framework 的 scheduler 选择使用与否，如果选择接受，则返回给 mesos 将要运行的 task 的描述信息。</p>
+<p>下图是一个资源分配的例子。<br><img src="/img/uploads/2018/resource_offer.png" alt=""></p>
+<p>简单描述其过程如下：</p>
+<ol>
+<li>slave 1 告诉 master 自己的空闲资源情况：4 CPU 和 4 GB 内存。master 调用资源分配模块得出应该给 framework 1 分配所有空闲的资源。</li>
+<li>master 向 framework 1 发送 resource offer (4CPU，4GB RAM)</li>
+<li>frameworker 1 接受 offer，回复要运行的 task 信息：task 1 &lt;2 CPUs, 1GB RAM&gt; 和 task 2 &lt;2 CPUs, 2GB RAM&gt;</li>
+<li>master 将第 3 步得到的 task 下发给 slave 节点。给 framework 的 executor 分配合适的资源，然后由 executor 运行 task</li>
+</ol>
+<p>为了保持 mesos 和 framework 之间的解耦，mesos 不要求 framework 对资源要求做限制。取而代之的是，mesos 给 framework 发送 resource offer，由 framework 自己决定要不要接受。这样每个 framework 就可以自定义自己资源限制条件了。这种设计的一个潜在的问题是效率问题：framework 可能要等很长时间才能得到满足自己需求的资源，mesos 要将一个 resource offer 发送给很多 framework 才会被其中一个接收。</p>
+<p>对于这种情况，mesos 的解决方案是 framework 设置 filter 做一个初步的过滤。</p>
+<h4 id="2-3-Resource-Allocation"><a href="#2-3-Resource-Allocation" class="headerlink" title="2.3 Resource Allocation"></a>2.3 Resource Allocation</h4><p>mesos 的资源分配模块是可插拔的，这样开发者可以做一些定制化策略。目前，mesos 本身提供两种分配策略：1. 基于 max-min fairness 的泛化算法（其实就是 DRF）；2. 基于优先级的严格策略，类似 Hadoop 和 Dryad 使用的策略。</p>
+<p>正常情况下，大多数 task 运行时间都很短，当 task 完成的时候才会重新分配资源。这也就意味着 framework 可以快速获得资源。比如，如果一个 framework 的集群使用份额是 10%，它需要等待 task 的平均时长的 10% 左右时间去获得资源。然而如果一个集群运行很多周期很长的 task 或者有问题的 job 导致资源一直得不到释放，这时候 mesos 可以通过 kill 来解决（graceful kill）。这里 kill 哪个 task 将由模块具体实现，不细说了。</p>
+<h4 id="2-4-Isolation"><a href="#2-4-Isolation" class="headerlink" title="2.4 Isolation"></a>2.4 Isolation</h4><p>隔离使用的操作系统容器技术里面的隔离机制，cgroup 等，不再细说。</p>
+<h4 id="2-5-Making-Resource-Offers-Scalable-and-Robust"><a href="#2-5-Making-Resource-Offers-Scalable-and-Robust" class="headerlink" title="2.5 Making Resource Offers Scalable and Robust"></a>2.5 Making Resource Offers Scalable and Robust</h4><p>因为 mesos 中的调度是一个分布式程序，需要考虑一下性能和健壮性。mesos 主要通过以下三点来保证。</p>
+<ol>
+<li>对于某些总是拒绝 master 的 resource offer 的 framework，master 将先执行 framework 的 filter。filter 是一个布尔函数，能够快速得到结果。</li>
+<li>激励 framework 更快响应 offer。</li>
+<li>如果一个 framework 在足够长的时间里面没有对 offer 做出响应，mesos 将收回 offer 并将 offer 提供给其他的 framework。</li>
+</ol>
+<h4 id="2-6-Fault-Tolerance"><a href="#2-6-Fault-Tolerance" class="headerlink" title="2.6 Fault Tolerance"></a>2.6 Fault Tolerance</h4><p>由于所有的 framework 都依赖 mesos master，所有提高 master 的容错很有必要。为了达到这个目的，master 被设计成 soft state，也就是说一个新的 master 可以通过 slave 和 framework 重新构建出 master 的状态。补充一下，master 的状态包括 active slaves, active frameworks 和 running tasks。如前面的架构所示，多个 master 的集群通过 ZooKeeper 来完成选主。</p>
+<p>除了 master 容错，mesos 还将节点失败和 executor crash 上报给 framework 的 scheduler，以便 framework 做一下容错处理。</p>
+<p>最后，对于 scheduler 的容错处理，mesos 容许 framework 注册多个 scheduler，多个 scheduler 之间的状态管理由 framework 自己完成。</p>
+<h3 id="3-Implementation"><a href="#3-Implementation" class="headerlink" title="3. Implementation"></a>3. Implementation</h3><p>mesos 最开始由大概 10000 行 C++ 代码编写而成，可以运行在 Linux，Solaris 和 OS X，支持多种由 C++，Java，Python 实现的 framework。</p>
+<p>为了减小复杂度，mesos 使用了一个 C++ 库 libprocess。libprocess 提供基于 actor 的编程模型。同时 mesos 使用 ZooKeeper 来做 leader 选举。隔离技术使用的 Linux 容器技术。</p>
+<p>剩下篇幅介绍了如何支持以下三个 framework：Hadoop，Torque 和 MPI。这里的 Hadoop 调度使用还是 MapReduce 1.0，我们当然就不再介绍了。</p>
+<h3 id="4-其他"><a href="#4-其他" class="headerlink" title="4. 其他"></a>4. 其他</h3><p>其他关于 mesos 的一些评估，因为论文中的评估太久远了，这里就不细说了，具体可以参考 mesos 的官网。</p>
+<h3 id="5-参考"><a href="#5-参考" class="headerlink" title="5. 参考"></a>5. 参考</h3><ol>
+<li><a href="https://people.eecs.berkeley.edu/~alig/papers/mesos.pdf" target="_blank" rel="noopener">Mesos: A Platform for Fine-Grained Resource Sharing in the Data Center</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2018/06/02/borg/" rel="next" title="集群资源管理之 Borg">
+                  <i class="fa fa-chevron-left"></i> 集群资源管理之 Borg
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/07/21/drf/" rel="prev" title="集群资源管理之 DRF">
+                  集群资源管理之 DRF <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-引言"><span class="nav-number">1.</span> <span class="nav-text">1. 引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Architecture"><span class="nav-number">2.</span> <span class="nav-text">2. Architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-Design-Philosophy"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 Design Philosophy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-Overview"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 Overview</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-Resource-Allocation"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 Resource Allocation</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-Isolation"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 Isolation</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-5-Making-Resource-Offers-Scalable-and-Robust"><span class="nav-number">2.5.</span> <span class="nav-text">2.5 Making Resource Offers Scalable and Robust</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-6-Fault-Tolerance"><span class="nav-number">2.6.</span> <span class="nav-text">2.6 Fault Tolerance</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-Implementation"><span class="nav-number">3.</span> <span class="nav-text">3. Implementation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-其他"><span class="nav-number">4.</span> <span class="nav-text">4. 其他</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-参考"><span class="nav-number">5.</span> <span class="nav-text">5. 参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

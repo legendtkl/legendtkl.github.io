@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="之后会编写一系列集群资源管理的文章，包括：Borg, Mesos, Omega, Yarn。这篇文章先来介绍一下 Borg，写的有问题的地方还请多多指教。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="集群资源管理之 Borg">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2018&#x2F;06&#x2F;02&#x2F;borg&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="之后会编写一系列集群资源管理的文章，包括：Borg, Mesos, Omega, Yarn。这篇文章先来介绍一下 Borg，写的有问题的地方还请多多指教。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2018&#x2F;task_status.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2018&#x2F;borg_arch.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.922Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2018&#x2F;task_status.png">
+
+<link rel="canonical" href="http://yoursite.com/2018/06/02/borg/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>集群资源管理之 Borg | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/02/borg/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          集群资源管理之 Borg
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2018-06-02 17:34:41" itemprop="dateCreated datePublished" datetime="2018-06-02T17:34:41+08:00">2018-06-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" itemprop="url" rel="index">
+                    <span itemprop="name">资源调度</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>之后会编写一系列集群资源管理的文章，包括：Borg, Mesos, Omega, Yarn。这篇文章先来介绍一下 Borg，写的有问题的地方还请多多指教。</p>
+<a id="more"></a>
+
+<h3 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h3><p>Borg 是 Google 的内部大规模集群管理器，论文于 2015 年发布。目前在云计算领域出尽风头的 Kubernetes 就是 Borg 的开源实现。</p>
+<p>在 Google 内部，Borg 负责作业的一系列操作，比如提交、调度、启动、停止等。特性主要包括下面三个部分：</p>
+<ol>
+<li>用户只需要专注作业开发，需要关注资源管理和失败处理</li>
+<li>高可用和高可靠性</li>
+<li>在数以千计的机器上高效运行任务</li>
+</ol>
+<p>Borg 之前其实有很多资源管理器了，比如 mesos，yarn，关于这些系统的异同，我们后面的文章里面再细说。</p>
+<h3 id="1-Borg-Overview"><a href="#1-Borg-Overview" class="headerlink" title="1. Borg Overview"></a>1. Borg Overview</h3><p>开发者向 Borg 提交 job，每个 job 包含多个 task。多个机器组成一个 cell，每个 job 运行在一个 cell 当中。</p>
+<h4 id="1-1-workload"><a href="#1-1-workload" class="headerlink" title="1.1 workload"></a>1.1 workload</h4><p>Workload 通俗点理解就是在集群上运行的任务。Borg 上的 workload 主要有两种：</p>
+<ol>
+<li>long-running service：比如在线服务 Gmail。</li>
+<li>batch job：比如一些数据统计工作，类比 Hadoop 系统中的一些批处理作业。</li>
+</ol>
+<p>相比 batch job，long-running service 需要保证可用性和低延迟，这也以为着对 borg 要求会更高一点。<br>在 Google 内部很多应用开发框架构架于 Borg 之上，比如内部 MapReduce 系统，FlumeJava，MillWheel 和 Pregel。这些框架的主要作用是用来开发和提交作业。在这篇文章</p>
+<h4 id="1-2-cluster-amp-cell"><a href="#1-2-cluster-amp-cell" class="headerlink" title="1.2 cluster &amp; cell"></a>1.2 cluster &amp; cell</h4><p>一个 DC (datacenter) 可以有一个或者多个 cluster，一个 cluster 可以有多个 cell（一个大 cell 和多个小 cell）。这里也意味着 cell 通常不是跨 DC，跨 DC 理论上应该是可行的，只不过会有性能损失。在 Google 内部中等规模的 cell 机器数在 10K 规模，cell 中的机器可以是异构的（异构的意思是机器的一些配置信息，比如 cpu，内存可以不一样）。</p>
+<h4 id="1-3-job-amp-task"><a href="#1-3-job-amp-task" class="headerlink" title="1.3 job &amp; task"></a>1.3 job &amp; task</h4><p>Borg 的 job 属性包括 job name, owner 和包含的 task 个数。job 可以设置限制 task 的运行限制条件，比如 cpu 架构，os 版本或者 ip 地址。限制条件可以有两种类型：require 和 preference。task 运行的实体是运行一个或者多个进程的容器。<br>task 也有一些属性：需要的资源和在 job 中的 index。正常同一个 Job 的 task 属性都是一样的，但是可以通过 flags 传参来进行改写。<br>用户可以通过 Borg 提供的 RPC 调用来查看 job 和一些监控信息。可以通过编写配置（使用 BCL，declarative configuration language，类似 pb 的定义文件 GCL ）来定义 job 的元数据。用户可以通过更新配置来更新运行中的 task，某些情况下将导致 task 重跑（比如更新二进制文件），有些情况下不会（比如修改优先级）。task restart 的时候通过捕获信号 SIGTERM 来保存状态信息。<br>下图是 job 和 task 的状态流转图。</p>
+<p><img src="/img/uploads/2018/task_status.png" alt=""></p>
+<h4 id="1-4-alloc"><a href="#1-4-alloc" class="headerlink" title="1.4 alloc"></a>1.4 alloc</h4><p>alloc 是 allocation 的简称，可以认为是机器的一些资源的封装，多个 task 可以运行在一个 alloc 里面。alloc 里面的资源不管有没有被使用，都将被标记为 assigned。简单理解，alloc 是分配出来的资源，虽然并不会立即使用，但是不能被再次分配了。<br>alloc set 之于 alloc 类似 job 之于 task。alloc set 里面 alloc 可以分布在不同的机器上。</p>
+<h4 id="1-5-Priority-quota-and-admission-control"><a href="#1-5-Priority-quota-and-admission-control" class="headerlink" title="1.5 Priority, quota, and admission control"></a>1.5 Priority, quota, and admission control</h4><p>在 1.3 里面提了一下 task 的优先级，这里详细说一下。对于多任务的系统，一般都会配置优先级，比如操作系统里面的进程。每个 job 都有一个优先级，正常 job 中的 task 优先级是一样的。Borg 中按用户配置了多套优先级系统，比如 moni- toring, production, batch 的优先级是不重叠的。<br>具有高优先级的 task 可以抢占低优先级的 task 的资源（killing），这样可能会导致一个瀑布效应：高优先级的 task 把次高优先级的 task 杀掉，次高优先级的 task 重新调度的时候又把更低优先级的 task 杀掉。其实这里有很多种处理方式，比如每次抢占优先级最低，但是论文里面没有写。论文说的只是 production 下的 task 不能进行抢占，因为 production 下的 task 可能是 long-runing 的在线服务。<br>quota 的中文意思是限额，顾名思义，borg 中的 quota 就是某个优先级资源的限额，在 job 提交的时候先要检查 quota 。通常高优先级的 quota 会占用更多的资源，production 优先级的 quota 是 cell 中可用的资源数。但是低优先级的 quota 是可以大于 cell 中可用的资源数的，也就是可以“超卖”，比如优先级是 0 的 quota 是无限的。如果真的“超卖”往往意外这 task 很长时间里处于 pending 状态。<br>话说回来，quota 究竟解决了什么问题？如果高效的进行资源调度是很难的问题，使用 quota 机制可以认为是这种问题的一种简单化解决方案。关于资源调度一个很有名的算法叫 Dominant Resource Fairness，简称 DRF，我们后面文章再说。<br>除此之后，Borg 还提供某些用户一些类似超级管理员的权限，可以对 Borg 中的 Job 进行一些删除等操作。</p>
+<h4 id="1-6-Naming-and-Monitor"><a href="#1-6-Naming-and-Monitor" class="headerlink" title="1.6 Naming and Monitor"></a>1.6 Naming and Monitor</h4><p>在 task 提交到 Borg 之后如何发现就需要寻址服务，Borg 提供的寻址服务是 “Borg name service” (BNS) 。BNS 将运行 task 的 host 的 hostname 写入到一个分布式高可靠的存储中心，Chubby。要寻址一个 task，我们先构造查询的 key，key 由 job，task index，owner，cell 等信息构成，比如用户 ubar 的 jfoo job 的第五十个 task，运行在 cell cc 里面，则构造出来的 key 为 50.jfoo.ubar.cc.borg.google.com。Borg 还将 job 的 size 和 task 的健康信息写入 Chubby 中，这样可以方便做 Load Balance。<br>运行在 Borg 中每个 task 都运行一个 HTTP server 来提供 task 的监控信息和一些 metrics 信息。一旦 Borg 发现 task 的健康检测请求没有响应，则重启 task。</p>
+<h3 id="2-Architecture"><a href="#2-Architecture" class="headerlink" title="2. Architecture"></a>2. Architecture</h3><p>Borg 的架构图如下。总的来说是一个 server/agent 架构，主要模块包括 Borgmaster 和 Borglet 等。</p>
+<p><img src="/img/uploads/2018/borg_arch.png" alt=""></p>
+<h4 id="2-1-Borgmaster"><a href="#2-1-Borgmaster" class="headerlink" title="2.1 Borgmaster"></a>2.1 Borgmaster</h4><p>Borgmaster 包括两个进程：main Borgmaster 进程和 scheduler 进程。main Borgmaster 进程负责处理 client RPC，比如创建 job 或者信息查询等。除此之后还要维护所有 object (machines, tasks, allocs, etc.) 的状态机。<br>为了避免单点故障，Borgmaster 一共有五个，通过 Paxos 选出一个 leader 负责所有服务。Borgmaster 的某个时间点状态叫做 checkpoint，会持久化在 Paxos store 里面。通过 checkpoint 我们查看之前所有的 event，以及在某个特定的 checkpoint 上面进行 debug。</p>
+<h4 id="2-2-Scheduling"><a href="#2-2-Scheduling" class="headerlink" title="2.2 Scheduling"></a>2.2 Scheduling</h4><p>当一个 job 被提交，Borgmaster 会将其记录在 paxos store，然后将 job 的 task 加到 pending 队列。然后 scheduler 会异步地扫描 pending 队列，如果发现有满足条件的机器，就将 task 分配到对应的机器上。扫描过程根据优先级从高到底，主要包括两个步骤：1. feasibility checking（寻找满足运行条件的机器）; 2. scoring（从机器里面选择一台）。score 过程主要考虑最小化抢占的 task 个数等因素。<br>Borg 最开始使用的 score 算法是 E-PVM，后来因为多种原因使用一种混合的式的 score 方法：最小化 stranded resource，因为其他资源被分配完导致无法使用的资源。如果通过 score 选出来的机器没有足够的资源，Borg 将对 task 由优先级从低到高进行抢占（kill），被抢占的 task 将进入 pending 队列。<br>task 启动时延（从提交到运行）也是一个值得探究的话题，在 Borg 中这个值的中位数为 25s，其中 80% 的时间用于包的安装，安装过程的瓶颈是磁盘写竞争。为了尽量最小化磁盘写竞争的影响，Borg 使用 package 共享的方式：将 task 分配到已经安装了需要的 package 的机器上。除此之外，Borg 使用类似 tree 或者 torrent 的协议来分发包。协议这个地方没有细说，其中 torrrent 协议应该是 P2P，但是 tree 相关的不是很了解。</p>
+<h4 id="2-3-Borglet"><a href="#2-3-Borglet" class="headerlink" title="2.3 Borglet"></a>2.3 Borglet</h4><p>Borglet 是运行在每台机器上的 agent，主要作用包括：</p>
+<ol>
+<li>task 的启停，以及失败重启。</li>
+<li>通过 OS kernel 相关设置管理 local resource。</li>
+<li>roll over debug 日志。</li>
+<li>向 Borgmaster 或者其他的监控系统上报机器的数据。</li>
+</ol>
+<p>Borgmaster 和 Borglet 的交互是 Borgmaster 主动请求 Borglet 的方式，这种方式的好处是可以由 Borgmaster 自己做流控，避免 Borgmaster 重启所有 Borglet 流量过来把 Borgmaster 打挂。为了扩展性，每个 Borgmaster 使用一个 link shard 与 Borglet 交互，同时为了保证系统的弹性，Borglet 上报的数据每次都是全量的，然后由 link shard 处理得到增量数据，然后做进一步处理。</p>
+<p>如果 Borglet 有多次没有对 Borgmaster 的请求进行响应，Borgmaster 就认为运行 Borglet 的这台机器挂掉了，然后对其上的 task 进行重新调度。</p>
+<h4 id="2-4-扩展性"><a href="#2-4-扩展性" class="headerlink" title="2.4 扩展性"></a>2.4 扩展性</h4><p>目前一个 cell 的 Borgmaster 可以管理数以千计的机器，有些 cell 大概每分钟运行 10000 个 task。文章表示并不知道扩展性的最终限制会在哪里。下面我们看一下目前为扩展性，Borg 做的一些设计。</p>
+<p>早期的 Borgmaster 是一个简单的同步循环来接受请求，调度 task，以及和 Borglet 交互。为了处理大的 cell，scheduler 被独立成一个进程，这样 Borgmaster 的主流程负责其他主要操作，然后再需要 scheduler 的时候和 scheduler 进行交互。可以认为这是一定程度的并行化。</p>
+<p>为了提高请求的响应时间，使用多个进程来处理请求。如果对性能还有更高的要求，则将请求分散到 Borgmaster 的 replica 上。正常来说，基于 Paxos 的集群都是由 leader 来处理所有请求，但是对于某些读请求，follower 也是可以处理的。</p>
+<p>除此之后还有一些设计使得 scheduler 扩展性更强。</p>
+<ol>
+<li>score cache。对机器进行 score 代价很大，所以可以 cache 下来，在机器状态发生变化的时候进行更新。</li>
+<li>equivalence classes。前面说到一个 job 里面的 task 都是一样的，虽然调度是以 task 进行调度的，但是对一个 Job 中的所有 task 只需要对一个 task 进行 feasibility 和 scoring。</li>
+<li>Relaxed randomization。调度的时候对所有的机器做 feasibility 和 scoring，资源消耗也是巨大的，所以这个过程可以随机选择几台然后找到规定数量的机器即可。</li>
+</ol>
+<h3 id="3-高可用"><a href="#3-高可用" class="headerlink" title="3. 高可用"></a>3. 高可用</h3><p>错误处理是分布式系统中非常重要的一环，Borg 的错误处理主要是通过下面几种技术：</p>
+<ol>
+<li>增加副本数</li>
+<li>在分布式文件系统中持久化状态</li>
+<li>定时保存 checkpoint</li>
+</ol>
+<p>举几个具体的例子：</p>
+<ol>
+<li>自动重新调度被抢占的 task，有时候需要分配到新的机器上</li>
+<li>减少关联失败</li>
+<li>在维护升级的时候尽量减少同时失败的 task 个数</li>
+<li>改变状态的操作使用幂等</li>
+<li>…</li>
+</ol>
+<p>对于高可用，Borg 还有一个重要的设计是 Borgmaster 和 Borglet 挂掉的时候，task 还可以运行。当然 Borgmaster 还是要拉起，要不然无法提交 job 了。<br>通过多种技术 Borg 的可用性可以达到 99.99%。</p>
+<h3 id="4-隔离性"><a href="#4-隔离性" class="headerlink" title="4. 隔离性"></a>4. 隔离性</h3><p>如果保证 task 之间的隔离性是一个绕不过去的话题，包括两方面：security 和 performance。</p>
+<h4 id="4-1-security"><a href="#4-1-security" class="headerlink" title="4.1 security"></a>4.1 security</h4><p>首先使用 <strong><em>chroot</em></strong> 来对 task 的文件系统进行隔离。其次，为了让用户可以 ssh 进行 debug，最开始采用的方式当用户的 task 运行时则将用户的 sshkey 加入到机器的 authority 中，这样隔离性其实不太好，因为可能会有多个用户的 task 同时运行。后来采用了一种方式 borgssh ，borgssh 和 Borglet 协助创建一个 ssh 隧道到运行特定 task 的 shell 中。</p>
+<h4 id="4-2-performance"><a href="#4-2-performance" class="headerlink" title="4.2 performance"></a>4.2 performance</h4><p>performance 隔离主要通过将 task 运行在基于 linux cgroup 的容器中，然后在其上增强控制。</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ol>
+<li><a href="https://ai.google/research/pubs/pub43438" target="_blank" rel="noopener">Large-scale cluster management at Google with Borg</a></li>
+<li><a href="http://static.usenix.org/event/nsdi11/tech/full_papers/Ghodsi.pdf" target="_blank" rel="noopener">DRF</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2017/10/17/dr-elephant-overview/" rel="next" title="Dr. Elephant 介绍">
+                  <i class="fa fa-chevron-left"></i> Dr. Elephant 介绍
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2018/06/09/mesos/" rel="prev" title="集群资源管理之 Mesos">
+                  集群资源管理之 Mesos <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#0-引言"><span class="nav-number">1.</span> <span class="nav-text">0. 引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Borg-Overview"><span class="nav-number">2.</span> <span class="nav-text">1. Borg Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-workload"><span class="nav-number">2.1.</span> <span class="nav-text">1.1 workload</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-cluster-amp-cell"><span class="nav-number">2.2.</span> <span class="nav-text">1.2 cluster &amp; cell</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-job-amp-task"><span class="nav-number">2.3.</span> <span class="nav-text">1.3 job &amp; task</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-4-alloc"><span class="nav-number">2.4.</span> <span class="nav-text">1.4 alloc</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-5-Priority-quota-and-admission-control"><span class="nav-number">2.5.</span> <span class="nav-text">1.5 Priority, quota, and admission control</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-6-Naming-and-Monitor"><span class="nav-number">2.6.</span> <span class="nav-text">1.6 Naming and Monitor</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Architecture"><span class="nav-number">3.</span> <span class="nav-text">2. Architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-Borgmaster"><span class="nav-number">3.1.</span> <span class="nav-text">2.1 Borgmaster</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-Scheduling"><span class="nav-number">3.2.</span> <span class="nav-text">2.2 Scheduling</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-Borglet"><span class="nav-number">3.3.</span> <span class="nav-text">2.3 Borglet</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-扩展性"><span class="nav-number">3.4.</span> <span class="nav-text">2.4 扩展性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-高可用"><span class="nav-number">4.</span> <span class="nav-text">3. 高可用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-隔离性"><span class="nav-number">5.</span> <span class="nav-text">4. 隔离性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-security"><span class="nav-number">5.1.</span> <span class="nav-text">4.1 security</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-2-performance"><span class="nav-number">5.2.</span> <span class="nav-text">4.2 performance</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

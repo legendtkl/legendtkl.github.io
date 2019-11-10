@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="skiplist，又称作跳表，跳跃表。 最开始接触skiplist的时候是在看那本《数据结构与算法分析——C++语言实现》，这本书很好，但是看完的人并不多。在书中第一次看到skiplist数据结构的时候，感觉还挺复杂的。直到去年看redis实现的时候又看到了skiplist才发现这真的是一种很巧妙的数据结构。下面先看一下最简单的skiplist，然后介绍两种变体。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从skiplist说起">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2016&#x2F;06&#x2F;05&#x2F;skiplist&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="skiplist，又称作跳表，跳跃表。 最开始接触skiplist的时候是在看那本《数据结构与算法分析——C++语言实现》，这本书很好，但是看完的人并不多。在书中第一次看到skiplist数据结构的时候，感觉还挺复杂的。直到去年看redis实现的时候又看到了skiplist才发现这真的是一种很巧妙的数据结构。下面先看一下最简单的skiplist，然后介绍两种变体。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;Skip_list.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;Skip_list_gif.gif">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;cacheskiplist.png">
+<meta property="og:updated_time" content="2019-11-08T03:09:25.928Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2016&#x2F;Skip_list.png">
+
+<link rel="canonical" href="http://yoursite.com/2016/06/05/skiplist/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>从skiplist说起 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/06/05/skiplist/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从skiplist说起
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2016-06-05 14:10:25" itemprop="dateCreated datePublished" datetime="2016-06-05T14:10:25+08:00">2016-06-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构与算法</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>skiplist，又称作跳表，跳跃表。</p>
+<p>最开始接触skiplist的时候是在看那本《数据结构与算法分析——C++语言实现》，这本书很好，但是看完的人并不多。在书中第一次看到skiplist数据结构的时候，感觉还挺复杂的。直到去年看redis实现的时候又看到了skiplist才发现这真的是一种很巧妙的数据结构。下面先看一下最简单的skiplist，然后介绍两种变体。</p>
+<a id="more"></a>
+
+<h2 id="Basic-Skiplist"><a href="#Basic-Skiplist" class="headerlink" title="Basic Skiplist"></a>Basic Skiplist</h2><h3 id="Why-Skiplist"><a href="#Why-Skiplist" class="headerlink" title="Why Skiplist"></a>Why Skiplist</h3><p>首先看一下为什么需要skiplist这种数据结构？现在有这么一个应用场景，我们需要持续有序地存储一些数据，并且满足下面的需要：1.查找；2.插入。这两个是最具有代表性的操作，为什么这么说呢？如果需要查找的效率尽量高，那么就应该使用线性存储（比如数组，查找复杂度O(1) ）；而频繁插入则应该使用链式存储（比如链表，插入复杂度O(1) ）。如果要把这两种结合起来的话，一种还不错的选择是二叉查找树（BST）。但是树本身有很多问题，比如如何保持平衡，如何动态调整。这个时候skiplist就出现了。简单来说，skiplist是一种可以满足树的大多数应用场景，同时又比树这种结构实现简单的数据结构。那么skiplist到底是什么样的呢？继续往下看。</p>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>想要快速理解一个事情的原理的时候最简单的方法就是图示法（当然前提是图可以表示出来）。下图摘自维基百科。<br><img src="/img/uploads/2016/Skip_list.png" alt=""><br>如上图所示，skiplist底层数据存储使用的还是链表，这样我们就可以在每个节点定制化更多的信息。除了底层链表之外，上面还有几层，上面的每一层都比它的下一层节点要少，同时每一层的节点可以指定寻址到它的上一层（如果对应位置上一层也有节点的话）和下一层的对应的节点的。然后所有的层用一个<code>指针数组</code>来连接起来。下面看一下查找以及插入在skiplist中是怎么个样子。</p>
+<p>首先是查找，先从最上面的一层开始。上图中第一层只有一个节点，但是我觉得更好一点是两个节点，不是一头一尾，而是一个头部节点和一个中间节点，假定为head, mid。将待查找的元素值于mid节点比较，如果小于mid节点值，则待查找节点一定在head和mid之间；大于mid节点则落在后半段区间。这样一次就去除了一半的元素。是不是似曾相似，对的，就是二分查找。整个查找的时间复杂度是O(lgn)。</p>
+<p>插入。插入数据的时候我们先查找到底层数据节点需要插入的位置。然后像链表一样插入就可以了。这里还有一个问题，底层数据插入之后，上层链表的节点有时候也需要做一下改变。关于如何改变不同的skiplist实现往往都是不同的。下面的动图很好地演示了插入过程。其它像删除操作和插入操作很类似。</p>
+<p><img src="/img/uploads/2016/Skip_list_gif.gif" alt=""></p>
+<h2 id="Segment-Skiplist"><a href="#Segment-Skiplist" class="headerlink" title="Segment Skiplist"></a>Segment Skiplist</h2><p>虽然我这里叫Segment Skiplist，其实并没有这种算法，我只是觉得这么使用有点像Segment Tree而且没有想到其他的好名字，所以暂且这么叫吧。前面说过由于skiplist底层是链表节点，所以节点的数据可以实现定制化。现在有这么一个场景：和上面类似，在存储（当然也有修改）有序数据的基础上，我还需要查询两个数据中间有多少个数据。</p>
+<p>首先底层肯定还是类似于上面的skiplist结构，这里的关键点是如何定制化节点的信息来实现区间查询。如果不添加数据，我们可以先查找到下限节点在底层链表（也就是存储了所有数据的链表）中的位置，然后在顺序往后查找。这个最坏的情况下，时间复杂度为O(n)。那么需要定制化什么信息呢？</p>
+<p>在监控数据的时候，比如unix时间就是1970.1.1到当前的时间秒数，有时候我们存储的数据都是基于一个时间戳。这样查找的话只需要用上界数据减去下届数据就可以了。猛然一看，这个和我们上面的情景还是挺像的，但是仔细一想就发现完全不是那么一回事。以为我们上面还需要改动数据，而基于时间存储的数据一般是不会改动的。如果我们使用这种的话，改动一个数据，这个时间戳之后的数据往往都需要改动。那么怎么办呢？</p>
+<p>上面的数据改动太多的本质原因是所有的数据都基于一个时间点，要想数据改动尽量小，我们就要使各个节点的数据依赖的部分尽可能的少。对于每一层，每个节点只存储上一个节点和当前节点之间的原始数据个数。举个栗子，上面第一幅图的第二层各个节点存储的额外数据从左到右分别为1，3，2。对于插入操作，则只需要找到插入数据所在的每一层链表区间，然后将区间的右边界存储数据加一；删除操作同理。</p>
+<h2 id="Cache-Friendly-Skiplist"><a href="#Cache-Friendly-Skiplist" class="headerlink" title="Cache-Friendly Skiplist"></a>Cache-Friendly Skiplist</h2><p>一个数据结构的好坏有一个很重要的指标是是否是Cache Friendly的？什么样的数据结构是Cache-Friendly的？简单来说就是连续存储。cache-friendly有什么用呢？我们知道cpu 有L1,L2 cache，在cpu与内存交互的时候会先去cpu cache里面取数据，如果取到了就是cache hit，否则就是miss。<br>skiplist本身是cache-unfriendly的，然后大概11年的时候写Linux内核的两个哥们Liu Bo和Chris Mason对skiplist做了friendly的改进，并做了benchmark测试。改进后的skiplist如下，并不打算细说了。感兴趣的可以参考<a href="https://lwn.net/Articles/552088/" target="_blank" rel="noopener">cache-friendly skiplist</a><br><img src="/img/uploads/2016/cacheskiplist.png" alt=""></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2016/06/04/service-discovery/" rel="next" title="服务发现简介">
+                  <i class="fa fa-chevron-left"></i> 服务发现简介
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2016/06/30/kafka-in-action/" rel="prev" title="kafka实战">
+                  kafka实战 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Basic-Skiplist"><span class="nav-number">1.</span> <span class="nav-text">Basic Skiplist</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Why-Skiplist"><span class="nav-number">1.1.</span> <span class="nav-text">Why Skiplist</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原理"><span class="nav-number">1.2.</span> <span class="nav-text">原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Segment-Skiplist"><span class="nav-number">2.</span> <span class="nav-text">Segment Skiplist</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cache-Friendly-Skiplist"><span class="nav-number">3.</span> <span class="nav-text">Cache-Friendly Skiplist</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
