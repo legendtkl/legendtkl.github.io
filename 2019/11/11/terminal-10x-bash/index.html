@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="在 github 上面有一个 700 多人 star 的 repo 叫做 Bash-Oneliner，介绍了很多实用并且可以有效提高工作效率的命令，我们来了解一下。原文直达：Bash-Oneliner 。注：去除了部分看上去没啥用的命令，可以原文查看所有内容。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="终端 10X 工作法">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;11&#x2F;11&#x2F;terminal-10x-bash&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="在 github 上面有一个 700 多人 star 的 repo 叫做 Bash-Oneliner，介绍了很多实用并且可以有效提高工作效率的命令，我们来了解一下。原文直达：Bash-Oneliner 。注：去除了部分看上去没啥用的命令，可以原文查看所有内容。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-11-11T02:37:52.686Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2019/11/11/terminal-10x-bash/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>终端 10X 工作法 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/11/terminal-10x-bash/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          终端 10X 工作法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2019-11-11 10:36:01 / Modified: 10:37:52" itemprop="dateCreated datePublished" datetime="2019-11-11T10:36:01+08:00">2019-11-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index">
+                    <span itemprop="name">linux</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在 github 上面有一个 700 多人 star 的 repo 叫做 Bash-Oneliner，介绍了很多实用并且可以有效提高工作效率的命令，我们来了解一下。原文直达：<a href="https://github.com/onceupon/Bash-Oneliner" target="_blank" rel="noopener">Bash-Oneliner</a> 。注：去除了部分看上去没啥用的命令，可以原文查看所有内容。</p>
+<a id="more"></a>
+
+<h3 id="1-Terminal"><a href="#1-Terminal" class="headerlink" title="1. Terminal"></a>1. Terminal</h3><p>注：下面介绍的是在 Linux 下的 terminal 的行为，在 Mac 下面会略有差异，尽量补全</p>
+<h4 id="Ctrl-相关"><a href="#Ctrl-相关" class="headerlink" title="Ctrl 相关"></a>Ctrl 相关</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Ctrl + n : 类似向下方向键</span><br><span class="line">Ctrl + p : 类似向上方向键</span><br><span class="line">Ctrl + r : 反向搜索 terminal 的历史命令</span><br><span class="line">Ctrl + s : 停止该 terminal</span><br><span class="line">Ctrl + q : 在 Ctrl + s 后面重新恢复该 terminal</span><br><span class="line">Ctrl + a : 移动光标到行的开始处。(这个很有用)</span><br><span class="line">Ctrl + e : 移动光标到行的结尾处。(同上)</span><br><span class="line">Ctrl + d : 如果当前的 terminal 的命令行有输入，那么 Ctrl + d 会删除光标处的数字。否则会退出当前的 terminal</span><br><span class="line">Ctrl + k : 删除从当前光标开始到结尾的所有的字符</span><br><span class="line">Ctrl + x + backspace: 删除从当前光标到行开始的所有的字符</span><br><span class="line">Ctrl + t : 交换当前光标下的字符和其前面的字符的位置。Esc + t 交换光标前面的两个单词。(这个很有意思)</span><br><span class="line">Ctrl + w : 剪切光标之前的单词。Ctrl + y 粘贴该单词</span><br><span class="line">Ctrl + u : 剪切光标之前的所有字符。Ctrl + y 粘贴刚刚剪切的字符</span><br><span class="line">Ctrl + _ : 撤销前面的操作。(可以连续操作多次)</span><br><span class="line">Ctrl + l : 类似 clear。(类似 Mac 终端下的 Command + k)</span><br><span class="line">Ctrl + x + Ctrl + e : 唤起 $EDITOR 环境变量设置的编辑器程序，在需要输入多行的情况下比较有用。(试验了一下如果之前没有设置，$EDITOR 的默认值是 emacs。你可以将其设置为 vim，即 export EDITOR=vim。当然也可以将这个环境变量设置为其他的应用程序去实现一些有趣的功能，这个测试过了)</span><br></pre></td></tr></table></figure>
+
+<h4 id="改变字符大小写"><a href="#改变字符大小写" class="headerlink" title="改变字符大小写"></a>改变字符大小写</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Esc + u : 将当前光标开始到单词结尾的字符都转换成大写。(这里的单词指的是光标所在的位置前后以空格分隔形成的单词)</span><br><span class="line">Esc + l : 将当前光标开始到单词结尾的字符都转换成小写</span><br><span class="line">Esc + c : 将光标所在位置的字符转换成大写</span><br></pre></td></tr></table></figure>
+
+<h4 id="执行历史命令"><a href="#执行历史命令" class="headerlink" title="执行历史命令"></a>执行历史命令</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">!53 : 执行 history 中的 53 号命令</span><br><span class="line">!! : 执行上一条命令</span><br></pre></td></tr></table></figure>
+
+<h4 id="替换上一条命令，并替换一些参数"><a href="#替换上一条命令，并替换一些参数" class="headerlink" title="替换上一条命令，并替换一些参数"></a>替换上一条命令，并替换一些参数</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 上一条命令：echo &apos;aaa&apos;</span><br><span class="line">^aaa^bbb</span><br><span class="line"># 此时将上一条命令替换为 echo &apos;bbb&apos;，输出 bbb</span><br><span class="line"></span><br><span class="line"># 需要注意的是，这样只会替换第一次 aaa，如果要替换所有的 aaa，需要像下面这样使用</span><br><span class="line">^aaa^bbb^:&amp;</span><br><span class="line"># 或者</span><br><span class="line">!!:gs/aaa/bbb/</span><br></pre></td></tr></table></figure>
+
+<h4 id="前缀匹配执行历史命令"><a href="#前缀匹配执行历史命令" class="headerlink" title="前缀匹配执行历史命令"></a>前缀匹配执行历史命令</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">!cat</span><br><span class="line"># 或者</span><br><span class="line">!c</span><br><span class="line"># 执行历史命令中最近一条满足前缀是 c 或者 cat 的命令</span><br></pre></td></tr></table></figure>
+
+<h4 id="文件名使用正则"><a href="#文件名使用正则" class="headerlink" title="文件名使用正则"></a>文件名使用正则</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># ? 表示一个单独的任意字符</span><br><span class="line">/b?n/?at  # 匹配上 /bin/cat</span><br><span class="line"></span><br><span class="line"># * 表示多个任意字符</span><br><span class="line">/etc/pa*wd  # 匹配上 /etc/passwd</span><br><span class="line"></span><br><span class="line"># &apos;[]&apos; 表示一个字符范围</span><br><span class="line">ls -al [a-z]*  # 列出所有以字母开头的文件</span><br><span class="line"></span><br><span class="line"># &apos;&#123;&#125;&apos; 文件名匹配多种模式</span><br><span class="line">ls &#123;*.sh,*.py&#125;  # 列出所有的 .sh 和 .py 文件</span><br></pre></td></tr></table></figure>
+
+<h4 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">$0, $1, $2, $3, ... ： 在执行 shell 的时候传参使用，$0 表示 shell 名字，$1,$2,$3依次表示后面的参数</span><br><span class="line">$# : 参数的个数</span><br><span class="line">$? : 最近的一个终端 foreground 命令的退出状态</span><br><span class="line">$- : 当前 shell 设置的选项，可以通过 echo $- 查看</span><br><span class="line">$$ : 当前 shell 进程的 pid</span><br><span class="line">$! : 最近的一个终端后台命令的 pid</span><br><span class="line"></span><br><span class="line">$DESKTOP_SESSION : 当前的展示管理器。(可能说的是 xWindow)</span><br><span class="line">$EDITOR : 编辑器，可以通过上面提到的快捷键唤醒</span><br><span class="line">$LANG : 语言设置</span><br><span class="line">$PATH : 这个不用说了</span><br><span class="line">$PWD : 当前目录</span><br><span class="line">$SHELL : 当前的 shell</span><br><span class="line">$USER : 当前的 username</span><br><span class="line">$HOSTNAME : 当前的 hostname</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-Grep"><a href="#2-Grep" class="headerlink" title="2. Grep"></a>2. Grep</h3><h4 id="grep-的种类"><a href="#grep-的种类" class="headerlink" title="grep 的种类"></a>grep 的种类</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grep = grep -G  # 支持基本的正则表达式</span><br><span class="line">fgrep = grep -F # 查找文件里符合条件的字符串</span><br><span class="line">egrep = grep -E # 支持扩展的正则表达式</span><br><span class="line">pgrep = grep -P # 兼容 Perl 的正则表达式语法</span><br><span class="line">rgrep = grep -r # 递归 grep</span><br></pre></td></tr></table></figure>
+
+<h4 id="统计空行个数"><a href="#统计空行个数" class="headerlink" title="统计空行个数"></a>统计空行个数</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -c &quot;^$&quot;</span><br></pre></td></tr></table></figure>
+
+<h4 id="grep-并且只返回数字"><a href="#grep-并且只返回数字" class="headerlink" title="grep 并且只返回数字"></a>grep 并且只返回数字</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">grep -o &apos;[0-9]*&apos;</span><br><span class="line">#或者</span><br><span class="line">grep -oP &apos;\d&apos;</span><br></pre></td></tr></table></figure>
+
+<h4 id="grep-含有特定数字的数字"><a href="#grep-含有特定数字的数字" class="headerlink" title="grep 含有特定数字的数字"></a>grep 含有特定数字的数字</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grep ‘[0-9]\&#123;3\&#125;’</span><br><span class="line"># or</span><br><span class="line">grep -E ‘[0-9]&#123;3&#125;’</span><br><span class="line"># or</span><br><span class="line">grep -P ‘\d&#123;3&#125;’</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找-IP-地址"><a href="#查找-IP-地址" class="headerlink" title="查找 IP 地址"></a>查找 IP 地址</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">grep -Eo &apos;[0-9]&#123;1,3&#125;\.[0-9]&#123;1,3&#125;\.[0-9]&#123;1,3&#125;\.[0-9]&#123;1,3&#125;&apos;</span><br><span class="line"># or</span><br><span class="line">grep -Po &apos;\d&#123;1,3&#125;\.\d&#123;1,3&#125;\.\d&#123;1,3&#125;\.\d&#123;1,3&#125;&apos;</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找单词"><a href="#查找单词" class="headerlink" title="查找单词"></a>查找单词</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># return also 3 lines after match</span></span><br><span class="line">grep -A 3 <span class="string">'bbo'</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># return also 3 lines before match</span></span><br><span class="line">grep -B 3 <span class="string">'bbo'</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># return also 3 lines before and after match</span></span><br><span class="line">grep -C 3 <span class="string">'bbo'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="查找特定字符开头的单词"><a href="#查找特定字符开头的单词" class="headerlink" title="查找特定字符开头的单词"></a>查找特定字符开头的单词</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -o <span class="string">'S.*'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="提取两个特定单词之间的文本"><a href="#提取两个特定单词之间的文本" class="headerlink" title="提取两个特定单词之间的文本"></a>提取两个特定单词之间的文本</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -o -P <span class="string">'(?&lt;=w1).*(?=w2)'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="查找不包含某个单词的文件内容"><a href="#查找不包含某个单词的文件内容" class="headerlink" title="查找不包含某个单词的文件内容"></a>查找不包含某个单词的文件内容</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -v bbo filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找不是以特定字符开头的文件内容"><a href="#查找不是以特定字符开头的文件内容" class="headerlink" title="查找不是以特定字符开头的文件内容"></a>查找不是以特定字符开头的文件内容</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -v <span class="string">'^#'</span> file.txt</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找含有空格的内容"><a href="#查找含有空格的内容" class="headerlink" title="查找含有空格的内容"></a>查找含有空格的内容</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bbo=<span class="string">"some strings"</span></span><br><span class="line">grep <span class="string">"<span class="variable">$boo</span>"</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找第一个-match-文件内容"><a href="#查找第一个-match-文件内容" class="headerlink" title="查找第一个 match 文件内容"></a>查找第一个 match 文件内容</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -m 1 bbo filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找并返回满足条件的文件内容条数"><a href="#查找并返回满足条件的文件内容条数" class="headerlink" title="查找并返回满足条件的文件内容条数"></a>查找并返回满足条件的文件内容条数</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -c bbo filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="统计单词在文件中出现的次数"><a href="#统计单词在文件中出现的次数" class="headerlink" title="统计单词在文件中出现的次数"></a>统计单词在文件中出现的次数</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -o bbo filename |wc -l</span><br></pre></td></tr></table></figure>
+
+<h4 id="大小写敏感的查找"><a href="#大小写敏感的查找" class="headerlink" title="大小写敏感的查找"></a>大小写敏感的查找</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -i <span class="string">"bbo"</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="匹配结果着色"><a href="#匹配结果着色" class="headerlink" title="匹配结果着色"></a>匹配结果着色</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep --color bbo filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找目录下的所有文件"><a href="#查找目录下的所有文件" class="headerlink" title="查找目录下的所有文件"></a>查找目录下的所有文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">grep -R bbo /path/to/directory</span><br><span class="line"><span class="comment"># or</span></span><br><span class="line">grep -r bbo /path/to/directory</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找目录下的所有文件，不输出文件内容"><a href="#查找目录下的所有文件，不输出文件内容" class="headerlink" title="查找目录下的所有文件，不输出文件内容"></a>查找目录下的所有文件，不输出文件内容</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -rh bbo /path/to/directory</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找目录下的所有文件，只输出匹配的文件名"><a href="#查找目录下的所有文件，只输出匹配的文件名" class="headerlink" title="查找目录下的所有文件，只输出匹配的文件名"></a>查找目录下的所有文件，只输出匹配的文件名</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -rl bbo /path/to/directory</span><br></pre></td></tr></table></figure>
+
+<h4 id="OR-查找"><a href="#OR-查找" class="headerlink" title="OR 查找"></a>OR 查找</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'A\|B\|C\|D'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="AND-查找（比如-A-and-B）"><a href="#AND-查找（比如-A-and-B）" class="headerlink" title="AND 查找（比如 A and B）"></a>AND 查找（比如 A and B）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'A.*B'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="正则查找（比如-ACB-或者-AEB）"><a href="#正则查找（比如-ACB-或者-AEB）" class="headerlink" title="正则查找（比如 ACB 或者 AEB）"></a>正则查找（比如 ACB 或者 AEB）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep <span class="string">'A.B'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="查找特定字符（比如-color-或者-colour）"><a href="#查找特定字符（比如-color-或者-colour）" class="headerlink" title="查找特定字符（比如 color 或者 colour）"></a>查找特定字符（比如 color 或者 colour）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep ‘colou?r’</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找多个文件的所有内容"><a href="#查找多个文件的所有内容" class="headerlink" title="查找多个文件的所有内容"></a>查找多个文件的所有内容</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -f fileA fileB</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找-tab"><a href="#查找-tab" class="headerlink" title="查找 tab"></a>查找 tab</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep $<span class="string">'\t'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="从变量中查找"><a href="#从变量中查找" class="headerlink" title="从变量中查找"></a>从变量中查找</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$echo</span> <span class="string">"<span class="variable">$long_str</span>"</span>|grep -q <span class="string">"<span class="variable">$short_str</span>"</span></span><br><span class="line"><span class="keyword">if</span> [ $? -eq 0 ]; <span class="keyword">then</span> <span class="built_in">echo</span> <span class="string">'found'</span>; <span class="keyword">fi</span></span><br><span class="line"><span class="comment">#grep -q will output 0 if match found</span></span><br><span class="line"><span class="comment">#remember to add space between []!</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="查找括号中间的字符串"><a href="#查找括号中间的字符串" class="headerlink" title="查找括号中间的字符串"></a>查找括号中间的字符串</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -oP <span class="string">'\(\K[^\)]+'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="略过目录查找"><a href="#略过目录查找" class="headerlink" title="略过目录查找"></a>略过目录查找</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -d skip <span class="string">'bbo'</span> /path/to/files/*</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-Sed"><a href="#3-Sed" class="headerlink" title="3. Sed"></a>3. Sed</h3><h4 id="移除文件第一行"><a href="#移除文件第一行" class="headerlink" title="移除文件第一行"></a>移除文件第一行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed 1d filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="移除文件的前-100-行"><a href="#移除文件的前-100-行" class="headerlink" title="移除文件的前 100 行"></a>移除文件的前 100 行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed 1,100d filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="移除包含特定字符串的文件行"><a href="#移除包含特定字符串的文件行" class="headerlink" title="移除包含特定字符串的文件行"></a>移除包含特定字符串的文件行</h4><p>注：这种方式并不会修改原文件，可以将输出重定向到新的文件保存</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">"/bbo/d"</span> filename</span><br><span class="line"><span class="comment"># case insensitive:</span></span><br><span class="line">sed <span class="string">"/bbo/Id"</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="移除文件不满足第-n-个字符串不等于某个值的行"><a href="#移除文件不满足第-n-个字符串不等于某个值的行" class="headerlink" title="移除文件不满足第 n 个字符串不等于某个值的行"></a>移除文件不满足第 n 个字符串不等于某个值的行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第 5 个字符不等于 2</span></span><br><span class="line">sed -E <span class="string">'/^.&#123;5&#125;[^2]/d'</span></span><br><span class="line"><span class="comment">#aaaa2aaa (you can stay)</span></span><br><span class="line"><span class="comment">#aaaa1aaa (delete!)</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="修改原文件"><a href="#修改原文件" class="headerlink" title="修改原文件"></a>修改原文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 删除包含 bbo 的行并直接保存文件</span></span><br><span class="line">sed -i <span class="string">"/bbo/d"</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="使用变量的时候使用双引号"><a href="#使用变量的时候使用双引号" class="headerlink" title="使用变量的时候使用双引号"></a>使用变量的时候使用双引号</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># e.g. add &gt;$i to the first line (to make a bioinformatics FASTA file)</span></span><br><span class="line">sed <span class="string">"1i &gt;<span class="variable">$i</span>"</span></span><br><span class="line"><span class="comment"># notice the double quotes! in other examples, you can use a single quote, but here, no way!</span></span><br><span class="line"><span class="comment"># '1i' means insert to first line</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="删除空行"><a href="#删除空行" class="headerlink" title="删除空行"></a>删除空行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'/^\s*$/d'</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># or</span></span><br><span class="line"></span><br><span class="line">sed <span class="string">'/^$/d'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="删除最后一行"><a href="#删除最后一行" class="headerlink" title="删除最后一行"></a>删除最后一行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'$d'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="删除文件的最后一个字符"><a href="#删除文件的最后一个字符" class="headerlink" title="删除文件的最后一个字符"></a>删除文件的最后一个字符</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'$ s/.$//'</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="向文件开头插入字符串（比如-“-“）"><a href="#向文件开头插入字符串（比如-“-“）" class="headerlink" title="向文件开头插入字符串（比如 “[“）"></a>向文件开头插入字符串（比如 “[“）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'1s/^/[/'</span> file</span><br></pre></td></tr></table></figure>
+
+<h4 id="向文件中特定行中插入字符串"><a href="#向文件中特定行中插入字符串" class="headerlink" title="向文件中特定行中插入字符串"></a>向文件中特定行中插入字符串</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -e <span class="string">'1isomething'</span> -e <span class="string">'3isomething'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="向文件结尾插入字符（比如-“-”）"><a href="#向文件结尾插入字符（比如-“-”）" class="headerlink" title="向文件结尾插入字符（比如 “]”）"></a>向文件结尾插入字符（比如 “]”）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'$s/$/]/'</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="向文件结尾插入新行"><a href="#向文件结尾插入新行" class="headerlink" title="向文件结尾插入新行"></a>向文件结尾插入新行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'$a\'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="向文件的每一行插入数据"><a href="#向文件的每一行插入数据" class="headerlink" title="向文件的每一行插入数据"></a>向文件的每一行插入数据</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -e <span class="string">'s/^/bbo/'</span> file</span><br></pre></td></tr></table></figure>
+
+<h4 id="向文件的每一行结尾插入数据"><a href="#向文件的每一行结尾插入数据" class="headerlink" title="向文件的每一行结尾插入数据"></a>向文件的每一行结尾插入数据</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -e <span class="string">'s/$/\&#125;\]/'</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="每-n-个字符插入换行符（比如每-4-个字符）"><a href="#每-n-个字符插入换行符（比如每-4-个字符）" class="headerlink" title="每 n 个字符插入换行符（比如每 4 个字符）"></a>每 n 个字符插入换行符（比如每 4 个字符）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'s/.\&#123;4\&#125;/&amp;\n/g'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="连接多个文件"><a href="#连接多个文件" class="headerlink" title="连接多个文件"></a>连接多个文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -s <span class="string">'$a,'</span> *.json &gt; all.json</span><br></pre></td></tr></table></figure>
+
+<h4 id="内容替换"><a href="#内容替换" class="headerlink" title="内容替换"></a>内容替换</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'s/A/B/g'</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="基于正则的文件内容替换"><a href="#基于正则的文件内容替换" class="headerlink" title="基于正则的文件内容替换"></a>基于正则的文件内容替换</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">"s/aaa=.*/aaa=\/my\/new\/path/g"</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="筛选文件中以特定字符串开始行"><a href="#筛选文件中以特定字符串开始行" class="headerlink" title="筛选文件中以特定字符串开始行"></a>筛选文件中以特定字符串开始行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n <span class="string">'/^@S/p'</span></span><br></pre></td></tr></table></figure>
+
+<p>####打印文件中的多行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n 500,5000p filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="打印文件中特定行"><a href="#打印文件中特定行" class="headerlink" title="打印文件中特定行"></a>打印文件中特定行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sed -n <span class="string">'0~3p'</span> filename</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印 3 的倍数行</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="打印奇数行"><a href="#打印奇数行" class="headerlink" title="打印奇数行"></a>打印奇数行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n <span class="string">'1~2p'</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="删除文件开头的空格和-tab"><a href="#删除文件开头的空格和-tab" class="headerlink" title="删除文件开头的空格和 tab"></a>删除文件开头的空格和 tab</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sed -e <span class="string">'s/^[ \t]*//'</span></span><br><span class="line"><span class="comment"># Notice a whitespace before '\t'!!</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="只删除空格"><a href="#只删除空格" class="headerlink" title="只删除空格"></a>只删除空格</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'s/ *//'</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># notice a whitespace before '*'!!</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="移除文件结尾的逗号"><a href="#移除文件结尾的逗号" class="headerlink" title="移除文件结尾的逗号"></a>移除文件结尾的逗号</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'s/,$//g'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="文件结尾添加一列（以-tab-分隔）"><a href="#文件结尾添加一列（以-tab-分隔）" class="headerlink" title="文件结尾添加一列（以 tab 分隔）"></a>文件结尾添加一列（以 tab 分隔）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">"s/$/\t<span class="variable">$i</span>/"</span></span><br><span class="line"><span class="comment"># $i is the valuable you want to add</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># To add the filename to every last column of the file</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> $(ls);<span class="keyword">do</span> sed -i <span class="string">"s/$/\t<span class="variable">$i</span>/"</span> <span class="variable">$i</span>;<span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="打印特定的行"><a href="#打印特定的行" class="headerlink" title="打印特定的行"></a>打印特定的行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n -e <span class="string">'123p'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="删除文件的最后一个字符-1"><a href="#删除文件的最后一个字符-1" class="headerlink" title="删除文件的最后一个字符"></a>删除文件的最后一个字符</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed <span class="string">'$ s/.$//'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="指定位置插入字符"><a href="#指定位置插入字符" class="headerlink" title="指定位置插入字符"></a>指定位置插入字符</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -r -e <span class="string">'s/^.&#123;3&#125;/&amp;#/'</span> file</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="4-Awk"><a href="#4-Awk" class="headerlink" title="4. Awk"></a>4. Awk</h3><h4 id="设置-tab-为分隔符"><a href="#设置-tab-为分隔符" class="headerlink" title="设置 tab 为分隔符"></a>设置 tab 为分隔符</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk -F $<span class="string">'\t'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="设置-tab-为输出内容的分隔符"><a href="#设置-tab-为输出内容的分隔符" class="headerlink" title="设置 tab 为输出内容的分隔符"></a>设置 tab 为输出内容的分隔符</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk -v OFS=<span class="string">'\t'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="传递参数"><a href="#传递参数" class="headerlink" title="传递参数"></a>传递参数</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a=bbo;b=obb;</span><br><span class="line">awk -v a=<span class="string">"<span class="variable">$a</span>"</span> -v b=<span class="string">"<span class="variable">$b</span>"</span> <span class="string">"<span class="variable">$1</span>==a &amp;&amp; <span class="variable">$10</span>=b"</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="输出文件行号以及每行的字符个数"><a href="#输出文件行号以及每行的字符个数" class="headerlink" title="输出文件行号以及每行的字符个数"></a>输出文件行号以及每行的字符个数</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'&#123;print NR,length($0);&#125;'</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="输出-column-field-的个数"><a href="#输出-column-field-的个数" class="headerlink" title="输出 column/field 的个数"></a>输出 column/field 的个数</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'&#123;print NF&#125;'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="判断是不是有逗号"><a href="#判断是不是有逗号" class="headerlink" title="判断是不是有逗号"></a>判断是不是有逗号</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'$1~/,/ &#123;print&#125;'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="输出字符串出现-n-次之前的所有行"><a href="#输出字符串出现-n-次之前的所有行" class="headerlink" title="输出字符串出现 n 次之前的所有行"></a>输出字符串出现 n 次之前的所有行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk -v N=7 <span class="string">'&#123;print&#125;/bbo/&amp;&amp; --N&lt;=0 &#123;exit&#125;'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="输出文件名和其最后一行"><a href="#输出文件名和其最后一行" class="headerlink" title="输出文件名和其最后一行"></a>输出文件名和其最后一行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls|xargs -n1 -I file awk <span class="string">'&#123;s=$0&#125;;END&#123;print FILENAME,s&#125;'</span> file</span><br></pre></td></tr></table></figure>
+
+<h4 id="向指定的-column-插入字符串"><a href="#向指定的-column-插入字符串" class="headerlink" title="向指定的 column 插入字符串"></a>向指定的 column 插入字符串</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN&#123;OFS="\t"&#125;$3="chr"$3'</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="移除包含特定字符串的行"><a href="#移除包含特定字符串的行" class="headerlink" title="移除包含特定字符串的行"></a>移除包含特定字符串的行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'!/bbo/'</span> file</span><br></pre></td></tr></table></figure>
+
+<h4 id="移除最后一个-column"><a href="#移除最后一个-column" class="headerlink" title="移除最后一个 column"></a>移除最后一个 column</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'NF&#123;NF-=1&#125;;1'</span> file</span><br></pre></td></tr></table></figure>
+
+<h4 id="理解-NR-和-FNR-的作用"><a href="#理解-NR-和-FNR-的作用" class="headerlink" title="理解 NR 和 FNR 的作用"></a>理解 NR 和 FNR 的作用</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># For example there are two files:</span></span><br><span class="line"><span class="comment"># fileA:</span></span><br><span class="line"><span class="comment"># a</span></span><br><span class="line"><span class="comment"># b</span></span><br><span class="line"><span class="comment"># c</span></span><br><span class="line"><span class="comment"># fileB:</span></span><br><span class="line"><span class="comment"># d</span></span><br><span class="line"><span class="comment"># e</span></span><br><span class="line">awk <span class="string">'print FILENAME, NR,FNR,$0&#125;'</span> fileA fileB</span><br><span class="line"><span class="comment"># fileA    1    1    a</span></span><br><span class="line"><span class="comment"># fileA    2    2    b</span></span><br><span class="line"><span class="comment"># fileA    3    3    c</span></span><br><span class="line"><span class="comment"># fileB    4    1    d</span></span><br><span class="line"><span class="comment"># fileB    5    2    e</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="5-Xargs"><a href="#5-Xargs" class="headerlink" title="5. Xargs"></a>5. Xargs</h3><h4 id="设置-tab-为分隔符-1"><a href="#设置-tab-为分隔符-1" class="headerlink" title="设置 tab 为分隔符"></a>设置 tab 为分隔符</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xargs -d\t</span><br></pre></td></tr></table></figure>
+
+<h4 id="每行显示三个元素"><a href="#每行显示三个元素" class="headerlink" title="每行显示三个元素"></a>每行显示三个元素</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 2 3 4 5 6| xargs -n 3</span><br><span class="line"><span class="comment"># 1 2 3</span></span><br><span class="line"><span class="comment"># 4 5 6</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="执行之前先询问"><a href="#执行之前先询问" class="headerlink" title="执行之前先询问"></a>执行之前先询问</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> a b c |xargs -p -n 3</span><br><span class="line">$ <span class="built_in">echo</span> a b c ?... <span class="comment">#输入 y</span></span><br><span class="line">$ a b c</span><br></pre></td></tr></table></figure>
+
+<h4 id="find-文件并删除"><a href="#find-文件并删除" class="headerlink" title="find 文件并删除"></a>find 文件并删除</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -name <span class="string">"*.html"</span>|xargs rm</span><br></pre></td></tr></table></figure>
+
+<h4 id="删除文件名中含有空格的文件"><a href="#删除文件名中含有空格的文件" class="headerlink" title="删除文件名中含有空格的文件"></a>删除文件名中含有空格的文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -name <span class="string">"*.c"</span> -print0|xargs -0 rm -rf</span><br></pre></td></tr></table></figure>
+
+<h4 id="显示-limits"><a href="#显示-limits" class="headerlink" title="显示 limits"></a>显示 limits</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xargs --show-limits</span><br></pre></td></tr></table></figure>
+
+<h4 id="移动文件"><a href="#移动文件" class="headerlink" title="移动文件"></a>移动文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">find . -name <span class="string">"*.bak"</span> -<span class="built_in">print</span> 0|xargs -0 -I &#123;&#125; mv &#123;&#125; ~/old</span><br><span class="line"></span><br><span class="line"><span class="comment"># or</span></span><br><span class="line">find . -name <span class="string">"*.bak"</span> -<span class="built_in">print</span> 0|xargs -0 -I file mv file ~/old</span><br><span class="line"></span><br><span class="line">ls |head -100|xargs -I &#123;&#125; mv &#123;&#125; d1</span><br></pre></td></tr></table></figure>
+
+<h4 id="并发执行"><a href="#并发执行" class="headerlink" title="并发执行"></a>并发执行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">time <span class="built_in">echo</span> &#123;1..5&#125; |xargs -n 1 -P 5 sleep</span><br><span class="line"></span><br><span class="line"><span class="comment"># a lot faster than:</span></span><br><span class="line">time <span class="built_in">echo</span> &#123;1..5&#125; |xargs -n1 sleep</span><br></pre></td></tr></table></figure>
+
+<h4 id="基于条件的文件拷贝"><a href="#基于条件的文件拷贝" class="headerlink" title="基于条件的文件拷贝"></a>基于条件的文件拷贝</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">find /dir/to/A -<span class="built_in">type</span> f -name <span class="string">"*.py"</span> -<span class="built_in">print</span> 0| xargs -0 -r -I file cp -v -p file --target-directory=/path/to/B</span><br><span class="line"></span><br><span class="line"><span class="comment"># v: verbose|</span></span><br><span class="line"><span class="comment"># p: keep detail (e.g. owner)</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="和-sed-配合使用"><a href="#和-sed-配合使用" class="headerlink" title="和 sed 配合使用"></a>和 sed 配合使用</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls |xargs -n1 -I file sed -i <span class="string">'/^Pos/d'</span> filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="将文件名加入到文件的第一行"><a href="#将文件名加入到文件的第一行" class="headerlink" title="将文件名加入到文件的第一行"></a>将文件名加入到文件的第一行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls |sed <span class="string">'s/.txt//g'</span>|xargs -n1 -I file sed -i -e <span class="string">'1 i\&gt;file\'</span> file.txt</span><br></pre></td></tr></table></figure>
+
+<h4 id="统计"><a href="#统计" class="headerlink" title="统计"></a>统计</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls |xargs -n1 wc -l</span><br></pre></td></tr></table></figure>
+
+<h4 id="将输出整合到一行"><a href="#将输出整合到一行" class="headerlink" title="将输出整合到一行"></a>将输出整合到一行</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls -l| xargs</span><br></pre></td></tr></table></figure>
+
+<h4 id="统计文件夹下面各个文件的行数和总的行数"><a href="#统计文件夹下面各个文件的行数和总的行数" class="headerlink" title="统计文件夹下面各个文件的行数和总的行数"></a>统计文件夹下面各个文件的行数和总的行数</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls|xargs wc -l</span><br></pre></td></tr></table></figure>
+
+<h4 id="和-grep-联合使用"><a href="#和-grep-联合使用" class="headerlink" title="和 grep 联合使用"></a>和 grep 联合使用</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat grep_list |xargs -I&#123;&#125; grep &#123;&#125; filename</span><br></pre></td></tr></table></figure>
+
+<h4 id="和-sed-联合使用"><a href="#和-sed-联合使用" class="headerlink" title="和 sed 联合使用"></a>和 sed 联合使用</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -rl <span class="string">'192.168.1.111'</span> /etc | xargs sed -i <span class="string">'s/192.168.1.111/192.168.2.111/g'</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="6-Find"><a href="#6-Find" class="headerlink" title="6. Find"></a>6. Find</h3><h4 id="递归列出所有的子目录和文件"><a href="#递归列出所有的子目录和文件" class="headerlink" title="递归列出所有的子目录和文件"></a>递归列出所有的子目录和文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find .</span><br></pre></td></tr></table></figure>
+
+<h4 id="列出当前目录下的所有文件"><a href="#列出当前目录下的所有文件" class="headerlink" title="列出当前目录下的所有文件"></a>列出当前目录下的所有文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -<span class="built_in">type</span> f</span><br></pre></td></tr></table></figure>
+
+<h4 id="列出当前目录下的所有子目录"><a href="#列出当前目录下的所有子目录" class="headerlink" title="列出当前目录下的所有子目录"></a>列出当前目录下的所有子目录</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . -<span class="built_in">type</span> d</span><br></pre></td></tr></table></figure>
+
+<h4 id="修改当前目录下的所有文件（将-‘www’-替换成-‘w’）"><a href="#修改当前目录下的所有文件（将-‘www’-替换成-‘w’）" class="headerlink" title="修改当前目录下的所有文件（将 ‘www’ 替换成 ‘w’）"></a>修改当前目录下的所有文件（将 ‘www’ 替换成 ‘w’）</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">find . -name <span class="string">'*.php'</span> -<span class="built_in">exec</span> sed -i <span class="string">'s/www/w/g'</span> &#123;&#125; \;</span><br><span class="line"></span><br><span class="line"><span class="comment"># if there are no subdirectory</span></span><br><span class="line">replace <span class="string">"www"</span> <span class="string">"w"</span> -- *</span><br><span class="line"><span class="comment"># a space before *</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="删除大小小于-74-byte-的文件"><a href="#删除大小小于-74-byte-的文件" class="headerlink" title="删除大小小于 74 byte 的文件"></a>删除大小小于 74 byte 的文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">find . -name <span class="string">"*.mso"</span> -size -74c -delete</span><br><span class="line"></span><br><span class="line"><span class="comment"># M for MB, etc</span></span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2019/10/13/uber-go-style/" rel="next" title="Uber Go 语言编程规范">
+                  <i class="fa fa-chevron-left"></i> Uber Go 语言编程规范
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Terminal"><span class="nav-number">1.</span> <span class="nav-text">1. Terminal</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Ctrl-相关"><span class="nav-number">1.1.</span> <span class="nav-text">Ctrl 相关</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#改变字符大小写"><span class="nav-number">1.2.</span> <span class="nav-text">改变字符大小写</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#执行历史命令"><span class="nav-number">1.3.</span> <span class="nav-text">执行历史命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#替换上一条命令，并替换一些参数"><span class="nav-number">1.4.</span> <span class="nav-text">替换上一条命令，并替换一些参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#前缀匹配执行历史命令"><span class="nav-number">1.5.</span> <span class="nav-text">前缀匹配执行历史命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#文件名使用正则"><span class="nav-number">1.6.</span> <span class="nav-text">文件名使用正则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#环境变量"><span class="nav-number">1.7.</span> <span class="nav-text">环境变量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Grep"><span class="nav-number">2.</span> <span class="nav-text">2. Grep</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#grep-的种类"><span class="nav-number">2.1.</span> <span class="nav-text">grep 的种类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#统计空行个数"><span class="nav-number">2.2.</span> <span class="nav-text">统计空行个数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#grep-并且只返回数字"><span class="nav-number">2.3.</span> <span class="nav-text">grep 并且只返回数字</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#grep-含有特定数字的数字"><span class="nav-number">2.4.</span> <span class="nav-text">grep 含有特定数字的数字</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找-IP-地址"><span class="nav-number">2.5.</span> <span class="nav-text">查找 IP 地址</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找单词"><span class="nav-number">2.6.</span> <span class="nav-text">查找单词</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找特定字符开头的单词"><span class="nav-number">2.7.</span> <span class="nav-text">查找特定字符开头的单词</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#提取两个特定单词之间的文本"><span class="nav-number">2.8.</span> <span class="nav-text">提取两个特定单词之间的文本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找不包含某个单词的文件内容"><span class="nav-number">2.9.</span> <span class="nav-text">查找不包含某个单词的文件内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找不是以特定字符开头的文件内容"><span class="nav-number">2.10.</span> <span class="nav-text">查找不是以特定字符开头的文件内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找含有空格的内容"><span class="nav-number">2.11.</span> <span class="nav-text">查找含有空格的内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找第一个-match-文件内容"><span class="nav-number">2.12.</span> <span class="nav-text">查找第一个 match 文件内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找并返回满足条件的文件内容条数"><span class="nav-number">2.13.</span> <span class="nav-text">查找并返回满足条件的文件内容条数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#统计单词在文件中出现的次数"><span class="nav-number">2.14.</span> <span class="nav-text">统计单词在文件中出现的次数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#大小写敏感的查找"><span class="nav-number">2.15.</span> <span class="nav-text">大小写敏感的查找</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#匹配结果着色"><span class="nav-number">2.16.</span> <span class="nav-text">匹配结果着色</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找目录下的所有文件"><span class="nav-number">2.17.</span> <span class="nav-text">查找目录下的所有文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找目录下的所有文件，不输出文件内容"><span class="nav-number">2.18.</span> <span class="nav-text">查找目录下的所有文件，不输出文件内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找目录下的所有文件，只输出匹配的文件名"><span class="nav-number">2.19.</span> <span class="nav-text">查找目录下的所有文件，只输出匹配的文件名</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#OR-查找"><span class="nav-number">2.20.</span> <span class="nav-text">OR 查找</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AND-查找（比如-A-and-B）"><span class="nav-number">2.21.</span> <span class="nav-text">AND 查找（比如 A and B）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#正则查找（比如-ACB-或者-AEB）"><span class="nav-number">2.22.</span> <span class="nav-text">正则查找（比如 ACB 或者 AEB）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找特定字符（比如-color-或者-colour）"><span class="nav-number">2.23.</span> <span class="nav-text">查找特定字符（比如 color 或者 colour）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找多个文件的所有内容"><span class="nav-number">2.24.</span> <span class="nav-text">查找多个文件的所有内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找-tab"><span class="nav-number">2.25.</span> <span class="nav-text">查找 tab</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#从变量中查找"><span class="nav-number">2.26.</span> <span class="nav-text">从变量中查找</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查找括号中间的字符串"><span class="nav-number">2.27.</span> <span class="nav-text">查找括号中间的字符串</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#略过目录查找"><span class="nav-number">2.28.</span> <span class="nav-text">略过目录查找</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-Sed"><span class="nav-number">3.</span> <span class="nav-text">3. Sed</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#移除文件第一行"><span class="nav-number">3.1.</span> <span class="nav-text">移除文件第一行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除文件的前-100-行"><span class="nav-number">3.2.</span> <span class="nav-text">移除文件的前 100 行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除包含特定字符串的文件行"><span class="nav-number">3.3.</span> <span class="nav-text">移除包含特定字符串的文件行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除文件不满足第-n-个字符串不等于某个值的行"><span class="nav-number">3.4.</span> <span class="nav-text">移除文件不满足第 n 个字符串不等于某个值的行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#修改原文件"><span class="nav-number">3.5.</span> <span class="nav-text">修改原文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用变量的时候使用双引号"><span class="nav-number">3.6.</span> <span class="nav-text">使用变量的时候使用双引号</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除空行"><span class="nav-number">3.7.</span> <span class="nav-text">删除空行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除最后一行"><span class="nav-number">3.8.</span> <span class="nav-text">删除最后一行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除文件的最后一个字符"><span class="nav-number">3.9.</span> <span class="nav-text">删除文件的最后一个字符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#向文件开头插入字符串（比如-“-“）"><span class="nav-number">3.10.</span> <span class="nav-text">向文件开头插入字符串（比如 “[“）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#向文件中特定行中插入字符串"><span class="nav-number">3.11.</span> <span class="nav-text">向文件中特定行中插入字符串</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#向文件结尾插入字符（比如-“-”）"><span class="nav-number">3.12.</span> <span class="nav-text">向文件结尾插入字符（比如 “]”）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#向文件结尾插入新行"><span class="nav-number">3.13.</span> <span class="nav-text">向文件结尾插入新行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#向文件的每一行插入数据"><span class="nav-number">3.14.</span> <span class="nav-text">向文件的每一行插入数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#向文件的每一行结尾插入数据"><span class="nav-number">3.15.</span> <span class="nav-text">向文件的每一行结尾插入数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#每-n-个字符插入换行符（比如每-4-个字符）"><span class="nav-number">3.16.</span> <span class="nav-text">每 n 个字符插入换行符（比如每 4 个字符）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#连接多个文件"><span class="nav-number">3.17.</span> <span class="nav-text">连接多个文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#内容替换"><span class="nav-number">3.18.</span> <span class="nav-text">内容替换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于正则的文件内容替换"><span class="nav-number">3.19.</span> <span class="nav-text">基于正则的文件内容替换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#筛选文件中以特定字符串开始行"><span class="nav-number">3.20.</span> <span class="nav-text">筛选文件中以特定字符串开始行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#打印文件中特定行"><span class="nav-number">3.21.</span> <span class="nav-text">打印文件中特定行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#打印奇数行"><span class="nav-number">3.22.</span> <span class="nav-text">打印奇数行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除文件开头的空格和-tab"><span class="nav-number">3.23.</span> <span class="nav-text">删除文件开头的空格和 tab</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#只删除空格"><span class="nav-number">3.24.</span> <span class="nav-text">只删除空格</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除文件结尾的逗号"><span class="nav-number">3.25.</span> <span class="nav-text">移除文件结尾的逗号</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#文件结尾添加一列（以-tab-分隔）"><span class="nav-number">3.26.</span> <span class="nav-text">文件结尾添加一列（以 tab 分隔）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#打印特定的行"><span class="nav-number">3.27.</span> <span class="nav-text">打印特定的行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除文件的最后一个字符-1"><span class="nav-number">3.28.</span> <span class="nav-text">删除文件的最后一个字符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#指定位置插入字符"><span class="nav-number">3.29.</span> <span class="nav-text">指定位置插入字符</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-Awk"><span class="nav-number">4.</span> <span class="nav-text">4. Awk</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#设置-tab-为分隔符"><span class="nav-number">4.1.</span> <span class="nav-text">设置 tab 为分隔符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#设置-tab-为输出内容的分隔符"><span class="nav-number">4.2.</span> <span class="nav-text">设置 tab 为输出内容的分隔符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#传递参数"><span class="nav-number">4.3.</span> <span class="nav-text">传递参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#输出文件行号以及每行的字符个数"><span class="nav-number">4.4.</span> <span class="nav-text">输出文件行号以及每行的字符个数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#输出-column-field-的个数"><span class="nav-number">4.5.</span> <span class="nav-text">输出 column/field 的个数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#判断是不是有逗号"><span class="nav-number">4.6.</span> <span class="nav-text">判断是不是有逗号</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#输出字符串出现-n-次之前的所有行"><span class="nav-number">4.7.</span> <span class="nav-text">输出字符串出现 n 次之前的所有行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#输出文件名和其最后一行"><span class="nav-number">4.8.</span> <span class="nav-text">输出文件名和其最后一行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#向指定的-column-插入字符串"><span class="nav-number">4.9.</span> <span class="nav-text">向指定的 column 插入字符串</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除包含特定字符串的行"><span class="nav-number">4.10.</span> <span class="nav-text">移除包含特定字符串的行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移除最后一个-column"><span class="nav-number">4.11.</span> <span class="nav-text">移除最后一个 column</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#理解-NR-和-FNR-的作用"><span class="nav-number">4.12.</span> <span class="nav-text">理解 NR 和 FNR 的作用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-Xargs"><span class="nav-number">5.</span> <span class="nav-text">5. Xargs</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#设置-tab-为分隔符-1"><span class="nav-number">5.1.</span> <span class="nav-text">设置 tab 为分隔符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#每行显示三个元素"><span class="nav-number">5.2.</span> <span class="nav-text">每行显示三个元素</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#执行之前先询问"><span class="nav-number">5.3.</span> <span class="nav-text">执行之前先询问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#find-文件并删除"><span class="nav-number">5.4.</span> <span class="nav-text">find 文件并删除</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除文件名中含有空格的文件"><span class="nav-number">5.5.</span> <span class="nav-text">删除文件名中含有空格的文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#显示-limits"><span class="nav-number">5.6.</span> <span class="nav-text">显示 limits</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#移动文件"><span class="nav-number">5.7.</span> <span class="nav-text">移动文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#并发执行"><span class="nav-number">5.8.</span> <span class="nav-text">并发执行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于条件的文件拷贝"><span class="nav-number">5.9.</span> <span class="nav-text">基于条件的文件拷贝</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#和-sed-配合使用"><span class="nav-number">5.10.</span> <span class="nav-text">和 sed 配合使用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#将文件名加入到文件的第一行"><span class="nav-number">5.11.</span> <span class="nav-text">将文件名加入到文件的第一行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#统计"><span class="nav-number">5.12.</span> <span class="nav-text">统计</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#将输出整合到一行"><span class="nav-number">5.13.</span> <span class="nav-text">将输出整合到一行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#统计文件夹下面各个文件的行数和总的行数"><span class="nav-number">5.14.</span> <span class="nav-text">统计文件夹下面各个文件的行数和总的行数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#和-grep-联合使用"><span class="nav-number">5.15.</span> <span class="nav-text">和 grep 联合使用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#和-sed-联合使用"><span class="nav-number">5.16.</span> <span class="nav-text">和 sed 联合使用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-Find"><span class="nav-number">6.</span> <span class="nav-text">6. Find</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#递归列出所有的子目录和文件"><span class="nav-number">6.1.</span> <span class="nav-text">递归列出所有的子目录和文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#列出当前目录下的所有文件"><span class="nav-number">6.2.</span> <span class="nav-text">列出当前目录下的所有文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#列出当前目录下的所有子目录"><span class="nav-number">6.3.</span> <span class="nav-text">列出当前目录下的所有子目录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#修改当前目录下的所有文件（将-‘www’-替换成-‘w’）"><span class="nav-number">6.4.</span> <span class="nav-text">修改当前目录下的所有文件（将 ‘www’ 替换成 ‘w’）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除大小小于-74-byte-的文件"><span class="nav-number">6.5.</span> <span class="nav-text">删除大小小于 74 byte 的文件</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
