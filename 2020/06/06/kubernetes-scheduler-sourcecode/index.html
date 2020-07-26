@@ -51,14 +51,14 @@
   };
 </script>
 
-  <meta name="description" content="kubernetes 代码版本：v1.18.4-rc.0。 0. 入口入口函数在路径 kubernetes&#x2F;cmd&#x2F;kube-scheduler&#x2F;scheduler.go#main()，如下 1234567891011121314151617func main() &amp;#123;	rand.Seed(time.Now().UnixNano())	command := app.NewScheduler">
+  <meta name="description" content="本篇文章介绍一下 Kubernetes 的默认调度器 kube-scheduler 的源码实现。kubernetes 代码版本：v1.18.4-rc.0。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="源码面前，了无密码：Kuberentes Scheduler 源码剖析">
 <meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2020&#x2F;06&#x2F;06&#x2F;kubernetes-scheduler-sourcecode&#x2F;index.html">
 <meta property="og:site_name" content="Legendtkl">
-<meta property="og:description" content="kubernetes 代码版本：v1.18.4-rc.0。 0. 入口入口函数在路径 kubernetes&#x2F;cmd&#x2F;kube-scheduler&#x2F;scheduler.go#main()，如下 1234567891011121314151617func main() &amp;#123;	rand.Seed(time.Now().UnixNano())	command := app.NewScheduler">
+<meta property="og:description" content="本篇文章介绍一下 Kubernetes 的默认调度器 kube-scheduler 的源码实现。kubernetes 代码版本：v1.18.4-rc.0。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-06-07T15:23:44.386Z">
+<meta property="og:updated_time" content="2020-07-26T05:29:36.145Z">
 <meta name="twitter:card" content="summary">
 
 <link rel="canonical" href="http://yoursite.com/2020/06/06/kubernetes-scheduler-sourcecode/">
@@ -215,7 +215,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-07 23:23:44" itemprop="dateModified" datetime="2020-06-07T23:23:44+08:00">2020-06-07</time>
+                <time title="Modified: 2020-07-26 13:29:36" itemprop="dateModified" datetime="2020-07-26T13:29:36+08:00">2020-07-26</time>
               </span>
 
           
@@ -229,7 +229,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>kubernetes 代码版本：v1.18.4-rc.0。</p>
+        <p>本篇文章介绍一下 Kubernetes 的默认调度器 kube-scheduler 的源码实现。kubernetes 代码版本：v1.18.4-rc.0。</p>
+<a id="more"></a>
+
+
+
 <h2 id="0-入口"><a href="#0-入口" class="headerlink" title="0. 入口"></a>0. 入口</h2><p>入口函数在路径 <code>kubernetes/cmd/kube-scheduler/scheduler.go#main()</code>，如下</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	rand.Seed(time.Now().UnixNano())</span><br><span class="line"></span><br><span class="line">	command := app.NewSchedulerCommand()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// <span class="doctag">TODO:</span> once we switch everything over to Cobra commands, we can go back to calling</span></span><br><span class="line">	<span class="comment">// utilflag.InitFlags() (by removing its pflag.Parse() call). For now, we have to set the</span></span><br><span class="line">	<span class="comment">// normalize func and add the go flag set by hand.</span></span><br><span class="line">	pflag.CommandLine.SetNormalizeFunc(cliflag.WordSepNormalizeFunc)</span><br><span class="line">	<span class="comment">// utilflag.InitFlags()</span></span><br><span class="line">	logs.InitLogs()</span><br><span class="line">	<span class="keyword">defer</span> logs.FlushLogs()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := command.Execute(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		os.Exit(<span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -294,7 +298,8 @@
 
 
 
-<h4 id="scheduler-cache"><a href="#scheduler-cache" class="headerlink" title="scheduler cache"></a>scheduler cache</h4>
+<h4 id="scheduler-cache"><a href="#scheduler-cache" class="headerlink" title="scheduler cache"></a>scheduler cache</h4><p>//未完待续</p>
+
     </div>
 
     
