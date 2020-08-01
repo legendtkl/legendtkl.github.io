@@ -184,6 +184,92 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/10/12/c-symbol/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2013/10/12/c-symbol/" class="post-title-link" itemprop="url">浅析C语言符号</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2013-10-12 20:14:32" itemprop="dateCreated datePublished" datetime="2013-10-12T20:14:32+08:00">2013-10-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/c/" itemprop="url" rel="index">
+                    <span itemprop="name">c</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>这里所说的符号是大家不常用的，而且可能出错的符号。不仅仅是指运算符，具体有注释符号，反斜杠，自增自减操作符。</p>
+<p>1.关于注释符号</p>
+<p>[cce_cpp tab_size=”4”]<br>int/<em>…</em>/i;<br>y = x/*p;<br>[/cce_cpp]<br>编译器剔除注释不是简单的剔除，而是用空格代替原来的注释。所以第一个表达式是正确的。而第二个表达式则会被编译器认为p为注释的一部分。</p>
+<p>2.反斜杠（\）<br>C语言里以反斜杠（\）表示断行。编译器会将反斜杠剔除掉，跟在反斜杠后面的字符自动连接到前面一行。但是注意：反斜杠之后不能有空格，反斜杠的下一行之前也不能有空格。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2013/10/12/c-symbol/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/10/12/struct-union/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1021,7 +1107,7 @@ struct test3
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">110</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>

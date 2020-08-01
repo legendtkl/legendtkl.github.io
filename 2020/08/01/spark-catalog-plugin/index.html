@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="Spark 3.0 推出了 Catalog Plugin 特性。在 Release Note 里面位于 Highlight 部分。我们这篇文章就来介绍一下 Catalog Plugin 机制。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark Catalog Plugin 机制介绍">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2020&#x2F;08&#x2F;01&#x2F;spark-catalog-plugin&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="Spark 3.0 推出了 Catalog Plugin 特性。在 Release Note 里面位于 Highlight 部分。我们这篇文章就来介绍一下 Catalog Plugin 机制。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2020&#x2F;spark3.0-release.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2020&#x2F;catalogplugin-hierarchy.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2020&#x2F;tablecatalog-structure.png">
+<meta property="og:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2020&#x2F;catalogmanager.png">
+<meta property="og:updated_time" content="2020-08-01T09:10:29.496Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http:&#x2F;&#x2F;yoursite.com&#x2F;img&#x2F;uploads&#x2F;2020&#x2F;spark3.0-release.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/08/01/spark-catalog-plugin/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Spark Catalog Plugin 机制介绍 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/01/spark-catalog-plugin/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spark Catalog Plugin 机制介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-08-01 17:04:54 / Modified: 17:10:29" itemprop="dateCreated datePublished" datetime="2020-08-01T17:04:54+08:00">2020-08-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spark/" itemprop="url" rel="index">
+                    <span itemprop="name">Spark</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Spark 3.0 推出了 Catalog Plugin 特性。在 Release Note 里面位于 <strong><em>Highlight</em></strong> 部分。我们这篇文章就来介绍一下 Catalog Plugin 机制。</p>
+<a id="more"></a>
+
+<p><img src="/img/uploads/2020/spark3.0-release.png" alt="image-20200728223818070"></p>
+<p>Catalog Plugin 的设计文章在 Google Doc 上： <a href="https://docs.google.com/document/d/1zLFiA1VuaWeVxeTDXNg8bL6GP3BVoOZBkewFtEnjEoo/edit#heading=h.m45webtwxf2d" target="_blank" rel="noopener">SPIP: Spark API for Table Metadata</a>。本文部分参考于这篇设计文档。</p>
+<h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>DataSourceV2 是 Spark 2.x 新推出的 API，主要目的是用来和外部数据存储进行集成，比如数据读写。但是这里缺少关键的一环：对表的元数据进行操作，比如创建、修改、删除表等。</p>
+<p>SparkSQL 和 DataFrame 操作都支持 CTAS (Create Table AS Select) 用来创建一个表并向该表写入数据，注意这里是一个操作。缺少创建目标表的 API，CTAS 的实际行为将完全取决于 DataSourceV2 的实现。比如写表失败，表可能被保存也可能被删除。并且在某些 SaveMode 下，我们无法区分 CTAS 和普通的写操作，那么很有可能在 Append 模式下写表的时候会因为表被删除而失败。最后一点，Spark 没有一种机制用来设置由 CTAS 创建的表，比如分区。</p>
+<p>除此之外，数据工程师也希望类似 CTAS 的 high-level 操作在数据源上面进行操作的时候能保持行为一致。 <a href="https://docs.google.com/document/d/1gYm5Ji2Mge3QBdOliFV5gSPTKlX4q1DCBXIkiyMv62A/edit?ts=5a987801#heading=h.m45webtwxf2d" target="_blank" rel="noopener">SPIP to Standardize SQL Logical Plans</a> 介绍了一些 high-level 的操作，并且总结了这些操作的期望行为，并期望 Spark 在内部实现上设计一种机制进行保证。这也要求 Catalog API 能对那些数据源进行创建、修改以及删除等操作。</p>
+<p>举个例子，为了实现 CTAS，Spark 会创建、写入或者删除表（写入失败时）。这样的话，当元数据管理不可用或者 driver 自己失败的时候，CTAS 可能会删除表不成功。</p>
+<p>除此之外，还有一个暴露 catalog API 的需求。我们使用 DataFrame 编写 Spark 程序的时候可以使用 SQL 引擎，但是并没有类似创建、修改以及删除这种 catalog 的 API 提供。在 Spark 代码中，Catalog 接口提供了一些操作，但是并不够全面和强大，比如不支持 multi catalog。</p>
+<p>这就是 Catalog Plugin 产生的背景。</p>
+<p>所以 Catalog Plugin 的首要目标其实是提供一组 catalog API 用来创建、修改、加载和删除表。</p>
+<h2 id="2-CatalogPlugin-Interface"><a href="#2-CatalogPlugin-Interface" class="headerlink" title="2. CatalogPlugin Interface"></a>2. CatalogPlugin Interface</h2><p>CatalogPlugin 在 Spark 代码中是一个 Interface，代码如下。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A marker interface to provide a catalog implementation for Spark.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * Implementations can provide catalog functions by implementing additional interfaces for tables,</span></span><br><span class="line"><span class="comment"> * views, and functions.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * Catalog implementations must implement this marker interface to be loaded by</span></span><br><span class="line"><span class="comment"> * &#123;@link Catalogs#load(String, SQLConf)&#125;. The loader will instantiate catalog classes using the</span></span><br><span class="line"><span class="comment"> * required public no-arg constructor. After creating an instance, it will be configured by calling</span></span><br><span class="line"><span class="comment"> * &#123;@link #initialize(String, CaseInsensitiveStringMap)&#125;.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * Catalog implementations are registered to a name by adding a configuration option to Spark:</span></span><br><span class="line"><span class="comment"> * &#123;@code spark.sql.catalog.catalog-name=com.example.YourCatalogClass&#125;. All configuration properties</span></span><br><span class="line"><span class="comment"> * in the Spark configuration that share the catalog name prefix,</span></span><br><span class="line"><span class="comment"> * &#123;@code spark.sql.catalog.catalog-name.(key)=(value)&#125; will be passed in the case insensitive</span></span><br><span class="line"><span class="comment"> * string map of options in initialization with the prefix removed.</span></span><br><span class="line"><span class="comment"> * &#123;@code name&#125;, is also passed and is the catalog's name; in this case, "catalog-name".</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @since 3.0.0</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Evolving</span></span><br><span class="line">public interface <span class="type">CatalogPlugin</span> &#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Called to initialize configuration.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;</span></span><br><span class="line"><span class="comment">   * This method is called once, just after the provider is instantiated.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * @param name the name used to identify and load this catalog</span></span><br><span class="line"><span class="comment">   * @param options a case-insensitive string map of configuration</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  void initialize(<span class="type">String</span> name, <span class="type">CaseInsensitiveStringMap</span> options);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Called to get this catalog's name.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;</span></span><br><span class="line"><span class="comment">   * This method is only called after &#123;@link #initialize(String, CaseInsensitiveStringMap)&#125; is</span></span><br><span class="line"><span class="comment">   * called to pass the catalog's name.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="type">String</span> name();</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Return a default namespace for the catalog.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;</span></span><br><span class="line"><span class="comment">   * When this catalog is set as the current catalog, the namespace returned by this method will be</span></span><br><span class="line"><span class="comment">   * set as the current namespace.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;</span></span><br><span class="line"><span class="comment">   * The namespace returned by this method is not required to exist.</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * @return a multi-part namespace</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="keyword">default</span> <span class="type">String</span>[] defaultNamespace() &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="type">String</span>[<span class="number">0</span>];</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从代码中我们可以获得几点有用的信息：</p>
+<ol>
+<li>自定义 catalog 必须实现这个 interface</li>
+<li>然后通过 Catalog#load(String, SQLConf) 进行加载，加载时会调用具体 Catalog 的无参构造函数方法进行初始化</li>
+<li>初始化之后会调用 CatalogPlugin 中的 initialize 方法进行初始化</li>
+<li>使用 CatalogPlugin 需要添加如下配置，其中第二个配置就是我们传递给 CatalogPlugin 的 initialize 方法的参数<ul>
+<li>spark.sql.catalog.catalog-name=com.example.YourCatalogClass</li>
+<li>spark.sql.catalog.catalog-name.(key)=(value)</li>
+</ul>
+</li>
+</ol>
+<p>我们查看一下 CatalogPlugin Interface 的实现和继承关系可以看到如下图。我们可以看到 TableCatalog Interfact 继承了 CatalogPlugin，然后 V2SessionCatalog 和 JDBCTableCatalog 是两个具体的 class，实现了 TableCatalog。所以我们可以有理由相信 TableCatalog 中实现了创建、修改、删除表的 api。</p>
+<p><img src="/img/uploads/2020/catalogplugin-hierarchy.png" alt="image-20200728235635020"></p>
+<h2 id="3-TableCatalog"><a href="#3-TableCatalog" class="headerlink" title="3. TableCatalog"></a>3. TableCatalog</h2><p>TableConfig 也是一个 Interface，代码如下。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Catalog methods for working with Tables.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;</span></span><br><span class="line"><span class="comment"> * TableCatalog implementations may be case sensitive or case insensitive. Spark will pass</span></span><br><span class="line"><span class="comment"> * &#123;@link Identifier table identifiers&#125; without modification. Field names passed to</span></span><br><span class="line"><span class="comment"> * &#123;@link #alterTable(Identifier, TableChange...)&#125; will be normalized to match the case used in the</span></span><br><span class="line"><span class="comment"> * table schema when updating, renaming, or dropping existing columns when catalyst analysis is case</span></span><br><span class="line"><span class="comment"> * insensitive.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @since 3.0.0</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Evolving</span></span><br><span class="line">public interface <span class="type">TableCatalog</span> <span class="keyword">extends</span> <span class="type">CatalogPlugin</span> &#123;</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>根据注释可以看出 TableCatalog 定义了 Catalog  和表进行交互的方法，其实就是前面说的增删改。值得注意的是 TableCatalog 可以被实现成字符敏感或者字符不敏感的，实现方法是通过一个 alterTable 方法去对 field 做规范化，确实挺巧妙的。</p>
+<p>TableCatalog 定义的方法非常的简单，都是和 table 相关的，如下，这里就不再细说的。</p>
+<p><img src="/img/uploads/2020/tablecatalog-structure.png" alt="image-20200729000503745"></p>
+<p>TableCatalog 的实现有 V2SessionCatalog 和 JDBCCatalog，其中 V2SessionCatalog 是为了和之前的 SparkSession 中的 Catalog 做兼容，这里就不再细说了。</p>
+<h2 id="4-CatalogManager"><a href="#4-CatalogManager" class="headerlink" title="4. CatalogManager"></a>4. CatalogManager</h2><p>前面介绍 Catalog 使用的时候提供一个配置就可以了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.catalog.catalog-name=com.example.YourCatalogClass</span><br></pre></td></tr></table></figure>
+
+<p>那么我们有理由怀疑所有的 catalog 都是通过一个 Map 映射关系来管理的，实际上确实差不多，这个管理的 Class 就是 CatalogManager。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A thread-safe manager for [[CatalogPlugin]]s. It tracks all the registered catalogs, and allow</span></span><br><span class="line"><span class="comment"> * the caller to look up a catalog by name.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * There are still many commands (e.g. ANALYZE TABLE) that do not support v2 catalog API. They</span></span><br><span class="line"><span class="comment"> * ignore the current catalog and blindly go to the v1 `SessionCatalog`. To avoid tracking current</span></span><br><span class="line"><span class="comment"> * namespace in both `SessionCatalog` and `CatalogManger`, we let `CatalogManager` to set/get</span></span><br><span class="line"><span class="comment"> * current database of `SessionCatalog` when the current catalog is the session catalog.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span>[sql]</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CatalogManager</span>(<span class="params"></span></span></span><br><span class="line"><span class="class"><span class="params">  ...</span></span></span><br><span class="line"><span class="class"><span class="params">  </span>)</span></span><br></pre></td></tr></table></figure>
+
+<p>从 CatalogManager 的注释中我们可以看出这就是一个 CatalogPlugin 的管理者，并且是线程安全的。我们简单看一下 CatalogManager 内部的方法和成员。</p>
+<p><img src="/img/uploads/2020/catalogmanager.png" alt="image-20200729001214656"></p>
+<p>如上所示，简单介绍其中两个。</p>
+<ul>
+<li>catalogs: 一个 map: mutable.HashMap[String, CatalogPlugin]，保存 catalog 名字和 Class 的隐射关系</li>
+<li>catalog(String)：用来查找特定名字的 Catalog，返回 CatalogPlugin 接口。</li>
+</ul>
+<h2 id="5-使用举例"><a href="#5-使用举例" class="headerlink" title="5. 使用举例"></a>5. 使用举例</h2><p>使用举例下面这篇文章写的挺好的，copy 部分内容如下，全文可以移步：<a href="https://developer.aliyun.com/article/756968" target="_blank" rel="noopener">https://developer.aliyun.com/article/756968</a></p>
+<h5 id="基于-Spark-3-0-preview使用Iceberg-SparkSQL"><a href="#基于-Spark-3-0-preview使用Iceberg-SparkSQL" class="headerlink" title="基于 Spark 3.0 preview使用Iceberg + SparkSQL"></a>基于 Spark 3.0 preview使用Iceberg + SparkSQL</h5><p>在Spark DatasourceV2增加了multiple catalog等功能后，回到我们想要查询的SQL，实现步骤如下：</p>
+<p>1.在Iceberg侧对CatalogPlugin/TableCatalog/SupportsRead等接口进行实现，实现类名如: org.apache.iceberg.spark.SparkCatalog</p>
+<p>2.在spark的配置文件中设置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.catalog.iceberg_catalog = org.apache.iceberg.spark.SparkCatalog</span><br></pre></td></tr></table></figure>
+
+<p>3.基于配置的catalogName，调整SQL如下，就可以进行基于SQL的跨数据源查询了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">select * </span><br><span class="line">from iceberg_catalog.ns1.t1</span><br><span class="line">join hive_db.t2 on t1.k1 = t2.k1;</span><br></pre></td></tr></table></figure>
+
+<p>4.除了跨数据源数据分析以外，现在还可以对Iceberg的表进行DDL操作了，如，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">create table iceberg_catalog.t1 ......</span><br><span class="line">drop table iceberg_catalog.t1</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/07/26/flink-catalog/" rel="next" title="Flink Catalog 介绍">
+                  <i class="fa fa-chevron-left"></i> Flink Catalog 介绍
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-背景"><span class="nav-number">1.</span> <span class="nav-text">1. 背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-CatalogPlugin-Interface"><span class="nav-number">2.</span> <span class="nav-text">2. CatalogPlugin Interface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-TableCatalog"><span class="nav-number">3.</span> <span class="nav-text">3. TableCatalog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-CatalogManager"><span class="nav-number">4.</span> <span class="nav-text">4. CatalogManager</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-使用举例"><span class="nav-number">5.</span> <span class="nav-text">5. 使用举例</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#基于-Spark-3-0-preview使用Iceberg-SparkSQL"><span class="nav-number">5.0.0.1.</span> <span class="nav-text">基于 Spark 3.0 preview使用Iceberg + SparkSQL</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">110</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
