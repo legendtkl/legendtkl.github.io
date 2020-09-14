@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="过去半年基本很少在博客或者知乎发表文章，主要原因是一直在做一个知识付费的课程，慕课网的专栏，这个是课程链接：跟 BAT 技术专家学 Docker + K8S 。下面摘抄一下网站的课程介绍如下，感兴趣的可以报名学习一下。这么多年一直在写免费的文章，第一次尝试付费内容。说来惭愧，目前的收入相比写文章付出的时间实在是惨不忍睹，所以博客上面做一个广告，希望多多包涵。下面是课程介绍。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="推荐一门自己做的 Docker 相关的付费课程">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2020&#x2F;09&#x2F;14&#x2F;imooc-md&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="过去半年基本很少在博客或者知乎发表文章，主要原因是一直在做一个知识付费的课程，慕课网的专栏，这个是课程链接：跟 BAT 技术专家学 Docker + K8S 。下面摘抄一下网站的课程介绍如下，感兴趣的可以报名学习一下。这么多年一直在写免费的文章，第一次尝试付费内容。说来惭愧，目前的收入相比写文章付出的时间实在是惨不忍睹，所以博客上面做一个广告，希望多多包涵。下面是课程介绍。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https:&#x2F;&#x2F;img3.sycdn.imooc.com&#x2F;5f1fc9ba00011efb07505508.jpg">
+<meta property="og:updated_time" content="2020-09-14T14:46:49.275Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;img3.sycdn.imooc.com&#x2F;5f1fc9ba00011efb07505508.jpg">
+
+<link rel="canonical" href="http://yoursite.com/2020/09/14/imooc-md/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>推荐一门自己做的 Docker 相关的付费课程 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/09/14/imooc-md/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          推荐一门自己做的 Docker 相关的付费课程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-09-14 22:36:19 / Modified: 22:46:49" itemprop="dateCreated datePublished" datetime="2020-09-14T22:36:19+08:00">2020-09-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/docker/" itemprop="url" rel="index">
+                    <span itemprop="name">docker</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/docker/kubernetes/" itemprop="url" rel="index">
+                    <span itemprop="name">kubernetes</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>过去半年基本很少在博客或者知乎发表文章，主要原因是一直在做一个知识付费的课程，慕课网的专栏，这个是课程链接：<a href="https://www.imooc.com/read/84" target="_blank" rel="noopener">跟 BAT 技术专家学 Docker + K8S</a> 。下面摘抄一下网站的课程介绍如下，感兴趣的可以报名学习一下。这么多年一直在写免费的文章，第一次尝试付费内容。说来惭愧，目前的收入相比写文章付出的时间实在是惨不忍睹，所以博客上面做一个广告，希望多多包涵。下面是课程介绍。</p>
+<a id="more"></a>
+
+<h3 id="1-你将收获"><a href="#1-你将收获" class="headerlink" title="1. 你将收获"></a>1. 你将收获</h3><ul>
+<li>BAT 技术专家第一手容器化迁移经验分享；</li>
+<li>全面的 Docker 知识体系及使用指南；</li>
+<li>容器技术的本质以及10+ 热门镜像的最佳实践；</li>
+<li>云原生容器技术 K8S 核心技术透彻分析及实践落地指导；</li>
+<li>一线大厂云原生监控系统使用标准及实践落地指导。</li>
+</ul>
+<h3 id="2-讲师介绍"><a href="#2-讲师介绍" class="headerlink" title="2. 讲师介绍"></a>2. 讲师介绍</h3><p>讲师 legendtkl，BAT 技术专家，具有多年的一线互联网工作经验。技术视野广泛，技术栈集中在云原生和分布式系统技术，Hadoop/Spark/Flink/HBase 等分布式计算和存储系统。Docker、Kubernetes 及其生态系统；在使用 Docker 和 Kubernetes 的过程中积累了大量的第一手经验。</p>
+<h3 id="3-课程简介"><a href="#3-课程简介" class="headerlink" title="3. 课程简介"></a>3. 课程简介</h3><p>目前的技术水平已经<strong>真正进入到了云计算时代</strong>，各大基础设施纷纷上云。阿里已经在去年双十一将所有业务都迁移到了云上，而<strong>云的基础设施就是 Docker</strong>。作为当下最主流的容器技术。毫无疑问，Docker 容器技术已经成为互联网从业成员不可或缺的技术。</p>
+<p><strong>使用 Docker 技术来开发和交付我们的应用，将极大提升工程效率，简化缩短整个开发流程</strong>。</p>
+<p>Docker 技术与传统应用交付方式的最大区别在于，传统的方式将应用开发和部署进行割裂，而Docker 技术的创新点在于直接将应用的软件依赖和环境依赖打包进 Docker 镜像，部署环节直接简化成了如何规范化容器的部署管理（这正是社区和 Kubernetes 等管理系统所做的事情），整个链路的工程效率提升极大。</p>
+<p>并且，由于目前处于云原生的技术趋势下，<strong>大部分的应用最终都将通过容器化的方式来交付</strong>。无论是无状态应用（比如 WebServer），还是分布式有状态应用（比如 ZooKeeper 等），抑或是<strong>当前最火热的大数据和 AI 技术，也在逐步和云原生技术进行结合</strong>。</p>
+<p><strong>本课程将带你全面获取 Docker 的基础知识、核心原理以及最佳实践</strong>。在应用容器化的道路上，如果不熟悉 Docker 的最佳实践，将会走很多弯路。比如将多个程序打包到一个 Docker 容器中就很有可能带来过多僵尸进程的问题，因此在<strong>设计之初，课程就明确了需要重点讨论并且要最佳实践的问题</strong>，希望大家少走弯路。</p>
+<p>考虑到 Docker 技术绝不是一个孤立的技术栈，Docker 技术栈结合使用最多的就是 Kubernetes 相关技术，因此<strong>本课程还会重点介绍 Kubernetes 技术，让你全面掌握相关技能</strong>。</p>
+<p>本课程会以一种“<strong>学习思路再现</strong>”的形式进行讲解，<strong>从提出问题开始，到尝试解决问题，最后理解问题背后的原理</strong>。这种学习方式能够帮助我们不仅知其然、而且知其所以然。更重要的是通过这种方式习得的知识要比填鸭式的照本宣科显得更加牢靠。</p>
+<h3 id="4-课程模块"><a href="#4-课程模块" class="headerlink" title="4. 课程模块"></a>4. 课程模块</h3><p>专栏分成 5 部分，47 小节，内容循序渐进，其中各个部分的内容组织如下所示：</p>
+<p><strong>第一章 Docker 基础</strong></p>
+<p>本部分内容会介绍 Docker 的一些背景和基础知识，包括Docker容器的发展之路、Docker安装与运行、Docker技术概览、Docker镜像技术，以及动手实践构建出第一个属于我们自己的 Docker 应用。</p>
+<p><strong>第二章 Docker 核心技术</strong></p>
+<p>在这个部分大家将更加深入地理解 Docker 的核心技术。包括 Docker 隔离技术的本质 Namespace深入解析、 Docker资源限制技术的幕后主使 Cgroup 剖析、 Docker 镜像深入理解、Docker 的本质、Docker 镜像构建、Docker 网络相关知识、Docker 数据存储相关知识等。</p>
+<p><strong>第三章 Docker 最佳实践</strong></p>
+<p>前面两部分介绍完了理论部分，第三章主要介绍 Docker 最佳实践。包括：<br>讲解Dockerfile 最佳编程实践、如何构建最小镜像最佳实践、其他 Docker 使用中的最佳实践，解释容器化时保持 Docker 是单进程模型的原因，介绍容器设计模式、 Docker 监控方案最佳实践，以及 从 0 到 1 构建一个分布式高可用的 Web 应用。</p>
+<p><strong>第四章 云原生容器技术 Kubernetes</strong></p>
+<p>前面介绍了 Docker 技术的一些理论知识和最佳实践，但Docker 技术从来都不是一个孤立的技术。Kubernetes 凭借着 Google 内部早期积累的经验和优秀的云原生设计理念，已经全面占领了云端统一管理的地位。这一章主要介绍 Kubernetes 相关的技术知识，包括集群资源隔离介绍、配置管理、Kubernetes的典型及控制器模式，最后通过 Kubernetes 来构建容器化应用。</p>
+<p><strong>第五章 云原生监控方案</strong></p>
+<p>目前 Prometheus 已经成为云原生监控方案的事实标准，最后一章我们将介绍 Prometheus 的一些知识。</p>
+<h3 id="5-课程目录"><a href="#5-课程目录" class="headerlink" title="5. 课程目录"></a>5. 课程目录</h3><p><img src="https://img3.sycdn.imooc.com/5f1fc9ba00011efb07505508.jpg" alt="img"></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/08/01/spark-catalog-plugin/" rel="next" title="Spark Catalog Plugin 机制介绍">
+                  <i class="fa fa-chevron-left"></i> Spark Catalog Plugin 机制介绍
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-你将收获"><span class="nav-number">1.</span> <span class="nav-text">1. 你将收获</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-讲师介绍"><span class="nav-number">2.</span> <span class="nav-text">2. 讲师介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-课程简介"><span class="nav-number">3.</span> <span class="nav-text">3. 课程简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-课程模块"><span class="nav-number">4.</span> <span class="nav-text">4. 课程模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-课程目录"><span class="nav-number">5.</span> <span class="nav-text">5. 课程目录</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">111</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
