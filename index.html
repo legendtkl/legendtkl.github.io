@@ -184,6 +184,77 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/09/15/secure-container-overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/09/15/secure-container-overview/" class="post-title-link" itemprop="url">安全容器综述</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-09-15 22:53:17 / Modified: 15:21:41" itemprop="dateCreated datePublished" datetime="2020-09-15T22:53:17+08:00">2020-09-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>最近两年安全容器非常的火，这篇文章就带大家来看一下何谓安全容器技术，以及目前主流的安全容器都有哪些，最后还会附上很多有价值的参考链接。本文将通过如下的方式进行展开：</p>
+<ol>
+<li>何谓安全容器</li>
+<li>安全容器技术的思路是什么样的</li>
+<li>目前的主流安全容器有哪些</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/09/15/secure-container-overview/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/09/14/imooc-md/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -908,90 +979,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/21/drf/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/avatar.jpg">
-      <meta itemprop="name" content="legendtkl">
-      <meta itemprop="description" content="Do not go gentle into that good night.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Legendtkl">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2018/07/21/drf/" class="post-title-link" itemprop="url">集群资源管理之 DRF</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2018-07-21 23:38:16" itemprop="dateCreated datePublished" datetime="2018-07-21T23:38:16+08:00">2018-07-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2019-11-08 11:09:26" itemprop="dateModified" datetime="2019-11-08T11:09:26+08:00">2019-11-08</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6/" itemprop="url" rel="index">
-                    <span itemprop="name">资源调度</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="0-引言"><a href="#0-引言" class="headerlink" title="0. 引言"></a>0. 引言</h2><p>如果看过我的上一篇关于 mesos 的文章，应该还记得 mesos 的资源调度策略写的泛化的 max-min fairness 算法，其实这个就是 DRF 算法。</p>
-<p>DRF，全称 dominant resource fairness，由伯克利大学提出，论文链接在文末列出。论文中介绍 DRF 为 generaliztion of max-min fairness to multiple resource types，所以下面先介绍一下 max-min fairness 算法。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/07/21/drf/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1042,7 +1029,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">111</span>
+          <span class="site-state-item-count">112</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>

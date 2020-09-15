@@ -184,6 +184,90 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/10/21/c-runtime/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2013/10/21/c-runtime/" class="post-title-link" itemprop="url">浅析C语言运行时内存管理</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2013-10-21 21:21:46" itemprop="dateCreated datePublished" datetime="2013-10-21T21:21:46+08:00">2013-10-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:26" itemprop="dateModified" datetime="2019-11-08T11:09:26+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index">
+                    <span itemprop="name">C</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>主要讨论C语言怎样组织正在运行的程序的数据结构的细节。</p>
+<p>我们知道知道在UNIX操作系统中，一个C语言文件经过预处理（cpp），编译（cc1），汇编（as）和链接（ld）后可以得到可执行文件a.out。我们可以用size命令（或nm、dump）检查可执行文件，它会告诉你这个文件中的三个段（文本段.text，数据段.data，.bss段）的大小。文本段包含程序的指令。由于程序的文本内容和大小都不会变化，链接器把指令直接从文件拷贝到内存中，不再处理。数据段包含经过初始化的全局和静态变量以及它们的值。BSS段的大小从可执行文件中得到，然后链接器得到这个大小的内存块，紧跟在数据段之后。当这个内存区进入程序的地址空间后全部清零，通常是memset全部置0。通常把数据段和BSS段统一称为数据区。上面这些内容可以通过size命令很直观的查看与验证。除了上面提到的程序指令、全局和静态变量，我们还有局部变量等数据需要存储。这就引出了堆栈段（stack）和堆空间（heap）。下面将详细讨论数据区、堆栈段和堆空间。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2013/10/21/c-runtime/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/10/19/c-array-and-pointer/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -968,91 +1052,6 @@ struct test3
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/02/27/linux-deal-with-text/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/avatar.jpg">
-      <meta itemprop="name" content="legendtkl">
-      <meta itemprop="description" content="Do not go gentle into that good night.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Legendtkl">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2013/02/27/linux-deal-with-text/" class="post-title-link" itemprop="url">linux常用文本处理命令</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2013-02-27 21:23:36" itemprop="dateCreated datePublished" datetime="2013-02-27T21:23:36+08:00">2013-02-27</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index">
-                    <span itemprop="name">linux</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>上一篇面经写完之后就去赶火车了，昨天到达帝都，空气还不错</p>
-<p>之前说到要将linux命令统一来作个总结，今天刚意识到这句话说的真是不严谨啊！linux下面命令实在是太多了，下面对我在面经中接触的命令以及后来实习工作中接触的常用命令作一个总结，至于其它的，我尽量补上吧！</p>
-<p>下面要介绍的主要是文本处理方面的命令</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2013/02/27/linux-deal-with-text/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1103,7 +1102,7 @@ struct test3
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">111</span>
+          <span class="site-state-item-count">112</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
