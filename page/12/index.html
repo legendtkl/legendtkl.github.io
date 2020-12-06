@@ -184,6 +184,90 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/02/28/csapp-data-experiment/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2013/02/28/csapp-data-experiment/" class="post-title-link" itemprop="url">CSAPP实验之数据实验</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2013-02-28 10:18:54" itemprop="dateCreated datePublished" datetime="2013-02-28T10:18:54+08:00">2013-02-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index">
+                    <span itemprop="name">算法设计</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>CSAPP是以前在IBMTC大家对Computer Systems： A Programmer’s Perspective的简称，中文名字是《深入理解计算机系统》。这本书我就不介绍了。最近拿出来温习一下，顺便把这本书上的实验再做一下。</p>
+<p>实验主要有：数据实验，二进制炸弹实验，缓冲区溢出实验，体系结构实验，性能实验，shell实验，malloc实验，代理实验。争取都做了吧！</p>
+<p>数据实验具体如下：函数srl使用算术（由值xsta给出）来执行逻辑右移，紧跟着的是其他不包括右移或者除尘的运算。函数sta使用逻辑(值由xstrl给出)来执行算术右移，紧跟着的是其他不包括右移或者除法的运算。可以假设int是32位长的，移位量k的取值范围是0~31.</p>
+<p>一般而言，机器支持两种形式的右移：逻辑右移和算法右移。逻辑右移在左端补k个0，算术右移是在左端补k个最高有效位的拷贝。所以我们只要设计一个掩码就好，还是比较简单的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="title">srl</span><span class="params">(<span class="keyword">unsigned</span> x, <span class="keyword">int</span> k)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">/*Perform shift arithmetically */</span></span><br><span class="line">    <span class="keyword">unsigned</span> xsra = (<span class="keyword">int</span>) x &gt;&gt; k;</span><br><span class="line">    <span class="comment">/* Make mask of low order 32-k bits*/</span></span><br><span class="line">    <span class="keyword">unsigned</span> mask = k ? ((<span class="number">1</span>&lt;&lt;(<span class="number">32</span>-k))<span class="number">-1</span>) : ~<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> xsra &amp;&amp; mask;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sra</span><span class="params">(<span class="keyword">int</span> x, <span class="keyword">int</span> k)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">/*Perform shift logically*/</span></span><br><span class="line">    <span class="keyword">int</span> xsrl = (<span class="keyword">unsigned</span>) x &gt;&gt; k;</span><br><span class="line">    <span class="comment">/*Make mask of high order k bits*/</span></span><br><span class="line">    <span class="keyword">unsigned</span> mask = k ? ~((<span class="number">1</span>&lt;&lt;(<span class="number">32</span>-k))<span class="number">-1</span>) : <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> (x&lt;<span class="number">0</span>) ? mask | xsrl : xsrl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关于移位运算还有一点要注意是优先级问题：1&lt;&lt;5-1等价于1&lt;&lt;(5-1)而不是(1&lt;&lt;5)-1.</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/02/27/linux-deal-with-text/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -404,14 +488,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">112</span>
+          <span class="site-state-item-count">113</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-count">32</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">

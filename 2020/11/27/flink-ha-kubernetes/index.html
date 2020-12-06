@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Legendtkl" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"right","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="这篇文章介绍一下 Flink 的 JobManager HA 在 Kubernetes 上面的实现思路。Flink 1.12 还没有 release，但是在开发计划中已经看到了 HA 在 K8s 上面的实现。但是这篇文章主要介绍我们内部的实现。下一篇在 Flink 1.12 正式 release 之后再进行介绍官方的实现。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink JM HA 在 Kubernetes 上的实现">
+<meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2020&#x2F;11&#x2F;27&#x2F;flink-ha-kubernetes&#x2F;index.html">
+<meta property="og:site_name" content="Legendtkl">
+<meta property="og:description" content="这篇文章介绍一下 Flink 的 JobManager HA 在 Kubernetes 上面的实现思路。Flink 1.12 还没有 release，但是在开发计划中已经看到了 HA 在 K8s 上面的实现。但是这篇文章主要介绍我们内部的实现。下一篇在 Flink 1.12 正式 release 之后再进行介绍官方的实现。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-12-06T06:19:21.722Z">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/11/27/flink-ha-kubernetes/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Flink JM HA 在 Kubernetes 上的实现 | Legendtkl</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Legendtkl</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">abc</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-booklist">
+
+    <a href="/booklist/" rel="section"><i class="fa fa-fw fa-book"></i>booklist</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/11/27/flink-ha-kubernetes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Flink JM HA 在 Kubernetes 上的实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-11-27 23:18:57" itemprop="dateCreated datePublished" datetime="2020-11-27T23:18:57+08:00">2020-11-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-12-06 14:19:21" itemprop="dateModified" datetime="2020-12-06T14:19:21+08:00">2020-12-06</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/flink/" itemprop="url" rel="index">
+                    <span itemprop="name">flink</span>
+                  </a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/flink/kubernetes/" itemprop="url" rel="index">
+                    <span itemprop="name">kubernetes</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这篇文章介绍一下 Flink 的 JobManager HA 在 Kubernetes 上面的实现思路。Flink 1.12 还没有 release，但是在开发计划中已经看到了 HA 在 K8s 上面的实现。但是这篇文章主要介绍我们内部的实现。下一篇在 Flink 1.12 正式 release 之后再进行介绍官方的实现。</p>
+<a id="more"></a>
+
+<h2 id="0-Flink-HA"><a href="#0-Flink-HA" class="headerlink" title="0. Flink HA"></a>0. Flink HA</h2><p>这里说的 HA 是 HighAvailability 的缩写，HA 在很多分布式系统中都有涉及，主要是为了解决 SPOF （<em>single point of failure</em>，也就是单点）问题。举个例子，大数据生态的分布式文件系统 HDFS 的 NameNode （可以简单理解为 master-slave 结构中的 master）在生产环境都是要开启 HA 的。类似的，很多 HA 都是针对分布式架构（master-slave）中的 master。</p>
+<p>那么具体一点，HA 如何来解决单点问题呢？在非 HA 的系统中，master 一旦挂掉，很多 master 角色承担的工作将会停止。比如 Flink 的 JobManager 负责 task 的转发。在非 HA 情况下我们不得不重启作业从头开始计算。但是有了 HA 之后，一台 JobManager 挂掉之后，会有新的 JobManager 来取代他从而使得作业可以继续运行。</p>
+<p>需要 HA 就需要多个同样的服务进程的同时存在，但是真正服务的应该只有一个进程，这个就是 Leader，而如何在这些服务中选出一个进行服务就是 Leader 选举。</p>
+<h3 id="1-Leader-选举"><a href="#1-Leader-选举" class="headerlink" title="1. Leader 选举"></a>1. Leader 选举</h3><p>在一个典型的 Leader 选举过程中，多个候选者（candidates）会去竞争 leader （正常只有一个）的位置，这个过程称为 Leader Election。Leader 选出来之后，其他的候选者一般称为 Follower，为了向其他的 follower 说明自己的 leader 角色，leader 需要不断发送心跳。但是心跳有一个弊端，在网络不稳定的时候可能会导致多主。为了解决这个问题，租约（lease）的概念被引入进来。租约机制简单来说是由一个特定的角色来向所有的系统中的节点颁发租约，获得租约的节点即为 leader。租约对应一个有效时长，在时长耗尽（timeout）之前，leader 需要去 renew 租约，否则就需要新的一轮的 leader 选举。</p>
+<p>要实现 Leader 选举除了自己实现一套一致性算法，还可以使用一些分布式协调系统（coordinator），比如 ZooKeeper，Etcd 等。</p>
+<h3 id="2-Flink-HA-Service-Interface"><a href="#2-Flink-HA-Service-Interface" class="headerlink" title="2. Flink HA Service Interface"></a>2. Flink HA Service Interface</h3><p>目前 Flink 的 HA 服务被抽象成了 interface  <strong><em>HighAvailabilityServices</em></strong>，我们可以以插件化的方式实现我们自己的 HA 服务。<strong><em>HighAvailabilityServices</em></strong> 负责所有需要保证高可用的服务，主要工作包括：</p>
+<ul>
+<li>ResourceManager leader 选举和 leader 获取。（ResourceManager 是 JobManager 的一个组件）</li>
+<li>JobManager leader 选举和 leader 获取。</li>
+<li>checkpoint 的元数据存储。checkpoint 是分布式计算系统的一个分布式快照，新的 JobManager 可以通过读取 checkpoint 来恢复之前的作业状态。这里有一点需要注意的是，存储的只是元数据，比如 checkpoint 本身。checkpoint 本身一般是存储在分布式文件系统中，比如 HDFS，HA 服务只需要存储 checkpoint 的文件路径。</li>
+<li>注册最新的 checkpoint。checkpoint 每隔固定的时间间隔就会做一次，recover 的时候一般从最新的恢复即可。</li>
+<li>Registry 负责管理作业的状态。</li>
+</ul>
+<p>下面是 interface 的实现，其中部分 Deprecated 的方法已经去掉了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">HighAvailabilityServices</span> <span class="keyword">extends</span> <span class="title">ClientHighAvailabilityServices</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 获取 resource manager 的 leader retriever</span></span><br><span class="line">	<span class="function">LeaderRetrievalService <span class="title">getResourceManagerLeaderRetriever</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获取 dispatcher 的 leader retriever</span></span><br><span class="line">	<span class="function">LeaderRetrievalService <span class="title">getDispatcherLeaderRetriever</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the leader retriever for the job JobMaster which is responsible for the given job.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> jobID The identifier of the job.</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> defaultJobManagerAddress JobManager address which will be returned by</span></span><br><span class="line"><span class="comment">	 *                              a static leader retrieval service.</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Leader retrieval service to retrieve the job manager for the given job</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">LeaderRetrievalService <span class="title">getJobManagerLeaderRetriever</span><span class="params">(JobID jobID, String defaultJobManagerAddress)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the leader election service for the cluster's resource manager.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Leader election service for the resource manager leader election</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">LeaderElectionService <span class="title">getResourceManagerLeaderElectionService</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the leader election service for the cluster's dispatcher.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Leader election service for the dispatcher leader election</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">LeaderElectionService <span class="title">getDispatcherLeaderElectionService</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the leader election service for the given job.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> jobID The identifier of the job running the election.</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Leader election service for the job manager leader election</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">LeaderElectionService <span class="title">getJobManagerLeaderElectionService</span><span class="params">(JobID jobID)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the checkpoint recovery factory for the job manager.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Checkpoint recovery factory</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">CheckpointRecoveryFactory <span class="title">getCheckpointRecoveryFactory</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the submitted job graph store for the job manager.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Submitted job graph store</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@throws</span> Exception if the submitted job graph store could not be created</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">JobGraphStore <span class="title">getJobGraphStore</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the registry that holds information about whether jobs are currently running.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Running job registry to retrieve running jobs</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">RunningJobsRegistry <span class="title">getRunningJobsRegistry</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Creates the BLOB store in which BLOBs are stored in a highly-available fashion.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> Blob store</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@throws</span> IOException if the blob store could not be created</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">BlobStore <span class="title">createBlobStore</span><span class="params">()</span> <span class="keyword">throws</span> IOException</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Gets the leader election service for the cluster's rest endpoint.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> the leader election service used by the cluster's rest endpoint</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">default</span> LeaderElectionService <span class="title">getClusterRestEndpointLeaderElectionService</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// for backwards compatibility we delegate to getWebMonitorLeaderElectionService</span></span><br><span class="line">		<span class="comment">// all implementations of this interface should override getClusterRestEndpointLeaderElectionService, though</span></span><br><span class="line">		<span class="keyword">return</span> getWebMonitorLeaderElectionService();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">default</span> LeaderRetrievalService <span class="title">getClusterRestEndpointLeaderRetriever</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="comment">// for backwards compatibility we delegate to getWebMonitorLeaderRetriever</span></span><br><span class="line">		<span class="comment">// all implementations of this interface should override getClusterRestEndpointLeaderRetriever, though</span></span><br><span class="line">		<span class="keyword">return</span> getWebMonitorLeaderRetriever();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ------------------------------------------------------------------------</span></span><br><span class="line">	<span class="comment">//  Shutdown and Cleanup</span></span><br><span class="line">	<span class="comment">// ------------------------------------------------------------------------</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Closes the high availability services, releasing all resources.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * &lt;p&gt;This method &lt;b&gt;does not delete or clean up&lt;/b&gt; any data stored in external stores</span></span><br><span class="line"><span class="comment">	 * (file systems, ZooKeeper, etc). Another instance of the high availability</span></span><br><span class="line"><span class="comment">	 * services will be able to recover the job.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * &lt;p&gt;If an exception occurs during closing services, this method will attempt to</span></span><br><span class="line"><span class="comment">	 * continue closing other services and report exceptions only after all services</span></span><br><span class="line"><span class="comment">	 * have been attempted to be closed.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@throws</span> Exception Thrown, if an exception occurred while closing these services.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Closes the high availability services (releasing all resources) and deletes</span></span><br><span class="line"><span class="comment">	 * all data stored by these services in external stores.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * &lt;p&gt;After this method was called, the any job or session that was managed by</span></span><br><span class="line"><span class="comment">	 * these high availability services will be unrecoverable.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * &lt;p&gt;If an exception occurs during cleanup, this method will attempt to</span></span><br><span class="line"><span class="comment">	 * continue the cleanup and report exceptions only after all cleanup steps have</span></span><br><span class="line"><span class="comment">	 * been attempted.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@throws</span> Exception Thrown, if an exception occurred while closing these services</span></span><br><span class="line"><span class="comment">	 *                   or cleaning up data stored by them.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">closeAndCleanupAllData</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong><em>HighAvailabilityServices</em></strong> 还涉及到其他几个相关 Interface。</p>
+<p><strong><em>LedaerElectionService</em></strong> 帮助竞选者 <strong><em>LeaderContender</em></strong> 去参与 leader 选举。所有参加 leader 选举的服务都需要实现接口 <strong><em>LeaderContender</em></strong>，在 Flink 中有四个服务实现了该接口：</p>
+<ul>
+<li>Dispatcher</li>
+<li>JobManager</li>
+<li>ResourceManager</li>
+<li>WebMonitorEndpoint</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LeaderElectionService</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 启动 leader 选举服务，内部在选举结束之后会根据成功或者失败调用 LeaderContender 的指定的回调函数</span></span><br><span class="line">  <span class="comment">// 除此之外还会将 contender 加入到 listener 中，以便在之后的选举流程中使用</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">start</span><span class="params">(LeaderContender contender)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 停止 leader 选举服务</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 确认竞争者接受了 leader 委派并发布其 leader 地址</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">confirmLeadership</span><span class="params">(UUID leaderSessionID, String leaderAddress)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 返回在 leaderSessionId 内，与该 service 绑定的竞争者是否是 leader</span></span><br><span class="line">	<span class="function"><span class="keyword">boolean</span> <span class="title">hasLeadership</span><span class="params">(@Nonnull UUID leaderSessionId)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 需要参与 leader 选举的服务都需要实现该接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LeaderContender</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 被选为 leader 时的回调函数</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">grantLeadership</span><span class="params">(UUID leaderSessionID)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 之前的 leader 被剥夺 leader 角色时的调用函数</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">revokeLeadership</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 错误处理</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">handleError</span><span class="params">(Exception exception)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">default</span> String <span class="title">getDescription</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">"LeaderContender: "</span> + getClass().getSimpleName();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong><em>LeaderRetrievalService</em></strong> 用来获取支持 HA 服务的当前的 leader 和在 leader 变化的时候通知 listener 新的 leader。其中 listener 对应是 <strong><em>LeaderRetrievalListener</em></strong>，所有想要接收新 leader 通知消息的服务都需要实现该接口。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LeaderRetrievalService</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 启动 service，并且将 listener 加到回调队列中，当出现新的 leader 时进行回调。</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">start</span><span class="params">(LeaderRetrievalListener listener)</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LeaderRetrievalListener</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 当新的 leader 被选出来时，会通过回调该方法进行通知</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">notifyLeaderAddress</span><span class="params">(@Nullable String leaderAddress, @Nullable UUID leaderSessionID)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">handleError</span><span class="params">(Exception exception)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong><em>CheckpointRecoveryFactory</em></strong> 是 checkpoint 相关的接口。HA Service 只会存储 checkpoint 的元数据比如 checkpoint 的存储路径（比如 HDFS）等，并不会存储 checkpoint 数据。这部分大部分是关于 checkpoint 的相关逻辑，这里不再赘述。</p>
+<p><strong><em>RunningJobsRegistry</em></strong> 用于追踪作业的状态。比如在发生 leader 切换的时候，新的 jobmanager 需要借助于 <strong><em>RunningJobsRegistry</em></strong> 去 recover。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">RunningJobsRegistry</span> </span>&#123;</span><br><span class="line">	<span class="keyword">enum</span> JobSchedulingStatus &#123;</span><br><span class="line">		PENDING,</span><br><span class="line">		RUNNING,</span><br><span class="line">		DONE;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 将作业状态设置为 Running</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">setJobRunning</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 将作业状态设置为完成</span></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">setJobFinished</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获得作业的 schedule 状态</span></span><br><span class="line">	<span class="function">JobSchedulingStatus <span class="title">getJobSchedulingStatus</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException</span>;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">void</span> <span class="title">clearJob</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="1-基于-ZooKeeper-的-HA-方案实现"><a href="#1-基于-ZooKeeper-的-HA-方案实现" class="headerlink" title="1. 基于 ZooKeeper 的 HA 方案实现"></a>1. 基于 ZooKeeper 的 HA 方案实现</h2><h3 id="1-ZooKeeper-选主"><a href="#1-ZooKeeper-选主" class="headerlink" title="1. ZooKeeper 选主"></a>1. ZooKeeper 选主</h3><p>总所周知 zk 可以用来选主，原理很简单：所有参与选主的 candidate 都尝试去创建一个指定的 znode（创建路径具有原子性），其实就是一个路径，创建成功的就是 leader。那么我们如何感知到 leader 挂掉然后重新开始新的一轮选主呢？zk 的 znode 分为两种：persist 和 ephemeral。persist 的 znode 和其存储的数据会一直存在，除非手动删除；ephemeral 的 znode 生命周期和创建它的 client 保持一致，严格来说是和 client 和 server 的连接（也就是 session）的生命周期保持一致。client 和 server 一旦断开，ephemeral 的 znode 将会被删除。另外 zk 提供了一个 api 叫 watch，其他 follower 只要通过 watch leader 的 znode 就能监听到 leader 挂掉了。</p>
+<p>简而言之，通过创建一个 ephemeral 的 znode 我们就可以实现 leader 选举和 leader 感知了。</p>
+<h4 id="Curator-leaderLatch"><a href="#Curator-leaderLatch" class="headerlink" title="Curator leaderLatch"></a>Curator leaderLatch</h4><p>尽管通过 zk 来实现选主比较简单，但是我们一般也不会去裸写相关代码逻辑。由于 zk 的常见用途比较固定（选主、分布式锁等），Netflix 公司开源了一套 zk 客户端操作框架：curator，现在大家对 zk 的操作基本都是通过 curator 来操作的，比如 Spark、Flink。</p>
+<p>Curator 提供了一个 Class 来实现选主：LeaderLatch。要使用 LeaderLatch 来选主非常简单，基本按如下流程即可。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">leaderLatch = <span class="keyword">new</span> LeaderLatch(client, latchPath);	<span class="comment">// 创建 LeaderLatch</span></span><br><span class="line">leaderLatch.addListener(<span class="keyword">this</span>);										<span class="comment">// 添加回调对象</span></span><br><span class="line">leaderLatch.start();															<span class="comment">// 参与选主</span></span><br></pre></td></tr></table></figure>
+
+<p>其中第二个添加回调对象，其实是如下的 interface。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LeaderLatchListener</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">isLeader</span><span class="params">()</span></span>;	<span class="comment">// leader 回调</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">notLeader</span><span class="params">()</span></span>;	<span class="comment">// 非 leader 回调</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>成功被选为 leader 的进程会回调方法 <code>isLeader()</code>，否则会回方法 <code>notLeader()</code>。</p>
+<h3 id="2-Flink-Leader-选举"><a href="#2-Flink-Leader-选举" class="headerlink" title="2. Flink Leader 选举"></a>2. Flink Leader 选举</h3><p>Flink 的 <strong><em>HighAvailabilityServices</em></strong> 中有四个服务需要进行选主：ResourceManager，Dispatcher，JobManager，ClusterRestEndpoint。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Gets the leader election service for the cluster's resource manager.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">LeaderElectionService <span class="title">getResourceManagerLeaderElectionService</span><span class="params">()</span></span>;</span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Gets the leader election service for the cluster's dispatcher.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">LeaderElectionService <span class="title">getDispatcherLeaderElectionService</span><span class="params">()</span></span>;</span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Gets the leader election service for the given job.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">LeaderElectionService <span class="title">getJobManagerLeaderElectionService</span><span class="params">(JobID jobID)</span></span>;</span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Gets the leader election service for the cluster's rest endpoint.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">default</span> LeaderElectionService <span class="title">getClusterRestEndpointLeaderElectionService</span><span class="params">()</span></span></span><br></pre></td></tr></table></figure>
+
+<p>通过上面的 zk 选主的分析，我们可以想到这四个方法的返回应该是一个实现，只是对应的 zk 的 znode 的 path 不同。实际上也确实是这样，返回的都是 <strong><em>ZooKeeperLeaderElectionService</em></strong> 。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ZooKeeperLeaderElectionService</span> <span class="keyword">implements</span> <span class="title">LeaderElectionService</span>, <span class="title">LeaderLatchListener</span>, <span class="title">NodeCacheListener</span>, <span class="title">UnhandledErrorListener</span> </span>&#123;</span><br><span class="line">  <span class="comment">// zk 相关</span></span><br><span class="line">  <span class="comment">/** Client to the ZooKeeper quorum. */</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> CuratorFramework client;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Curator recipe for leader election. */</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> LeaderLatch leaderLatch;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Curator recipe to watch a given ZooKeeper node for changes. */</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> NodeCache cache;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong><em>ZooKeeperLeaderElectionService</em></strong> 成员中包含了 curator 的 LeaderLatch 用来选主和 NodeCache 用来监听 leader 节点变化。<strong><em>ZooKeeperLeaderElectionService</em></strong> 除了实现 Flink 的 interface <strong><em>LeaderElectionService</em></strong>，还实现了 curator 的 interface <strong><em>LeaderLatchListener</em></strong> 和 <strong><em>NodeCacheListener</em></strong>，这样我们就可以将当前对象以回调的方式添加到 zk 的回调对象里面了。<strong><em>LeaderLatchListener</em></strong> 用于选主完成（成功或者失败）进行回调，<strong><em>NodeCacheListener</em></strong> 用于节点发生变化进行回调。</p>
+<h3 id="3-Flink-Leader-Retrieval"><a href="#3-Flink-Leader-Retrieval" class="headerlink" title="3. Flink Leader Retrieval"></a>3. Flink Leader Retrieval</h3><p>Leader Retrieval 其实说的就是 Flink 的 HaService 中的 interface <strong><em>LeaderRetrievalService</em></strong>，前面也说到 <strong><em>LeaderRetrievalService</em></strong> 的最大作用就是在 Leader 发生变化的时候通知到 client，其实就是 Flink 的 TaskManager 等。联想到 zk 的 leader 监听我们不难想到 zk 的 <strong><em>LeaderRetrievalService</em></strong> 一定是扩展了 curator 框架的 <strong><em>NodeCacheListener</em></strong>，我们来看一下是不是。</p>
+<p>interface <strong><em>LeaderRetrievalService</em></strong> 基于 zk 的实现是 <strong><em>ZooKeeperLeaderRetrievalService</em></strong>。我们下面列出了三个方法：</p>
+<ul>
+<li><strong><em>start</em></strong>：interface <strong><em>LeaderRetrievalService</em></strong> 中对于 <strong><em>start</em></strong> 方法的描述是 <strong>Starts the leader retrieval service with the given listener to listen for new leaders.</strong> 其核心也就是将 listener 加入回调对象中，当 leader 发生变更的时候进行回调通知。但是基于 zk 的实现，回调是 zk 来做的，但是 <strong><em>start</em></strong> 的入参 LeaderRetrievalListener 并不能作为 zk 的回调对象（没有实现 NodeCacheListener）。所以这里回调其实是 zk 回调 <strong><em>ZooKeeperLeaderRetrievalService</em></strong>，然后 <strong><em>ZooKeeperLeaderRetrievalService</em></strong> 再去通知真正的 listener。</li>
+<li><strong><em>stop</em></strong>：没啥可说的，比较简单，主要就是停止并清理。</li>
+<li><strong><em>nodeChanged</em></strong>：就是当 leader 发生变更的时候 zk 的回调函数。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ZooKeeperLeaderRetrievalService</span> <span class="keyword">implements</span> <span class="title">LeaderRetrievalService</span>, <span class="title">NodeCacheListener</span>, <span class="title">UnhandledErrorListener</span> </span>&#123;</span><br><span class="line">	<span class="comment">/** Connection to the used ZooKeeper quorum. */</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> CuratorFramework client;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** Curator recipe to watch changes of a specific ZooKeeper node. */</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> NodeCache cache;</span><br><span class="line">  </span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">(LeaderRetrievalListener listener)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		<span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">			leaderListener = listener;</span><br><span class="line"></span><br><span class="line">			client.getUnhandledErrorListenable().addListener(<span class="keyword">this</span>);</span><br><span class="line">			cache.getListenable().addListener(<span class="keyword">this</span>);</span><br><span class="line">			cache.start();</span><br><span class="line"></span><br><span class="line">			client.getConnectionStateListenable().addListener(connectionStateListener);</span><br><span class="line"></span><br><span class="line">			running = <span class="keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		<span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">			<span class="keyword">if</span> (!running) &#123;</span><br><span class="line">				<span class="keyword">return</span>;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			running = <span class="keyword">false</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		client.getUnhandledErrorListenable().removeListener(<span class="keyword">this</span>);</span><br><span class="line">		client.getConnectionStateListenable().removeListener(connectionStateListener);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			cache.close();</span><br><span class="line">		&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> Exception(<span class="string">"Could not properly stop the ZooKeeperLeaderRetrievalService."</span>, e);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">nodeChanged</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		<span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">			<span class="keyword">if</span> (running) &#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					LOG.debug(<span class="string">"Leader node has changed."</span>);</span><br><span class="line"></span><br><span class="line">					ChildData childData = cache.getCurrentData();</span><br><span class="line"></span><br><span class="line">					String leaderAddress;</span><br><span class="line">					UUID leaderSessionID;</span><br><span class="line"></span><br><span class="line">					<span class="keyword">if</span> (childData == <span class="keyword">null</span>) &#123;</span><br><span class="line">						leaderAddress = <span class="keyword">null</span>;</span><br><span class="line">						leaderSessionID = <span class="keyword">null</span>;</span><br><span class="line">					&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">						<span class="keyword">byte</span>[] data = childData.getData();</span><br><span class="line"></span><br><span class="line">						<span class="keyword">if</span> (data == <span class="keyword">null</span> || data.length == <span class="number">0</span>) &#123;</span><br><span class="line">							leaderAddress = <span class="keyword">null</span>;</span><br><span class="line">							leaderSessionID = <span class="keyword">null</span>;</span><br><span class="line">						&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">							ByteArrayInputStream bais = <span class="keyword">new</span> ByteArrayInputStream(data);</span><br><span class="line">							ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(bais);</span><br><span class="line"></span><br><span class="line">							leaderAddress = ois.readUTF();</span><br><span class="line">							leaderSessionID = (UUID) ois.readObject();</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line"></span><br><span class="line">					<span class="keyword">if</span> (!(Objects.equals(leaderAddress, lastLeaderAddress) &amp;&amp;</span><br><span class="line">						Objects.equals(leaderSessionID, lastLeaderSessionID))) &#123;</span><br><span class="line">						LOG.debug(</span><br><span class="line">							<span class="string">"New leader information: Leader=&#123;&#125;, session ID=&#123;&#125;."</span>,</span><br><span class="line">							leaderAddress,</span><br><span class="line">							leaderSessionID);</span><br><span class="line"></span><br><span class="line">						lastLeaderAddress = leaderAddress;</span><br><span class="line">						lastLeaderSessionID = leaderSessionID;</span><br><span class="line">						leaderListener.notifyLeaderAddress(leaderAddress, leaderSessionID);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">					leaderListener.handleError(<span class="keyword">new</span> Exception(<span class="string">"Could not handle node changed event."</span>, e));</span><br><span class="line">					<span class="keyword">throw</span> e;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				LOG.debug(<span class="string">"Ignoring node change notification since the service has already been stopped."</span>);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="4-RunningJobsRegistry"><a href="#4-RunningJobsRegistry" class="headerlink" title="4. RunningJobsRegistry"></a>4. RunningJobsRegistry</h3><p>HA Service 中还有一块内容是 <strong><em>RunningJobsRegistry</em></strong>，用来记录运行的作业。基于 zk 的实现想一想也能想到只要基于一个固定的路径进行读写就可以了，比较简单，不再赘述。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A zookeeper based registry for running jobs, highly available.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ZooKeeperRunningJobsRegistry</span> <span class="keyword">implements</span> <span class="title">RunningJobsRegistry</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOG = LoggerFactory.getLogger(ZooKeeperRunningJobsRegistry<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Charset ENCODING = Charset.forName(<span class="string">"utf-8"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/** The ZooKeeper client to use. */</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> CuratorFramework client;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> String runningJobPath;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">ZooKeeperRunningJobsRegistry</span><span class="params">(<span class="keyword">final</span> CuratorFramework client, <span class="keyword">final</span> Configuration configuration)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.client = checkNotNull(client, <span class="string">"client"</span>);</span><br><span class="line">		<span class="keyword">this</span>.runningJobPath = configuration.getString(HighAvailabilityOptions.ZOOKEEPER_RUNNING_JOB_REGISTRY_PATH);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setJobRunning</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">		checkNotNull(jobID);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			writeEnumToZooKeeper(jobID, JobSchedulingStatus.RUNNING);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Failed to set RUNNING state in ZooKeeper for job "</span> + jobID, e);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setJobFinished</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">		checkNotNull(jobID);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			writeEnumToZooKeeper(jobID, JobSchedulingStatus.DONE);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Failed to set DONE state in ZooKeeper for job "</span> + jobID, e);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> JobSchedulingStatus <span class="title">getJobSchedulingStatus</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">		checkNotNull(jobID);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="keyword">final</span> String zkPath = createZkPath(jobID);</span><br><span class="line">			<span class="keyword">final</span> Stat stat = client.checkExists().forPath(zkPath);</span><br><span class="line">			<span class="keyword">if</span> (stat != <span class="keyword">null</span>) &#123;</span><br><span class="line">				<span class="comment">// found some data, try to parse it</span></span><br><span class="line">				<span class="keyword">final</span> <span class="keyword">byte</span>[] data = client.getData().forPath(zkPath);</span><br><span class="line">				<span class="keyword">if</span> (data != <span class="keyword">null</span>) &#123;</span><br><span class="line">					<span class="keyword">try</span> &#123;</span><br><span class="line">						<span class="keyword">final</span> String name = <span class="keyword">new</span> String(data, ENCODING);</span><br><span class="line">						<span class="keyword">return</span> JobSchedulingStatus.valueOf(name);</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="keyword">catch</span> (IllegalArgumentException e) &#123;</span><br><span class="line">						<span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Found corrupt data in ZooKeeper: "</span> +</span><br><span class="line">								Arrays.toString(data) + <span class="string">" is no valid job status"</span>);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">// nothing found, yet, must be in status 'PENDING'</span></span><br><span class="line">			<span class="keyword">return</span> JobSchedulingStatus.PENDING;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Get finished state from zk fail for job "</span> + jobID.toString(), e);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">clearJob</span><span class="params">(JobID jobID)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">		checkNotNull(jobID);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="keyword">final</span> String zkPath = createZkPath(jobID);</span><br><span class="line">			<span class="keyword">this</span>.client.newNamespaceAwareEnsurePath(zkPath).ensure(client.getZookeeperClient());</span><br><span class="line">			<span class="keyword">this</span>.client.delete().forPath(zkPath);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">"Failed to clear job state from ZooKeeper for job "</span> + jobID, e);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">private</span> String <span class="title">createZkPath</span><span class="params">(JobID jobID)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> runningJobPath + jobID.toString();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeEnumToZooKeeper</span><span class="params">(JobID jobID, JobSchedulingStatus status)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		LOG.debug(<span class="string">"Setting scheduling state for job &#123;&#125; to &#123;&#125;."</span>, jobID, status);</span><br><span class="line">		<span class="keyword">final</span> String zkPath = createZkPath(jobID);</span><br><span class="line">		<span class="keyword">this</span>.client.newNamespaceAwareEnsurePath(zkPath).ensure(client.getZookeeperClient());</span><br><span class="line">		<span class="keyword">this</span>.client.setData().forPath(zkPath, status.name().getBytes(ENCODING));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="2-为什么需要基于-Kubernetes-的-HA-方案"><a href="#2-为什么需要基于-Kubernetes-的-HA-方案" class="headerlink" title="2. 为什么需要基于 Kubernetes 的 HA 方案"></a>2. 为什么需要基于 Kubernetes 的 HA 方案</h2><p>一定程度上来说，Kubernetes 已经成为云原生的事实标准。（所谓事实标准，就是谁用的多谁就是标准）。现在很多大数据生态也开始逐步拥抱 Kubernetes 生态，比如分布式计算框架 Flink、Spark 等。但是 Kubernetes 集群在分布式协调中使用的 etcd，并没有使用 zk，所以上面说的基于 zk 的 HA 方案就行不通了。那么我们能不能自己搭建一个 zk 集群来做 Flink 的 HA 呢？当然可以，但是对于之前使用 Kubernetes 的用户为了 Flink 的 HA 需要另外管理一个 zk 集群肯定是不妥的。</p>
+<p>针对这种情况，基于 Kubernetes 的 Flink HA 方案就显的比较重要了。有些人可能会问，为什么不是基于 etcd 呢？很简单，Kubernetes 虽然使用的是 etcd，但是并没有将 etcd 服务暴露给用户，而是将 etcd 作为 Kubernetes 自身的一些元数据后端存储。但是我们使用 k8s 也是相当于间接的使用 etcd 了。</p>
+<h2 id="3-方案具体实现"><a href="#3-方案具体实现" class="headerlink" title="3. 方案具体实现"></a>3. 方案具体实现</h2><h3 id="1-基于-k8s-的-leader-选举"><a href="#1-基于-k8s-的-leader-选举" class="headerlink" title="1. 基于 k8s 的 leader 选举"></a>1. 基于 k8s 的 leader 选举</h3><p>对于 zk 来说，我们通过创建 znode 的 api 的原子性来实现 Leader 选举，对于 k8s 也是类似的。在 k8s 的官方文档中有一篇 2016 年 blog 就详细介绍了如何借助 k8s 来做 leader 选举，原文链接：<a href="https://kubernetes.io/blog/2016/01/simple-leader-election-with-kubernetes/" target="_blank" rel="noopener">https://kubernetes.io/blog/2016/01/simple-leader-election-with-kubernetes/</a> 。简单来说就是利用 k8s 的 API 的原子性封装成一个分布式锁，所有参与选举的 candidate 都去竞争该锁，获得锁的就是 leader。</p>
+<p>在 k8s 的 client-go 的 api 中，上面的锁叫做 resourcelock，现在 client-go 中支持四种 <a href="https://github.com/kubernetes/client-go/tree/fb61a7c88cb9f599363919a34b7c54a605455ffc/tools/leaderelection/resourcelock" target="_blank" rel="noopener">resourceLock</a>:</p>
+<ul>
+<li><p>configMapLock：基于 configMap 资源的操作扩展的分布式锁</p>
+</li>
+<li><p>endpointLock: 基于 endPoint 资源的操作扩展的分布式锁</p>
+</li>
+<li><p>leaseLock：基于 lease 资源，相对来说 leader 资源比较轻量</p>
+</li>
+<li><p>multiLock：多种锁混合使用</p>
+<p>resourceLock 的本质是用锁锁住 k8s 的资源，然后提供特定的 method 供选举使用。这里说的特定的 method 就是 Lock 的 interfact 定义的方法，主要包括如下几个。</p>
+</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Interface offers a common interface for locking on arbitrary</span></span><br><span class="line"><span class="comment">// resources used in leader election.  The Interface is used</span></span><br><span class="line"><span class="comment">// to hide the details on specific implementations in order to allow</span></span><br><span class="line"><span class="comment">// them to change over time.  This interface is strictly for use</span></span><br><span class="line"><span class="comment">// by the leaderelection code.</span></span><br><span class="line"><span class="keyword">type</span> Interface <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// Get returns the LeaderElectionRecord</span></span><br><span class="line">	Get(ctx context.Context) (*LeaderElectionRecord, []<span class="keyword">byte</span>, error)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Create attempts to create a LeaderElectionRecord</span></span><br><span class="line">	Create(ctx context.Context, ler LeaderElectionRecord) error</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Update will update and existing LeaderElectionRecord</span></span><br><span class="line">	Update(ctx context.Context, ler LeaderElectionRecord) error</span><br><span class="line"></span><br><span class="line">	<span class="comment">// RecordEvent is used to record events</span></span><br><span class="line">	RecordEvent(<span class="keyword">string</span>)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Identity will return the locks Identity</span></span><br><span class="line">	Identity() <span class="keyword">string</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Describe is used to convert details on current resource lock</span></span><br><span class="line">	<span class="comment">// into a string</span></span><br><span class="line">	Describe() <span class="keyword">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于特定的 resourceLock 的 实现实际上就是通过调用 k8s 的 api 对资源（configMap，endpoint，release 等）进行操作，比如 configMapLock 的 Create 的实现如下：尝试在特定的 namespace 下创建一个特定名称的 configMap，并且将 leader 信息写入到 annotation 中。（k8s 的 API 对象 annotation 基本可以写入任意信息）当多个 candidate 同时尝试去在同一个 namespace 下创建同名的 configMap 的时候，只有一个会成功，这个就是 leader。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Create attempts to create a LeaderElectionRecord annotation</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(cml *ConfigMapLock)</span> <span class="title">Create</span><span class="params">(ctx context.Context, ler LeaderElectionRecord)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	recordBytes, err := json.Marshal(ler)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	cml.cm, err = cml.Client.ConfigMaps(cml.ConfigMapMeta.Namespace).Create(ctx, &amp;v1.ConfigMap&#123;</span><br><span class="line">		ObjectMeta: metav1.ObjectMeta&#123;</span><br><span class="line">			Name:      cml.ConfigMapMeta.Name,</span><br><span class="line">			Namespace: cml.ConfigMapMeta.Namespace,</span><br><span class="line">			Annotations: <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span>&#123;</span><br><span class="line">				LeaderElectionRecordAnnotationKey: <span class="keyword">string</span>(recordBytes),</span><br><span class="line">			&#125;,</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;, metav1.CreateOptions&#123;&#125;)</span><br><span class="line">	<span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>借助于 client-go 提供的 resourceLock package 和 leaderelection，我们可以很容易实现我们自己的 leader 选举逻辑。下面是一个使用 leaseLock 的例子，完整代码在：<a href="https://github.com/kubernetes/client-go/blob/master/examples/leader-election/main.go" target="_blank" rel="noopener">https://github.com/kubernetes/client-go/blob/master/examples/leader-election/main.go</a></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">// we use the Lease lock type since edits to Leases are less common</span></span><br><span class="line"><span class="comment">// and fewer objects in the cluster watch "all Leases".</span></span><br><span class="line">lock := &amp;resourcelock.LeaseLock&#123;</span><br><span class="line">	LeaseMeta: metav1.ObjectMeta&#123;</span><br><span class="line">		Name:      leaseLockName,</span><br><span class="line">		Namespace: leaseLockNamespace,</span><br><span class="line">	&#125;,</span><br><span class="line">	Client: client.CoordinationV1(),</span><br><span class="line">	LockConfig: resourcelock.ResourceLockConfig&#123;</span><br><span class="line">		Identity: id,</span><br><span class="line">	&#125;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// start the leader election code loop</span></span><br><span class="line">leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig&#123;</span><br><span class="line">	Lock: lock,</span><br><span class="line">	<span class="comment">// IMPORTANT: you MUST ensure that any code you have that</span></span><br><span class="line">	<span class="comment">// is protected by the lease must terminate **before**</span></span><br><span class="line">	<span class="comment">// you call cancel. Otherwise, you could have a background</span></span><br><span class="line">	<span class="comment">// loop still running and another process could</span></span><br><span class="line">	<span class="comment">// get elected before your background loop finished, violating</span></span><br><span class="line">	<span class="comment">// the stated goal of the lease.</span></span><br><span class="line">	ReleaseOnCancel: <span class="literal">true</span>,</span><br><span class="line">	LeaseDuration:   <span class="number">60</span> * time.Second,</span><br><span class="line">	RenewDeadline:   <span class="number">15</span> * time.Second,</span><br><span class="line">	RetryPeriod:     <span class="number">5</span> * time.Second,</span><br><span class="line">	Callbacks: leaderelection.LeaderCallbacks&#123;</span><br><span class="line">		OnStartedLeading: <span class="function"><span class="keyword">func</span><span class="params">(ctx context.Context)</span></span> &#123;</span><br><span class="line">			<span class="comment">// we're notified when we start - this is where you would</span></span><br><span class="line">			<span class="comment">// usually put your code</span></span><br><span class="line">			run(ctx)</span><br><span class="line">		&#125;,</span><br><span class="line">		OnStoppedLeading: <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">			<span class="comment">// we can do cleanup here</span></span><br><span class="line">			klog.Infof(<span class="string">"leader lost: %s"</span>, id)</span><br><span class="line">			os.Exit(<span class="number">0</span>)</span><br><span class="line">		&#125;,</span><br><span class="line">		OnNewLeader: <span class="function"><span class="keyword">func</span><span class="params">(identity <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">			<span class="comment">// we're notified when new leader elected</span></span><br><span class="line">			<span class="keyword">if</span> identity == id &#123;</span><br><span class="line">				<span class="comment">// I just got the lock</span></span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			klog.Infof(<span class="string">"new leader elected: %s"</span>, identity)</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;,</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="2-Flink-HA-on-k8s-的实现"><a href="#2-Flink-HA-on-k8s-的实现" class="headerlink" title="2. Flink HA on k8s 的实现"></a>2. Flink HA on k8s 的实现</h3><p>上面j介绍了 k8s 中的 leader 选举的部分是在 client-go 中，对于 Java 调用来说我们可以使用 java 对应 client SDK：<code>io.kubernetes:client-java-extend</code>。我们可以看到代码中提供了三种 resourceLock: configMapLock、endpointLock 和 leaseLock 。链接：<a href="https://github.com/kubernetes-client/java/tree/master/extended/src/main/java/io/kubernetes/client/extended/leaderelection/resourcelock" target="_blank" rel="noopener">https://github.com/kubernetes-client/java/tree/master/extended/src/main/java/io/kubernetes/client/extended/leaderelection/resourcelock</a></p>
+<p>我们内部使用的 configMapLock，也就是说使用 configMap 的 annotation 来存储 leader 信息。</p>
+<h4 id="1-LeaderElectionService"><a href="#1-LeaderElectionService" class="headerlink" title="1. LeaderElectionService"></a>1. LeaderElectionService</h4><p>要实现 Java 版本的基于 k8s 的 <strong><em>LedaerElectionService</em></strong>，我们可以参考 sdk 中提供的 class: <a href="https://github.com/kubernetes-client/java/blob/master/extended/src/main/java/io/kubernetes/client/extended/leaderelection/LeaderElector.java" target="_blank" rel="noopener"><strong><em>LeaderElector</em></strong></a>。<strong><em>LeaderElector</em></strong> 提供了一个 run 方法用来运行 leader 选举。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Runs the leader election in foreground.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">(Runnable startLeadingHook, Runnable stopLeadingHook)</span> </span>&#123;</span><br><span class="line">    run(startLeadingHook, stopLeadingHook, <span class="keyword">null</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Runs the leader election in foreground.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      Runnable startLeadingHook, Runnable stopLeadingHook, Consumer&lt;String&gt; onNewLeaderHook)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.onNewLeaderHook = onNewLeaderHook;</span><br><span class="line">    log.info(<span class="string">"Start leader election with lock &#123;&#125;"</span>, config.getLock().describe());</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (!acquire()) &#123;</span><br><span class="line">        <span class="comment">// Fail to acquire leadership</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      log.info(<span class="string">"Successfully acquired lease, became leader"</span>);</span><br><span class="line">      <span class="comment">// Hook on start leading</span></span><br><span class="line">      hookWorkers.submit(startLeadingHook);</span><br><span class="line">      renewLoop();</span><br><span class="line">      log.info(<span class="string">"Failed to renew lease, lose leadership"</span>);</span><br><span class="line">      <span class="comment">// Hook on stop leading</span></span><br><span class="line">      stopLeadingHook.run();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">      stopLeadingHook.run();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是这个 run 方法是一次性的，为了实现 Flink 的 <strong><em>LedaerElectionService</em></strong>，我们需要写一个 class 来做一些辅助工作，比如：</p>
+<ul>
+<li>封装 <strong>LeaderElector</strong> 来运行 leader 选举</li>
+<li>定义一个 daemon 进程来循环运行 leader 选举</li>
+<li>定义一个 Listener 接口用来回调</li>
+</ul>
+<h4 id="2-LeaderRetrievalService"><a href="#2-LeaderRetrievalService" class="headerlink" title="2. LeaderRetrievalService"></a>2. <strong><em>LeaderRetrievalService</em></strong></h4><p>基于 k8s 来实现 <strong><em>LeaderRetrievalService</em></strong> 相对来说就比较简单了，因为我们把 leader 信息存储到 k8s 的特定的资源（ConfigMap、Endpoint、Lease）的 annotation 中，所以我们直接读取对应的资源的 annotation 就可以了。但是同样的，我们也需要扩展出一个常驻进程和 Listener 接口用来当 Leader 信息发生变化的时候通知 Listener。</p>
+<p>剩下两个 <strong><em>CheckpointRecoveryFactory</em></strong> 和 <strong><em>RunningJobsRegistry</em></strong> 也是类似。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2020/09/15/secure-container-overview/" rel="next" title="安全容器综述">
+                  <i class="fa fa-chevron-left"></i> 安全容器综述
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-Flink-HA"><span class="nav-number">1.</span> <span class="nav-text">0. Flink HA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Leader-选举"><span class="nav-number">1.1.</span> <span class="nav-text">1. Leader 选举</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Flink-HA-Service-Interface"><span class="nav-number">1.2.</span> <span class="nav-text">2. Flink HA Service Interface</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-基于-ZooKeeper-的-HA-方案实现"><span class="nav-number">2.</span> <span class="nav-text">1. 基于 ZooKeeper 的 HA 方案实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-ZooKeeper-选主"><span class="nav-number">2.1.</span> <span class="nav-text">1. ZooKeeper 选主</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Curator-leaderLatch"><span class="nav-number">2.1.1.</span> <span class="nav-text">Curator leaderLatch</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Flink-Leader-选举"><span class="nav-number">2.2.</span> <span class="nav-text">2. Flink Leader 选举</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-Flink-Leader-Retrieval"><span class="nav-number">2.3.</span> <span class="nav-text">3. Flink Leader Retrieval</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-RunningJobsRegistry"><span class="nav-number">2.4.</span> <span class="nav-text">4. RunningJobsRegistry</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-为什么需要基于-Kubernetes-的-HA-方案"><span class="nav-number">3.</span> <span class="nav-text">2. 为什么需要基于 Kubernetes 的 HA 方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-方案具体实现"><span class="nav-number">4.</span> <span class="nav-text">3. 方案具体实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-基于-k8s-的-leader-选举"><span class="nav-number">4.1.</span> <span class="nav-text">1. 基于 k8s 的 leader 选举</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Flink-HA-on-k8s-的实现"><span class="nav-number">4.2.</span> <span class="nav-text">2. Flink HA on k8s 的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-LeaderElectionService"><span class="nav-number">4.2.1.</span> <span class="nav-text">1. LeaderElectionService</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-LeaderRetrievalService"><span class="nav-number">4.2.2.</span> <span class="nav-text">2. LeaderRetrievalService</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="legendtkl"
+    src="/img/avatar.jpg">
+  <p class="site-author-name" itemprop="name">legendtkl</p>
+  <div class="site-description" itemprop="description">Do not go gentle into that good night.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">113</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/legendtkl" title="Github &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Github</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/HIT_Achilles" title="Weibo &amp;rarr; http:&#x2F;&#x2F;weibo.com&#x2F;HIT_Achilles" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://www.zhihu.com/people/legendtkl" title="Zhihu &amp;rarr; http:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;legendtkl" rel="noopener" target="_blank"><i class="fa fa-fw fa-zhihu"></i>Zhihu</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">legendtkl</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> v4.0.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.5.0
+  </div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
