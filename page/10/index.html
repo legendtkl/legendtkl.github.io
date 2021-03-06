@@ -184,6 +184,89 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/04/26/array-problem-trick/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/04/26/array-problem-trick/" class="post-title-link" itemprop="url">关于部分数组固定和的一类问题解析</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014-04-26 22:57:04" itemprop="dateCreated datePublished" datetime="2014-04-26T22:57:04+08:00">2014-04-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index">
+                    <span itemprop="name">算法设计</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>前面写过2sum问题，回顾一下：给定一个数组，求其中和等于给定和的两个数。思想很简单，双指针的思想：对于排序数组，一个头指针一个尾指针，不断向中间压缩。如果数组是排序的，则时间复杂度为O(n)，空间复杂度为O(1)。由此可以K sum问题，如果看过《算法引论》这本书，我们可以把K sum问题归约到K-1 sum。举个例子，3 sum问题归约到2sum 问题。对于数组中的每一个数A[i]，对数组A[i+1…n]进行2sum求解，则时间复杂度为O(n^2)。类似的我们知道K sum问题的时间复杂度为O(n^k-1)。然而我们今天要讨论的却是另外一类问题。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2014/04/26/array-problem-trick/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2014/03/21/coder-gospel/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -944,90 +1027,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/11/08/link-and-IPC/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/avatar.jpg">
-      <meta itemprop="name" content="legendtkl">
-      <meta itemprop="description" content="Do not go gentle into that good night.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Legendtkl">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2013/11/08/link-and-IPC/" class="post-title-link" itemprop="url">再论链接之PIC</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2013-11-08 17:16:05" itemprop="dateCreated datePublished" datetime="2013-11-08T17:16:05+08:00">2013-11-08</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/c/" itemprop="url" rel="index">
-                    <span itemprop="name">c</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>动态链接使用共享库的一个主要目的就是允许多个正在运行的进程共享存储器中相同的库代码，因而节约资源。那么，多个进程是如何共享一个程序的一个拷贝的呢？一种比较好的方法就是编译库代码，使得不需要链接器修改库代码，就可以在任何地址加载和执行这些代码。这样的代码就叫做位置无关的代码（position-independent code, PIC）。</p>
-<p>PIC的特点是，它被加载到任意地址空间都可以正确的执行，这点是显著区别于可重定向文件的。其原理是PIC对常量和函数入口地址的操作都是基于PC+偏移量的寻址方式。即使程序被移动，但是PC也变化了，而偏移量是不变的，所以程序仍然可以找到正确的入口地址或者常量。那些引用了绝对内存地址的指令（比如绝对跳转指令）必须被替换为PC相对寻址指令。这些间接处理过程可能导致PIC的运行效率下降，但是目前大多数处理器对PIC都有很好的支持，使得这效率上的这一点点下降基本可以忽略。下面具体说明。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2013/11/08/link-and-IPC/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1078,14 +1077,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">113</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -1131,7 +1130,7 @@
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2020</span>
+  <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>

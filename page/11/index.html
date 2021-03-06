@@ -184,6 +184,90 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/11/08/link-and-IPC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/avatar.jpg">
+      <meta itemprop="name" content="legendtkl">
+      <meta itemprop="description" content="Do not go gentle into that good night.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Legendtkl">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2013/11/08/link-and-IPC/" class="post-title-link" itemprop="url">再论链接之PIC</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2013-11-08 17:16:05" itemprop="dateCreated datePublished" datetime="2013-11-08T17:16:05+08:00">2013-11-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/c/" itemprop="url" rel="index">
+                    <span itemprop="name">c</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>动态链接使用共享库的一个主要目的就是允许多个正在运行的进程共享存储器中相同的库代码，因而节约资源。那么，多个进程是如何共享一个程序的一个拷贝的呢？一种比较好的方法就是编译库代码，使得不需要链接器修改库代码，就可以在任何地址加载和执行这些代码。这样的代码就叫做位置无关的代码（position-independent code, PIC）。</p>
+<p>PIC的特点是，它被加载到任意地址空间都可以正确的执行，这点是显著区别于可重定向文件的。其原理是PIC对常量和函数入口地址的操作都是基于PC+偏移量的寻址方式。即使程序被移动，但是PC也变化了，而偏移量是不变的，所以程序仍然可以找到正确的入口地址或者常量。那些引用了绝对内存地址的指令（比如绝对跳转指令）必须被替换为PC相对寻址指令。这些间接处理过程可能导致PIC的运行效率下降，但是目前大多数处理器对PIC都有很好的支持，使得这效率上的这一点点下降基本可以忽略。下面具体说明。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2013/11/08/link-and-IPC/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/10/25/about-link/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -973,85 +1057,6 @@ struct test3
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2013/03/16/reading-about-jobs/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/avatar.jpg">
-      <meta itemprop="name" content="legendtkl">
-      <meta itemprop="description" content="Do not go gentle into that good night.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Legendtkl">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/2013/03/16/reading-about-jobs/" class="post-title-link" itemprop="url">优秀的艺术家抄袭，伟大的艺术家剽窃</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2013-03-16 00:27:11" itemprop="dateCreated datePublished" datetime="2013-03-16T00:27:11+08:00">2013-03-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2019-11-08 11:09:25" itemprop="dateModified" datetime="2019-11-08T11:09:25+08:00">2019-11-08</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AF%BB%E4%B9%A6/" itemprop="url" rel="index">
-                    <span itemprop="name">读书</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>对于这句话大家应该都不会陌生，这句话让史蒂夫·乔布斯创造了一流的公司，而乔布斯也让这句话为众人所知。我就当回标题党，以这句话来作为读完乔布斯传记后的感想的文章标题了。分享一下。</p>
-<h3 id="一、优秀的艺术家抄袭，伟大的艺术家剽窃"><a href="#一、优秀的艺术家抄袭，伟大的艺术家剽窃" class="headerlink" title="一、优秀的艺术家抄袭，伟大的艺术家剽窃"></a>一、优秀的艺术家抄袭，伟大的艺术家剽窃</h3><p>—Jobs: Ultimately it comes down to taste. It’s a matter of trying to expose yourself to the best things that humans have done. And then try to bring those things into what you are doing. Picasso had a saying: “Good artists copy. Great artists steal.” We have always been shameless about stealing great ideas.<br>—乔布斯：其实归根到底是品位的问题。你要尽量让自己接触到这个世界上最优秀的产品，并把它运用到自己的工作中去。毕加索说过：“优良的艺术家抄袭, 伟大的艺术家偷窃。”当我们剽窃别人的卓越的创意的时候，从不觉得羞愧。“优良的艺术家抄袭, 伟大的艺术家偷窃。”<br>这句话原话是毕加索说的，至于毕加索当时说这句话是什么想法，各位学术帝也大可不必深究。真正的大师是要靠他的读者的，“导演们在电影上映后都要去豆瓣社区看下电影影评，才领略到自己电影的内涵”。<br>简述一下事件：施乐PARC，也就是施乐公司的帕洛奥图研究中心(Palo Alto Research Center)，最先提出的图形用户界面，乔布斯在参观后凭借其敏锐的洞察力成功将其收入旗下，并且做出了更好的图形用户界面。对了，还有鼠标。乔布斯引用毕加索这句话，就是在告诉世人，普通的艺术家善于模仿，但其作品只能达到形似，却缺乏灵魂；伟大的艺术家不耻于“剽窃”，他们从不盲目地拾人牙慧，而是青出于蓝胜于蓝，最后自成体系，成为领域的领军人物。<br>无独有偶，看过电影《社交网络》（忽略此处的书名号吧！）的人对于facebook的创始人也有同样的情节。MicroSoft同样。不管是抄袭还是剽窃，都需要我们站在别人的角度下来重新审视一件事，而思考的深度会有那么一点点的影响，而真正起作用的往往就是这么一点点。从某个角度来看，这也是推动人类文明进步了。所以下次当我们嘲笑别人的时候，还请先想一想自己是不是有那个能力，抄袭也好，剽窃也罢！</p>
-<h3 id="二、专注成就卓越"><a href="#二、专注成就卓越" class="headerlink" title="二、专注成就卓越"></a>二、专注成就卓越</h3><p>乔布斯对用户体验的执著值得我们所有人学习：专注。<br>乔布斯的极致还表现在他的专注力上。他会设定优先级，把他激光般的注意力对准目标，把分散精力的事情都过滤掉。如果他开始做某件事——麦金塔早期的用户界面，ipod和iphone的设计，把单薄公司引进iTunes商店——他就会非常专注。但是如果他不想处理某件事——法律纠纷，业务事项，他的癌症诊断，某件家事——则会坚决的忽视它。那种专注使他能够说不。他只保留几个核心产品，砍掉一切其他业务，让苹果回到正轨。他剔除按键让电子设备简单化，剔除功能让软件简单化，剔除选项让界面简单化。<br>我想，他的专注，他的至繁归于至简的理念值得我们所有人学习，毕竟“吾辈也有涯”。</p>
-<p>该休息了。最后以乔布斯在中央公园对斯卡利说的一句话，“你是想卖一辈子糖水呢，还是想抓住机会来改变世界”，来结束吧。你我共勉！！！</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -1102,14 +1107,14 @@ struct test3
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">113</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-count">33</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -1155,7 +1160,7 @@ struct test3
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2020</span>
+  <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
