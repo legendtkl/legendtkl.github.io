@@ -1,0 +1,180 @@
+  <a class="skip" href="#main">跳到正文</a>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">SkillOpt-Lite <i>论文解剖图</i></div>
+      <nav class="nav" aria-label="页面目录">
+        <a href="#summary">结论</a><a href="#mechanism">机制</a><a href="#theory">理论</a><a href="#results">实验</a><a href="#harness">Harness</a><a href="#critique">批判</a><a href="#practice">落地</a><a href="#sources">来源</a>
+      </nav>
+      <button class="icon-btn" id="themeBtn" aria-label="切换明暗主题" title="切换主题">◐</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap">
+      <header class="hero">
+        <div class="hero-grid">
+          <div>
+            <div class="eyebrow">arXiv:2607.03451 · 2026-07-03</div>
+            <h1>更少结构，<br><span class="title-mark">更强自进化</span></h1>
+            <p class="lede"><strong>SkillOpt-Lite 的核心不是一个更聪明的“元优化器”</strong>，而是把 Agent 的失败轨迹变成可浏览文件，让编码 Agent 像调试程序一样寻找共性问题，只提交最小文本补丁，并用独立验证集决定保留还是回滚。</p>
+            <div class="hero-actions">
+              <a class="btn primary" href="https://arxiv.org/abs/2607.03451" target="_blank" rel="noreferrer">↗ 阅读论文</a>
+              <a class="btn" href="https://github.com/EvolvingLMMs-Lab/SkillOpt-Lite" target="_blank" rel="noreferrer">⌘ 查看代码</a>
+              <button class="btn" id="printBtn">⎙ 打印 / 导出 PDF</button>
+            </div>
+            <div class="meta-row">
+              <span class="chip">Yifei Shen · Bo Li · Xinjie Zhang</span>
+              <span class="chip">Skill text optimization</span>
+              <span class="chip">Harness optimization</span>
+              <span class="chip">独立解读，不代表作者</span>
+            </div>
+          </div>
+          <div class="hero-sketch" aria-label="SkillOpt-Lite 闭环示意图">
+            <div class="paper-card">
+              <div class="tape"></div>
+              <svg class="loop-svg" viewBox="0 0 430 330" role="img" aria-labelledby="loopTitle loopDesc">
+                <title id="loopTitle">SkillOpt-Lite 四步闭环</title>
+                <desc id="loopDesc">轨迹文件、探索归因、共识补丁、验证门控形成循环。</desc>
+                <defs><marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>
+                <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M215 35 C330 35 380 100 368 168" marker-end="url(#arrowhead)"/>
+                  <path d="M365 185 C345 282 260 302 194 286" marker-end="url(#arrowhead)"/>
+                  <path d="M178 286 C73 268 45 204 66 146" marker-end="url(#arrowhead)"/>
+                  <path d="M72 128 C99 57 158 34 198 36" marker-end="url(#arrowhead)"/>
+                </g>
+                <g stroke="currentColor" stroke-width="2.2">
+                  <path d="M173 15 h83 l10 12 -10 34 h-83 l-10-12z" fill="#e7ad35"/>
+                  <path d="M319 115 q38-7 57 24 l-11 61 q-33 15-64-7z" fill="#b9d8ce"/>
+                  <path d="M163 246 q48-20 97 5 l-5 59 q-50 17-95-5z" fill="#c9d2f0"/>
+                  <path d="M42 103 q42-17 75 10 l-8 69 q-42 15-73-8z" fill="#efb9ad"/>
+                </g>
+                <g font-family="sans-serif" text-anchor="middle" fill="#182126" font-weight="800">
+                  <text x="215" y="39" font-size="14">① 保存轨迹</text>
+                  <text x="339" y="155" font-size="14">② 文件探索</text>
+                  <text x="210" y="278" font-size="14">③ 共识补丁</text>
+                  <text x="75" y="143" font-size="14">④ 验证门控</text>
+                </g>
+                <g fill="none" stroke="#e76043" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M143 92 q73-28 146 0"/><path d="M146 98 q68-20 139 1"/>
+                </g>
+                <text x="215" y="119" text-anchor="middle" font-family="serif" font-size="18" fill="currentColor">语义化调试，而非盲目扰动</text>
+                <text x="215" y="145" text-anchor="middle" font-family="sans-serif" font-size="12" fill="currentColor">train 提供失败信号</text>
+                <text x="215" y="165" text-anchor="middle" font-family="sans-serif" font-size="12" fill="currentColor">val 决定接受 / 回滚</text>
+                <text x="215" y="185" text-anchor="middle" font-family="sans-serif" font-size="12" fill="currentColor">test 最终只看一次</text>
+              </svg>
+              <div class="hand-note">“像调代码一样调 skill.md”</div>
+            </div>
+          </div>
+        </div>
+      </header>
+    </div>
+
+    <section id="summary">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">01 / 先看结论</div><div><h2>30 秒抓住论文</h2><p class="section-desc">从第一性原理看，Agent 系统性能由三个层面共同决定：模型权重给出基础能力，技能文本给出行为策略，Harness 决定模型能看见什么、调用什么、如何重试与落盘。这篇论文先优化第二层，再把同一闭环扩展到第三层。</p></div></div>
+        <div class="grid-3">
+          <article class="sketch"><div class="mini-label">我按论文 Table 2 重算</div><div class="big-number">23 / 30</div><h3>单元格胜过 SkillOpt</h3><p>5 个模型 × 6 个基准中，SkillOpt-Lite 有 23 胜、3 平、4 负；宏平均比 SkillOpt 高 <strong>6.17 个百分点</strong>。<a class="cite" href="https://arxiv.org/pdf/2607.03451" target="_blank">Table 2</a></p></article>
+          <article class="sketch"><div class="mini-label">最明显的收益区域</div><div class="big-number">+19.16</div><h3>LiveMath 平均增益</h3><p>对照 SkillOpt，五个模型在 LiveMath 上平均提升 19.16 个百分点；Spreadsheet 平均提升 12.58 个百分点。收益集中在<strong>可归因、可验证、错误模式重复</strong>的任务。</p></article>
+          <article class="sketch"><div class="mini-label">能力不只由模型大小决定</div><div class="big-number">77.58</div><h3>nano + HarnessOpt</h3><p>在 SpreadsheetBench，GPT-5.4-nano 配合 HarnessOpt + skill 得分 77.58，超过 GPT-5.5 + 原 SkillOpt 的 76.20。<a class="cite" href="https://arxiv.org/pdf/2607.03451" target="_blank">Table 3</a></p></article>
+        </div>
+
+        <div class="first-principles" aria-label="Agent 系统三个可优化层级">
+          <article class="layer-card"><div class="layer-icon">🧠</div><h3>模型权重</h3><p><strong>能力底座：</strong>知识、推理、代码生成与视觉理解。改变它通常需要训练或微调，成本最高。</p><div class="mini-label">“会不会”</div></article>
+          <article class="layer-card"><div class="layer-icon">📜</div><h3>Skill 文本</h3><p><strong>行为策略：</strong>步骤、检查清单、领域规则、失败恢复。SkillOpt-Lite 的主要优化对象。</p><div class="mini-label">“按什么方法做”</div></article>
+          <article class="layer-card"><div class="layer-icon">🧰</div><h3>Harness 代码</h3><p><strong>执行环境：</strong>工具、循环、记忆、超时、上下文与输出解析。HarnessOpt 的优化对象。</p><div class="mini-label">“在什么机制里做”</div></article>
+        </div>
+        <div class="callout"><strong>一句话判断：</strong>这篇论文最有价值的贡献，不是提出新的复杂算法，而是指出一个反常识事实——对于语义文本优化，LLM 原生的文件浏览、归因和补丁能力，可能比人为搭建的多层元优化结构更有效。</div>
+      </div>
+    </section>
+
+    <section id="mechanism">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">02 / 闭环机制</div><div><h2>删掉“优化器”，保留最小闭环</h2><p class="section-desc">原 SkillOpt 有批内合并、文本学习率、拒绝编辑缓存、跨 epoch 慢更新等结构；Lite 版把这些显式机制移除，把“如何看轨迹、如何归因、如何改文档”交给编码 Agent。剩下的刚性约束只有：证据共识、最小补丁、独立验证、可回滚。</p></div></div>
+
+        <div class="compare-strip">
+          <div class="complex"><div class="mini-label">较重的元优化框架</div><h3>SkillOpt</h3><ul><li>批级候选合并</li><li>文本化学习率调度</li><li>拒绝编辑缓冲区</li><li>epoch 级慢更新</li></ul></div>
+          <div class="arrow" aria-hidden="true">⇢</div>
+          <div class="lite"><div class="mini-label">最小充分闭环</div><h3>SkillOpt-Lite</h3><ul><li>一条轨迹一个文件</li><li>Agent 自主浏览与聚类</li><li>只改多条证据支持的模式</li><li>val 退化就回滚</li></ul></div>
+        </div>
+
+        <div class="flow">
+          <article class="flow-step"><div class="step-n">1</div><h3>轨迹落盘</h3><p>当前 skill 在 train batch 上运行；每个成功/失败 episode 单独保存，保留输入、工具调用、输出与判分原因。</p><span class="cite">filesystem staging</span></article>
+          <article class="flow-step"><div class="step-n">2</div><h3>按症状探索</h3><p>Agent 先看文件名与首行，按错误症状聚类，再读每簇代表样本；目标不是读完，而是覆盖不同故障模式。</p><a class="cite" href="https://github.com/EvolvingLMMs-Lab/SkillOpt-Lite" target="_blank">实现提示词</a></article>
+          <article class="flow-step"><div class="step-n">3</div><h3>共识 + 最小补丁</h3><p>只处理至少两条轨迹共同支持的模式；不硬编码任务值，不重复已有规则，优先小幅强化而非重写。</p><span class="cite">consensus mining</span></article>
+          <article class="flow-step"><div class="step-n">4</div><h3>独立验证门控</h3><p>候选 skill 在完整 val 上评估；改善则接受，退化则回滚，噪声区间保持不动；test 只在结束时评一次。</p><span class="cite">validation gate</span></article>
+        </div>
+
+        <div class="rule-list">
+          <div class="rule"><strong>Cluster first, sample second：</strong>先覆盖症状簇，再增加阅读量。</div>
+          <div class="rule"><strong>Common patterns only：</strong>单样本边角案例不进入 skill。</div>
+          <div class="rule"><strong>Smallest patch：</strong>官方示例每轮最多 4 处编辑，避免大改引发回归。</div>
+          <div class="rule"><strong>Fresh rollout：</strong>每轮换 train 子样本；拒绝后也重新生成，使轨迹始终匹配磁盘上的版本。</div>
+          <div class="rule"><strong>Dead band：</strong>示例门控用 ±0.01 噪声带，微小波动不更新历史最优。</div>
+          <div class="rule"><strong>Test sealed：</strong>循环内绝不窥看 test，最终恢复 best snapshot 后一次性报告。</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="theory">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">03 / 理论视角</div><div><h2>它把 Skill 优化看成“语义零阶优化”</h2><p class="section-desc">模型 M 与 Harness H 固定，只有文本技能 s 可改；奖励来自黑盒执行，因此没有梯度。论文借用 Zeroth-Order Optimization 的语言解释闭环，但关键差异在于：轨迹不是一个标量，而是可读、可归因的语义证据。</p></div></div>
+        <div class="formula" aria-label="Skill 优化目标">s* = arg max<sub>s</sub>  E<sub>z ~ D</sub> [ R( H(M, z, s) ) ]<br><span style="opacity:.72">// 固定模型与执行器，仅通过候选文本的运行结果比较优劣</span></div>
+        <div class="theory-grid">
+          <article class="theory-card"><div class="mini-label">经典零阶优化</div><h3>盲扰动 → 看标量反馈</h3><p>在连续空间里通过随机方向和函数值差估计优化方向。它依赖局部平滑性，通常不知道一次失败“为什么失败”。</p></article>
+          <article class="theory-card"><div class="mini-label">SkillOpt-Lite</div><h3>读轨迹 → 形成语义方向</h3><p>失败轨迹直接暴露格式陷阱、工具误用、步骤遗漏或恢复策略缺口。编码 Agent 据此提出可解释补丁，接近软件调试与编译优化。</p></article>
+          <article class="theory-card"><div class="mini-label">PAC / 稳定性直觉</div><h3>共识是一种正则化</h3><p>只接受跨多条轨迹重复出现的模式，相当于抑制对单个训练样本的记忆；独立 val 门控进一步阻断训练反馈自我强化。</p></article>
+          <article class="theory-card"><div class="mini-label">工程含义</div><h3>把可塑性与选择分离</h3><p>LLM 可以自由提出语义修改，但是否进入生产版本由稳定、机械、可审计的外部评价器决定。</p></article>
+        </div>
+        <div class="warning"><div>⚠</div><div><strong>不要把理论包装误读为收敛定理。</strong>论文明确承认文本域没有自然的平滑流形；这里的 ZO/PAC 主要是设计解释与稳定性直觉。正文没有给出收敛率、泛化界数值或统计显著性检验。</div></div>
+      </div>
+    </section>
+
+    <section id="results">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">04 / 实验复核</div><div><h2>完整数据，不只看高光数字</h2><p class="section-desc">论文覆盖 5 个目标模型、6 个基准。下图直接录入 Table 2 的 90 个分数；可切换模型查看 Init、SkillOpt 与 SkillOpt-Lite。宏平均及胜负计数均由页面实时重算。</p></div></div>
+
+        <div class="result-summary" id="resultSummary" aria-live="polite"></div>
+        <div class="dashboard">
+          <div class="controls">
+            <label for="modelSelect">目标模型</label>
+            <select id="modelSelect"></select>
+            <button class="btn" id="csvBtn">↓ 下载 Table 2 CSV</button>
+            <div class="legend" aria-label="图例"><span style="--c:#9da6aa">Init</span><span style="--c:#526dc9">SkillOpt</span><span style="--c:#237a68">SkillOpt-Lite</span></div>
+          </div>
+          <div class="bars" id="resultBars"></div>
+          <p class="table-note">分数单位为百分点。论文注：SkillOpt 最多 4 epochs / 10 batches；SkillOpt-Lite 固定 10 batches。该对照未进一步按总 token、LLM 调用次数或墙钟时间归一化。</p>
+        </div>
+
+        <h3 style="margin-top:2.4rem">Lite − SkillOpt：全部 30 个单元格</h3>
+        <p class="section-desc">绿色为提升，红色为回退。最突出的两类收益是 LiveMath 与 Spreadsheet；SearchQA 的跨模型平均反而略低 0.14 个百分点，说明“更简”并非处处占优。</p>
+        <div class="heatmap-wrap"><div class="heatmap" id="heatmap"></div></div>
+      </div>
+    </section>
+
+    <section id="harness">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">05 / HarnessOpt</div><div><h2>从改说明书，升级到改执行系统</h2><p class="section-desc">如果失败不是“策略没写清”，而是上下文预览太窄、代码提取规则错误、工具缺失、循环卡死或重试策略不合适，那么继续改 skill 文本只是在错误层级上优化。HarnessOpt 把可编辑面扩大到 Agent 代码。</p></div></div>
+        <div class="harness-layout">
+          <div>
+            <div class="stack-diagram" aria-label="模型、技能和 Harness 的层级关系">
+              <div class="stack-layer"><h3>模型权重</h3><p>基础推理与生成能力</p></div>
+              <div class="stack-layer"><h3>Skill 文本</h3><p>领域流程、检查与恢复策略</p></div>
+              <div class="stack-layer"><h3>Harness 代码</h3><p>工具 / 记忆 / 上下文 / 循环 / 超时 / 解析</p></div>
+            </div>
+            <div class="callout"><strong>分层诊断原则：</strong>“不知道怎么做”多半改 skill；“做法被执行环境卡住”多半改 harness；“根本没有能力”才需要换模型或训练。</div>
+          </div>
+          <div class="dashboard">
+            <div class="controls"><label for="harnessSelect">目标模型</label><select id="harnessSelect"></select><div class="legend"><span style="--c:#237a68">SpreadsheetBench</span></div></div>
+            <div class="harness-bars" id="harnessBars"></div>
+            <p class="table-note">方法顺序：Init → SkillOpt → SkillOpt-Lite → HarnessOpt（不加 skill）→ HarnessOpt + skill。数据来自论文 Table 3。</p>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top:1.2rem">
+          <article class="sketch"><div class="mini-label">Round 0 更谨慎</div><h3>先全量扫描，再让人批准</h3><p>官方实现先跑完整 train，形成失败分类，从工具、提示上下文、循环策略、代码生成形态、记忆五个视角提出设计；首个结构改动需人工批准。</p></article>
+          <article class="sketch"><div class="mini-label">可修改面必须受控</div><h3>Allowlist + Smoke Test</h3><p>只允许修改指定 Harness 文件；触碰 skill 或评估器即拒绝。完整 val 前先用 5 个任务做编译与冒烟测试，避免昂贵长跑被语法错误浪费。</p></article>
+          <article class="sketch"><div class="mini-label">必须可逆</div><h3>Git 标签 + 硬回滚</h3><p>每轮保存 before tag，验证退化就 <code>git reset --hard</code>。这比复制单个文件更适合多文件 Harness 变更，也更容易审计。</p></article>
+        </div>
+      </div>
+    </section>
+
