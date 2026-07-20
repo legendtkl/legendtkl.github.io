@@ -1,0 +1,88 @@
+    <section id="critique">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">06 / 证据审查</div><div><h2>哪些可以相信，哪些仍是开放问题？</h2><p class="section-desc">下面把论文主张按证据强度拆开。核心方法与广泛分数提升有直接实验支撑；“更快、更便宜、更普适”的强版本结论还需要成本归一化、重复实验与消融。</p></div></div>
+        <div class="evidence-grid">
+          <article class="evidence"><span class="evidence-tag" style="--tag:#b9d8ce">证据较强</span><h3>实验直接支持</h3><ul><li>5 模型 × 6 基准的广覆盖比较。</li><li>23/30 单元格超过 SkillOpt。</li><li>代码实现与论文的文件探索、共识、小补丁、val 回滚一致。</li><li>HarnessOpt 在 SpreadsheetBench 上对所有四个模型进一步提升。</li></ul></article>
+          <article class="evidence"><span class="evidence-tag" style="--tag:#f3d997">有支持但需谨慎</span><h3>趋势性结论</h3><ul><li>前 2–3 步更快达到高分，曲线支持“更快收敛”。</li><li>小模型 + 好 Harness 可超过大模型 + 弱 Harness。</li><li>语义文件探索可能优于显式反馈压缩。</li><li>结果暗示复杂度本身会成为优化瓶颈。</li></ul></article>
+          <article class="evidence"><span class="evidence-tag" style="--tag:#efb9ad">尚未充分证明</span><h3>开放问题</h3><ul><li>没有多随机种子、置信区间或显著性检验。</li><li>没有逐组件消融：文件系统、共识、最小补丁、门控各贡献多少？</li><li>没有按 token、调用次数、费用与墙钟时间统一比较。</li><li>HarnessOpt 只在 SpreadsheetBench 系统评估。</li></ul></article>
+        </div>
+        <div class="critique">
+          <div class="crit"><b>01</b><div><strong>预算并非完全同构。</strong><br>SkillOpt 上限为 4 epochs / 10 batches，Lite 为恰好 10 batches；没有列出实际调用量与上下文 token。</div></div>
+          <div class="crit"><b>02</b><div><strong>验证集可能成为新过拟合面。</strong><br>每轮都用同一 val 门控，长期迭代会逐渐针对 val 选择；最好使用轮换验证、嵌套验证或保留第二道审计集。</div></div>
+          <div class="crit"><b>03</b><div><strong>数据拆分有调整。</strong><br>LiveMath 与 OfficeQA 从 2:1:7 改为 2:2:6；OfficeQA 因在线搜索 API 不可用而离线运行，跨论文比较需谨慎。</div></div>
+          <div class="crit"><b>04</b><div><strong>负例不能忽略。</strong><br>Lite 在 nano 的 SearchQA / OfficeQA、mini 的 OfficeQA、GPT-5.4 的 SearchQA 上落后 SkillOpt，最大回退 2.9 个百分点。</div></div>
+          <div class="crit"><b>05</b><div><strong>理论更像解释框架。</strong><br>ZO/PAC 提供合理设计直觉，但没有给出文本空间的严格优化几何、收敛保证或泛化界。</div></div>
+          <div class="crit"><b>06</b><div><strong>工程成熟度仍在推进。</strong><br>论文称其打包为 Copilot 工作流；仓库可直接使用 prompt command，但 agent-agnostic runner、Codex/Claude 插件仍列在 roadmap。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">07 / 落地模板</div><div><h2>把论文变成可执行工程约束</h2><p class="section-desc">真正可迁移的不是某个 prompt，而是“提案自由、选择保守、测试封闭、版本可逆”的控制结构。下面是一个更适合生产与研究的增强版最小循环。</p></div></div>
+        <div class="grid-2">
+          <pre class="pseudo"><span class="kw">baseline</span> = <span class="fn">eval</span>(skill, val)
+best = snapshot(skill, baseline)
+
+<span class="kw">for</span> round in rounds:
+    traces = <span class="fn">rollout</span>(skill, fresh_train_batch)
+    clusters = <span class="fn">group_by_symptom</span>(traces)
+    evidence = <span class="fn">consensus</span>(clusters, support &gt;= 2)
+    candidate = <span class="fn">minimal_patch</span>(skill, evidence)
+
+    <span class="kw">if</span> touches_denylist(candidate): rollback()
+    <span class="kw">if not</span> smoke_test(candidate): rollback()
+
+    score = <span class="fn">eval</span>(candidate, val)
+    skill = accept(candidate) <span class="kw">if</span> score &gt; baseline + δ \
+            <span class="kw">else</span> rollback()
+    best = max(best, skill)
+
+<span class="cm"># test 在循环结束后只运行一次</span>
+report(<span class="fn">eval</span>(best, test))</pre>
+          <div class="timeline">
+            <article class="sketch"><h3>研究版必须补的三件事</h3><p>至少 3 个随机种子；同时报告均值、方差与置信区间；做组件消融和成本归一化，避免只比较最高分。</p></article>
+            <article class="sketch"><h3>生产版必须补的三件事</h3><p>文件 allowlist / denylist；静态检查与小批 smoke；快照、差异、判分、回滚原因全部入审计日志。</p></article>
+            <article class="sketch"><h3>更稳健的验证策略</h3><p>主 val 做每轮门控，shadow-val 定期审计，test 封存；迭代很多时轮换 val 子集或使用 nested validation。</p></article>
+          </div>
+        </div>
+        <div class="fit-grid">
+          <div class="fit"><h3>适合使用</h3><p>判分稳定；失败轨迹可读；错误模式重复；val 成本可接受；修改可回滚；任务分布相对稳定。</p></div>
+          <div class="fit bad"><h3>不宜直接使用</h3><p>奖励极噪声或稀疏；任务持续漂移；验证一次非常昂贵；安全关键系统没有人工门；轨迹含敏感数据且无法隔离。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="related">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">08 / 研究定位</div><div><h2>它位于 Skill 优化与 Harness 工程的交叉点</h2><p class="section-desc">SkillOpt-Lite 不是孤立工作。它一边继承 SkillOpt 的 held-out gate，一边靠近 Meta-Harness 与 AHE 的“文件化、可观察、可回滚”工程路线；与 Trace2Skill 相比，它更强调减少中间汇总结构。</p></div></div>
+        <div class="related-wrap">
+          <div class="related">
+            <div class="rel-cell rel-head">工作</div><div class="rel-cell rel-head">主要可编辑对象</div><div class="rel-cell rel-head">如何吸收轨迹</div><div class="rel-cell rel-head">关键差异</div>
+            <div class="rel-cell"><strong>SkillOpt</strong></div><div class="rel-cell">Skill 文本</div><div class="rel-cell">批合并、拒绝缓存、慢更新</div><div class="rel-cell">更显式、更结构化的文本优化器</div>
+            <div class="rel-cell"><strong>Trace2Skill</strong></div><div class="rel-cell">Skill / 技能目录</div><div class="rel-cell">多分析器并行提炼、层级整合</div><div class="rel-cell">强调广泛轨迹池与可迁移经验蒸馏</div>
+            <div class="rel-cell"><strong>SkillOpt-Lite</strong></div><div class="rel-cell">Skill 文本</div><div class="rel-cell">直接浏览轨迹文件、共识最小补丁</div><div class="rel-cell">主动删掉复杂中间机制</div>
+            <div class="rel-cell"><strong>Meta-Harness</strong></div><div class="rel-cell">Harness 代码</div><div class="rel-cell">浏览所有候选代码、得分与轨迹</div><div class="rel-cell">端到端搜索执行系统本身</div>
+            <div class="rel-cell"><strong>AHE</strong></div><div class="rel-cell">Harness 组件</div><div class="rel-cell">分层证据语料 + 可证伪编辑预测</div><div class="rel-cell">强调组件、经验与决策可观察性</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sources">
+      <div class="wrap">
+        <div class="section-head"><div class="section-no">09 / 来源与方法</div><div><h2>资料来源</h2><p class="section-desc">本页逐页阅读论文 PDF，并对 Table 2 / 3 全量录入重算；同时核对官方仓库中的闭环 prompt 与 HarnessOpt 约束。所有衍生结论均标明为“本页重算”或“批判性判断”。</p></div></div>
+        <div class="source-list">
+          <div class="source"><div class="source-id">P</div><div><strong>SkillOpt-Lite: Better and Faster Agent Self-evolution via One Line of Vibe</strong><br><span class="tiny">方法、理论、Table 2 / 3、实验设置与局限的第一来源。</span></div><a href="https://arxiv.org/abs/2607.03451" target="_blank" rel="noreferrer">arXiv ↗</a></div>
+          <div class="source"><div class="source-id">C</div><div><strong>EvolvingLMMs-Lab / SkillOpt-Lite</strong><br><span class="tiny">复现脚本、slash commands、训练/验证/测试语义、门控与回滚细节。</span></div><a href="https://github.com/EvolvingLMMs-Lab/SkillOpt-Lite" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+          <div class="source"><div class="source-id">S1</div><div><strong>SkillOpt: Systematic Optimization of Skills for LLM Agents</strong></div><a href="https://arxiv.org/abs/2605.23904" target="_blank" rel="noreferrer">arXiv ↗</a></div>
+          <div class="source"><div class="source-id">S2</div><div><strong>Trace2Skill: Distill Trajectory-Local Lessons into Transferable Agent Skills</strong></div><a href="https://arxiv.org/abs/2603.25158" target="_blank" rel="noreferrer">arXiv ↗</a></div>
+          <div class="source"><div class="source-id">H1</div><div><strong>Meta-Harness: End-to-End Optimization of Model Harnesses</strong></div><a href="https://arxiv.org/abs/2603.28052" target="_blank" rel="noreferrer">arXiv ↗</a></div>
+          <div class="source"><div class="source-id">H2</div><div><strong>Agentic Harness Engineering: Observability-Driven Automatic Evolution of Coding-Agent Harnesses</strong></div><a href="https://arxiv.org/abs/2604.25850" target="_blank" rel="noreferrer">arXiv ↗</a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap footer-grid"><div><strong>SkillOpt-Lite 深度解读</strong><div class="footer-note">解读版本：2026-07-20。数据来自论文表格，交互图表在浏览器本地计算；页面不加载第三方脚本，不收集数据。</div></div><div class="hand-note">最小闭环 ≠ 简陋；它是把复杂度放回正确的层。</div></div></footer>
+
