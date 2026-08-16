@@ -11,26 +11,71 @@
 <meta property="og:url" content="https://legendtkl.github.io/reports/bifrost-tokenhub/" />
 <link rel="canonical" href="https://legendtkl.github.io/reports/bifrost-tokenhub/" />
 <style>
-html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#f7f4ec;color:#272a2d;font:16px/1.6 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.loading{max-width:620px;margin:24px;padding:28px;border:1px solid #d7d4cc;border-radius:22px;background:#fffefa;box-shadow:0 10px 28px rgba(40,42,44,.07)}.dot{display:inline-block;width:.65em;height:.65em;margin-right:.55em;border:2px solid #3977b7;border-top-color:transparent;border-radius:50%;animation:r .8s linear infinite}@keyframes r{to{transform:rotate(360deg)}}small{color:#60666b}
+html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#f7f4ec;color:#272a2d;font:16px/1.6 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.loading{max-width:650px;margin:24px;padding:28px;border:1px solid #d7d4cc;border-radius:22px;background:#fffefa;box-shadow:0 10px 28px rgba(40,42,44,.07)}.dot{display:inline-block;width:.65em;height:.65em;margin-right:.55em;border:2px solid #3977b7;border-top-color:transparent;border-radius:50%;animation:r .8s linear infinite}@keyframes r{to{transform:rotate(360deg)}}small{display:block;margin-top:8px;color:#60666b}.error{color:#8d351b;white-space:pre-wrap;word-break:break-word}
 </style>
 </head>
 <body>
-<div class="loading"><div id="status"><span class="dot"></span>正在载入完整报告…</div><small>报告为离线自包含页面，首次打开需要解压约 98 KB 内容。</small><noscript><p>请启用 JavaScript 后查看报告。</p></noscript></div>
-<script>window.__REPORT_CHUNKS=[];</script>
-<script src="./chunk-00.js?v=20260816"></script>
-<script src="./chunk-01.js?v=20260816"></script>
-<script src="./chunk-02.js?v=20260816"></script>
-<script src="./chunk-03.js?v=20260816"></script>
-<script src="./chunk-04.js?v=20260816"></script>
+<div class="loading">
+  <div id="status"><span class="dot"></span>正在载入完整报告…</div>
+  <small>报告为离线自包含页面，首次打开需要解压约 98 KB 内容。</small>
+  <noscript><p class="error">请启用 JavaScript 后查看报告。</p></noscript>
+</div>
 <script>
 (async()=>{
-  if (!("DecompressionStream" in window)) throw new Error("当前浏览器过旧，不支持本页面的离线解压；请使用新版 Chrome、Safari、Edge 或 Firefox。");
-  const b64=window.__REPORT_CHUNKS.join("");
-  const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  const status=document.getElementById('status');
+  const chunks=[];
+  window.__REPORT_CHUNKS={push(value){chunks.push(String(value));}};
+
+  const loadScript=src=>new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=false;
+    script.onload=resolve;
+    script.onerror=()=>reject(new Error('分片文件载入失败：'+src));
+    document.head.appendChild(script);
+  });
+
+  const version='20260816-fix2';
+  for(let i=0;i<5;i++){
+    await loadScript(`./chunk-${String(i).padStart(2,'0')}.js?v=${version}`);
+  }
+  if(chunks.length!==5) throw new Error(`分片数量异常：期望 5，实际 ${chunks.length}`);
+
+  const decoded=[];
+  let total=0;
+  for(let i=0;i<chunks.length;i++){
+    let value=chunks[i]
+      .replace(/-/g,'+')
+      .replace(/_/g,'/')
+      .replace(/[^A-Za-z0-9+/=]/g,'');
+    const mod=value.length%4;
+    if(mod===1) throw new Error(`第 ${i+1} 个分片的 Base64 长度异常`);
+    if(mod) value+='='.repeat(4-mod);
+    let binary;
+    try{ binary=atob(value); }
+    catch(error){ throw new Error(`第 ${i+1} 个分片解码失败：${error.message}`); }
+    const bytes=new Uint8Array(binary.length);
+    for(let j=0;j<binary.length;j++) bytes[j]=binary.charCodeAt(j);
+    decoded.push(bytes);
+    total+=bytes.length;
+  }
+
+  const compressed=new Uint8Array(total);
+  let offset=0;
+  for(const bytes of decoded){compressed.set(bytes,offset);offset+=bytes.length;}
+  if(compressed[0]!==0x1f||compressed[1]!==0x8b) throw new Error('报告压缩数据头校验失败');
+  if(!('DecompressionStream' in window)) throw new Error('当前浏览器不支持离线解压，请使用新版 Chrome、Safari、Edge 或 Firefox。');
+
+  const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
   const html=await new Response(stream).text();
+  if(!html.toLowerCase().includes('<!doctype html')||!html.includes('Bifrost')) throw new Error('报告正文完整性校验失败');
   document.open();document.write(html);document.close();
-})().catch(err=>{document.getElementById("status").textContent="报告载入失败："+err.message;console.error(err);});
+})().catch(error=>{
+  const status=document.getElementById('status');
+  status.className='error';
+  status.textContent='报告载入失败：'+error.message+'\n请尝试强制刷新页面（Ctrl/Cmd + Shift + R）。';
+  console.error(error);
+});
 </script>
 </body>
 </html>
