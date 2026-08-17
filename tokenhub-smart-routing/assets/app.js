@@ -1,4 +1,5 @@
     (() => {
+      // TokenHub smart-routing visual report, RFC v0.2.
       const root = document.documentElement;
       const saved = localStorage.getItem('tokenhub-report-theme');
       const preferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
