@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>TokenHub PR #196：A2A 1.0 Agent Gateway 设计审查</title>
+  <meta name="description" content="对 TokenHub PR #196（A2A 1.0 Agent Gateway）的架构、安全、状态机、一致性和生产化设计审查。">
+  <link rel="canonical" href="https://legendtkl.github.io/reports/tokenhub-pr-196/">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="TokenHub PR #196：A2A 1.0 Agent Gateway 设计审查">
+  <meta property="og:description" content="方向正确，但生产启用前仍需补齐委托上下文、Task 状态机、事务一致性与执行图治理。">
+  <meta property="og:url" content="https://legendtkl.github.io/reports/tokenhub-pr-196/">
+  <meta property="og:image" content="https://legendtkl.github.io/reports/tokenhub-pr-196/cover.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    :root{color-scheme:light dark}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{display:grid;place-items:center;background:#f5f7fb;color:#13213c;font:16px/1.7 Inter,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+    .card{width:min(620px,calc(100% - 32px));padding:30px;border:1px solid #dce3ee;border-radius:24px;background:#fff;box-shadow:0 18px 50px rgba(18,35,68,.12)}
+    .title{font-weight:800;font-size:24px;margin-bottom:10px}.sub{color:#5d6b82}.dot{display:inline-block;width:.75em;height:.75em;margin-right:.65em;border:2px solid #3b5ccc;border-top-color:transparent;border-radius:50%;animation:r .8s linear infinite}@keyframes r{to{transform:rotate(360deg)}}
+    .error{color:#be3443;white-space:pre-wrap;word-break:break-word}
+    @media(prefers-color-scheme:dark){body{background:#080d1a;color:#eaf0ff}.card{background:#0f1728;border-color:#26344f}.sub{color:#aebbd1}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">TokenHub PR #196 设计审查</div>
+    <div id="status"><span class="dot"></span>正在载入完整报告…</div>
+    <div class="sub">报告为独立静态页面，正在校验并解压约 54 KB 内容。</div>
+    <noscript><p class="error">请启用 JavaScript 后查看报告。</p></noscript>
+  </div>
+  <script>
+    (async()=>{
+      const expectedBase64Length=19868;
+      const expectedCompressedLength=14899;
+      const expectedSha256='e49a24d39dfe72e6161c9f600a05e6271959223862eccfc19208682a4d6292f7';
+      const response=await fetch('./payload.txt?v=51b24f5',{cache:'no-store'});
+      if(!response.ok) throw new Error(`报告数据请求失败：HTTP ${response.status}`);
+      const base64=(await response.text()).trim();
+      if(base64.length!==expectedBase64Length) throw new Error(`报告数据长度异常：${base64.length}`);
+      let binary;
+      try{binary=atob(base64)}catch(error){throw new Error(`Base64 解码失败：${error.message}`)}
+      const compressed=new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++) compressed[i]=binary.charCodeAt(i);
+      if(compressed.length!==expectedCompressedLength||compressed[0]!==0x1f||compressed[1]!==0x8b) throw new Error('报告压缩数据校验失败');
+      if(globalThis.crypto?.subtle){
+        const digest=await crypto.subtle.digest('SHA-256',compressed);
+        const actual=[...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,'0')).join('');
+        if(actual!==expectedSha256) throw new Error('报告数据哈希校验失败');
+      }
+      if(!('DecompressionStream' in window)) throw new Error('当前浏览器不支持 gzip 解压，请使用新版 Chrome、Safari、Edge 或 Firefox。');
+      const html=await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      if(!html.toLowerCase().includes('<!doctype html')||!html.includes('TokenHub PR #196')||!html.includes('A2A 1.0 Agent Gateway')) throw new Error('报告正文完整性校验失败');
+      document.open();document.write(html);document.close();
+    })().catch(error=>{
+      const el=document.getElementById('status');
+      el.className='error';el.textContent='报告载入失败：'+error.message+'\n请尝试强制刷新页面。';
+      console.error(error);
+    });
+  </script>
+</body>
+</html>
