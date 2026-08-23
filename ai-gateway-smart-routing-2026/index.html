@@ -3,36 +3,34 @@
 <head>
   <meta charset='utf-8'>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
-  <meta name='description' content='TokenHub 智能模型路由详细技术方案：在现有 Provider/Resource 路由之前增加 Smart Model Resolver，覆盖请求时序、Go 接口、数据模型、失败语义、流式与后台任务、评测和落地路线。'>
+  <meta name='description' content='TokenHub 智能模型路由详细技术方案：在现有 Provider 与 Resource 路由之前增加模型能力决策层，明确第三方决策模型、请求时序、数据边界、失败语义、评测与工程落地。'>
   <meta name='theme-color' content='#f5efe3'>
   <meta property='og:title' content='TokenHub 智能模型路由详细技术方案（2026）'>
-  <meta property='og:description' content='问题难度路由、轨迹级 Stage Router、控制面与数据面设计、成本收益模型及工程落地。'>
+  <meta property='og:description' content='请求级与轨迹级模型路由、第三方 Classifier/Judge、成本收益模型、控制面与数据面设计。'>
   <title>TokenHub 智能模型路由详细技术方案（2026）</title>
   <link rel='stylesheet' href='style.css'>
   <style>
-    .scope{display:grid;grid-template-columns:1fr 64px 1fr;gap:14px;align-items:stretch}.scope .card{min-height:250px}.scope-arrow{display:grid;place-items:center;font-size:42px;font-weight:950;color:var(--orange)}
-    .fact,.proposal,.phase-pill{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;margin-bottom:8px}.fact{background:#dcecf0}.proposal{background:#f3ddca}.phase-pill{background:#e8e2f1;margin:0}
+    .scope{display:grid;grid-template-columns:1fr 64px 1fr;gap:14px;align-items:stretch}.scope .card{min-height:255px}.scope-arrow{display:grid;place-items:center;font-size:42px;font-weight:950;color:var(--orange)}
+    .fact,.proposal,.optional,.phase-pill{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;margin-bottom:8px}.fact{background:#dcecf0}.proposal{background:#f3ddca}.optional{background:#e8e2f1}.phase-pill{background:#f7edc1;margin:0}
     .mini-flow{display:flex;gap:7px;align-items:stretch;overflow:auto;padding:7px 2px 14px}.mini-step{min-width:145px;flex:1;border:2px solid var(--line);border-radius:13px;padding:12px;background:#fffaf0;box-shadow:2px 2px 0 var(--line)}.mini-step b{display:block;font-size:13px}.mini-step small{color:var(--muted)}.mini-arrow{align-self:center;font-size:22px;font-weight:950;color:var(--orange)}
     .new-layer{background:#f3e3d3!important}.existing-layer{background:#e6eff2!important}.execution-layer{background:#e6efe8!important}
     .case-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.case-stat{border:2px solid var(--line);border-radius:15px;padding:17px;background:#fffaf0;text-align:center;box-shadow:3px 3px 0 var(--line)}.case-stat strong{display:block;font-size:34px;line-height:1;color:var(--blue)}.case-stat small{color:var(--muted)}
     .signals{display:grid;grid-template-columns:1fr 1fr;gap:14px}.signal{border:2px solid var(--line);border-radius:16px;padding:17px;background:#fffaf0}.signal.wrong{background:#f3dddd}.signal.progressing{background:#e2eee5}.signal h4{margin-top:0}.signal ul{margin-bottom:0;padding-left:18px}
-    .semantic-table,.table-box{overflow:auto;border:2px solid var(--line);border-radius:15px;background:#fffaf0}.semantic-table table,.table-box table{min-width:850px;font-size:12px}.semantic-table th,.semantic-table td,.table-box th,.table-box td{padding:10px;border-right:1px solid #d2c6b3;border-bottom:1px solid #d2c6b3;text-align:left;vertical-align:top}.semantic-table th,.table-box th{background:#2b302b;color:#fff}.semantic-table tr:nth-child(even) td,.table-box tr:nth-child(even) td{background:#faf2e3}
-    .arch{display:grid;gap:9px}.arch-row{display:grid;grid-template-columns:190px 1fr 260px;gap:14px;align-items:center;border:2px solid var(--line);border-radius:15px;padding:15px 18px;background:#fffaf0;box-shadow:2px 2px 0 var(--line)}.arch-row b{font-size:17px}.arch-row small{color:var(--muted);text-align:right}.arch-row.new{background:#f3e3d3}.arch-row.keep{background:#e4eef1}.arch-row.feedback{background:#e2eee5}
-    .schema-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.schema{border:2px solid var(--line);border-radius:15px;background:#fffaf0;padding:16px}.schema h4{margin-top:0}.schema code{font-size:11px}
-    .calculator{display:grid;grid-template-columns:340px 1fr;gap:19px}.calc-controls{border:2px dashed #7d7464;border-radius:15px;padding:16px;background:#fffaf0}.calc-control{margin:11px 0}.calc-control label{display:flex;justify-content:space-between;font-size:12px;font-weight:850}.calc-control input{width:100%;accent-color:var(--blue)}.scenario-row{display:flex;gap:7px;flex-wrap:wrap}.scenario{border:1.5px solid var(--line);border-radius:999px;background:#fffaf0;padding:6px 9px;font-weight:800;cursor:pointer}.scenario.active{background:#26302a;color:#fff}.calc-results{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.calc-result{border:2px solid var(--line);border-radius:14px;padding:14px;background:#fffaf0}.calc-result strong{display:block;font-size:24px;color:var(--blue)}.verdict{grid-column:1/-1;border-left:6px solid var(--green);background:#e2eee5;padding:15px 17px;border-radius:0 14px 14px 0;font-weight:800}
-    .quadrant-label{font-size:11px;font-weight:950;color:var(--orange)}
-    .change-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.change{border:2px solid var(--line);border-radius:14px;padding:15px;background:#fffaf0}.change b{display:block}.change code{font-size:11px}
-    .source-list li small{display:block;color:var(--muted);margin-top:3px}.source-tag{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px 7px;font-size:9px;font-weight:900;margin-right:6px;background:#dcecf0}.source-tag.pdf{background:#f3ddca}.source-tag.paper{background:#e8e2f1}
-    .danger{color:#8d443a;font-weight:850}.good{color:#276b47;font-weight:850}
-    .detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.detail-card{border:2px solid var(--line);border-radius:15px;background:#fffaf0;padding:16px;box-shadow:2px 2px 0 rgba(32,35,31,.7)}.detail-card h4{margin:0 0 6px}.detail-card p{font-size:13px;margin:5px 0}.detail-card dl{display:grid;grid-template-columns:58px 1fr;gap:3px 7px;font-size:11px;margin:9px 0 0}.detail-card dt{font-weight:900}.detail-card dd{margin:0;color:var(--muted)}
-    .sequence{display:grid;gap:8px}.seq-row{display:grid;grid-template-columns:54px 185px 1fr 270px;gap:10px;align-items:center;border:2px solid var(--line);border-radius:13px;background:#fffaf0;padding:11px 13px}.seq-no{width:34px;height:34px;border:2px solid var(--line);border-radius:50%;display:grid;place-items:center;font-weight:950;background:var(--yellow)}.seq-lane{font-size:12px;font-weight:900;color:var(--blue)}.seq-main{font-size:13px}.seq-note{font-size:11px;color:var(--muted)}
+    .table-box{overflow:auto;border:2px solid var(--line);border-radius:15px;background:#fffaf0}.table-box table{min-width:900px;font-size:12px}.table-box th,.table-box td{padding:10px;border-right:1px solid #d2c6b3;border-bottom:1px solid #d2c6b3;text-align:left;vertical-align:top}.table-box th{background:#2b302b;color:#fff}.table-box tr:nth-child(even) td{background:#faf2e3}
+    .arch{display:grid;gap:9px}.arch-row{display:grid;grid-template-columns:190px 1fr 280px;gap:14px;align-items:center;border:2px solid var(--line);border-radius:15px;padding:15px 18px;background:#fffaf0;box-shadow:2px 2px 0 var(--line)}.arch-row b{font-size:17px}.arch-row small{color:var(--muted);text-align:right}.arch-row.new{background:#f3e3d3}.arch-row.keep{background:#e4eef1}.arch-row.feedback{background:#e2eee5}
+    .detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.detail-card{border:2px solid var(--line);border-radius:15px;background:#fffaf0;padding:16px;box-shadow:2px 2px 0 rgba(32,35,31,.7)}.detail-card h4{margin:0 0 6px}.detail-card p{font-size:13px;margin:5px 0}.detail-card dl{display:grid;grid-template-columns:62px 1fr;gap:3px 7px;font-size:11px;margin:9px 0 0}.detail-card dt{font-weight:900}.detail-card dd{margin:0;color:var(--muted)}
+    .sequence{display:grid;gap:8px}.seq-row{display:grid;grid-template-columns:54px 185px 1fr 285px;gap:10px;align-items:center;border:2px solid var(--line);border-radius:13px;background:#fffaf0;padding:11px 13px}.seq-no{width:34px;height:34px;border:2px solid var(--line);border-radius:50%;display:grid;place-items:center;font-weight:950;background:var(--yellow)}.seq-lane{font-size:12px;font-weight:900;color:var(--blue)}.seq-main{font-size:13px}.seq-note{font-size:11px;color:var(--muted)}
     .code-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.code-grid pre{margin:0;min-height:100%}
-    .endpoint-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.endpoint{border:1.6px dashed #696d65;border-radius:12px;padding:12px;background:rgba(255,255,255,.62)}.endpoint code{display:inline-block;margin-bottom:6px}.endpoint p{font-size:12px;margin:0;color:var(--muted)}
     .invariant-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.invariant{border-left:5px solid var(--blue);background:#e7f0f2;border-radius:0 12px 12px 0;padding:12px 14px;font-size:12px}.invariant b{display:block;font-size:13px}
-    .file-map{display:grid;gap:7px}.file-row{display:grid;grid-template-columns:270px 1fr 130px;gap:10px;border-bottom:1px dashed #998e78;padding:9px 5px}.file-row:last-child{border-bottom:0}.file-row code{font-size:11px}.file-row small{color:var(--muted)}
+    .role-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.role{border:2px solid var(--line);border-radius:15px;padding:16px;background:#fffaf0;box-shadow:2px 2px 0 var(--line)}.role h4{margin:0 0 7px}.role .when{font-size:11px;color:var(--orange);font-weight:900}.role p{font-size:13px}.role code{font-size:11px}
+    .decision-flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:center}.decision-node{border:2px solid var(--line);border-radius:14px;padding:15px;background:#fffaf0;min-height:120px}.decision-node.third{background:#eee6f2}.decision-node.policy{background:#e2eee5}.decision-node b{display:block;margin-bottom:5px}.decision-node small{color:var(--muted)}.decision-arrow{font-size:26px;font-weight:950;color:var(--orange)}
+    .endpoint-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.endpoint{border:1.6px dashed #696d65;border-radius:12px;padding:12px;background:rgba(255,255,255,.62)}.endpoint code{display:inline-block;margin-bottom:6px}.endpoint p{font-size:12px;margin:0;color:var(--muted)}
+    .calculator{display:grid;grid-template-columns:340px 1fr;gap:19px}.calc-controls{border:2px dashed #7d7464;border-radius:15px;padding:16px;background:#fffaf0}.calc-control{margin:11px 0}.calc-control label{display:flex;justify-content:space-between;font-size:12px;font-weight:850}.calc-control input{width:100%;accent-color:var(--blue)}.scenario-row{display:flex;gap:7px;flex-wrap:wrap}.scenario{border:1.5px solid var(--line);border-radius:999px;background:#fffaf0;padding:6px 9px;font-weight:800;cursor:pointer}.scenario.active{background:#26302a;color:#fff}.calc-results{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.calc-result{border:2px solid var(--line);border-radius:14px;padding:14px;background:#fffaf0}.calc-result strong{display:block;font-size:24px;color:var(--blue)}.verdict{grid-column:1/-1;border-left:6px solid var(--green);background:#e2eee5;padding:15px 17px;border-radius:0 14px 14px 0;font-weight:800}
+    .file-map{display:grid;gap:7px}.file-row{display:grid;grid-template-columns:280px 1fr 130px;gap:10px;border-bottom:1px dashed #998e78;padding:9px 5px}.file-row:last-child{border-bottom:0}.file-row code{font-size:11px}.file-row small{color:var(--muted)}
     .pr-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pr-card{border:2px solid var(--line);border-radius:14px;padding:14px;background:#fffaf0;box-shadow:2px 2px 0 var(--line)}.pr-card h4{margin:4px 0 7px}.pr-card ul{padding-left:17px;font-size:12px;margin-bottom:0}
-    @media(max-width:1100px){.scope,.calculator{grid-template-columns:1fr}.scope-arrow{transform:rotate(90deg)}.case-stats,.schema-grid,.detail-grid{grid-template-columns:repeat(2,1fr)}.arch-row{grid-template-columns:1fr}.arch-row small{text-align:left}.calc-results{grid-template-columns:repeat(2,1fr)}.seq-row{grid-template-columns:45px 150px 1fr}.seq-note{grid-column:2/-1}.pr-grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:760px){.case-stats,.signals,.schema-grid,.change-list,.calc-results,.detail-grid,.code-grid,.endpoint-grid,.invariant-list,.pr-grid{grid-template-columns:1fr}.scope .card{min-height:0}.verdict{grid-column:auto}.seq-row{grid-template-columns:42px 1fr}.seq-lane{grid-column:2}.seq-main,.seq-note{grid-column:1/-1}.file-row{grid-template-columns:1fr}}
+    .source-list li small{display:block;color:var(--muted);margin-top:3px}.source-tag{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px 7px;font-size:9px;font-weight:900;margin-right:6px;background:#dcecf0}.source-tag.pdf{background:#f3ddca}.source-tag.paper{background:#e8e2f1}.danger{color:#8d443a;font-weight:850}
+    @media(max-width:1100px){.scope,.calculator{grid-template-columns:1fr}.scope-arrow{transform:rotate(90deg)}.case-stats,.detail-grid,.role-grid{grid-template-columns:repeat(2,1fr)}.arch-row{grid-template-columns:1fr}.arch-row small{text-align:left}.calc-results{grid-template-columns:repeat(2,1fr)}.seq-row{grid-template-columns:45px 150px 1fr}.seq-note{grid-column:2/-1}.pr-grid{grid-template-columns:repeat(2,1fr)}.decision-flow{grid-template-columns:1fr}.decision-arrow{transform:rotate(90deg);text-align:center}}
+    @media(max-width:760px){.case-stats,.signals,.detail-grid,.role-grid,.code-grid,.endpoint-grid,.invariant-list,.calc-results,.pr-grid{grid-template-columns:1fr}.scope .card{min-height:0}.verdict{grid-column:auto}.seq-row{grid-template-columns:42px 1fr}.seq-lane{grid-column:2}.seq-main,.seq-note{grid-column:1/-1}.file-row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -44,207 +42,272 @@
       <a href='#summary'>核心结论</a>
       <a href='#boundary'>能力边界</a>
       <a href='#principle'>第一性原理</a>
-      <a href='#strategy'>方案选型</a>
+      <a href='#strategy'>决策级联</a>
       <a href='#switchyard'>附件案例</a>
       <a href='#architecture'>分层架构</a>
-      <a href='#detailed-design'>详细技术设计</a>
-      <a href='#contract'>控制面契约</a>
-      <a href='#economics'>成本测算</a>
-      <a href='#evaluation'>评测体系</a>
+      <a href='#third-party-model'>第三方决策模型</a>
+      <a href='#runtime'>运行时设计</a>
+      <a href='#contract'>策略与数据契约</a>
+      <a href='#failure'>失败语义</a>
+      <a href='#evaluation'>成本与评测</a>
       <a href='#engineering'>工程改造</a>
       <a href='#roadmap'>落地路线</a>
-      <a href='#risks'>风险边界</a>
       <a href='#sources'>资料来源</a>
     </nav>
-    <div class='side-note'>更新：2026-08-23<br>蓝色标记为代码/资料事实，橙色标记为面向 TokenHub 的设计建议。</div>
+    <div class='side-note'>更新：2026-08-23<br>蓝色为代码／资料事实，橙色为面向 TokenHub 的设计建议。</div>
   </aside>
 
   <main>
     <header class='hero'>
       <div class='eyebrow'>TokenHub · Intelligent Model Routing</div>
       <h1>智能模型路由：<br>把前沿模型用在真正困难的地方</h1>
-      <p class='lead'>TokenHub 已具备 Provider / Resource 路由。本报告聚焦新增的模型能力决策层：根据请求能力边界、完成概率与 Agent 运行轨迹，在高效模型和前沿模型之间动态选择，并给出可以映射到当前 Go 后端、存储、计费和日志链路的详细实现方案。</p>
+      <p class='lead'>TokenHub 已具备 Provider / Resource 路由。本报告聚焦新增的模型能力决策层，并明确第三方模型在其中的角色：它可以作为可选 Classifier 或 Judge 提供结构化判断，但最终档位选择、权限、凭证、阈值和故障兜底仍由 TokenHub 的确定性策略控制。</p>
       <div class='meta'>
         <span class='chip orange'>聚焦 TokenHub</span>
         <span class='chip blue'>请求级 + 轨迹级路由</span>
-        <span class='chip green'>Observe-only 优先</span>
+        <span class='chip green'>第三方模型可选</span>
         <span class='chip'>Cost per Successful Task</span>
       </div>
       <div class='hero-flow'>
-        <div class='node'><b>业务请求 / Agent 回合</b><small>Prompt、工具、上下文、风险、会话轨迹</small></div>
+        <div class='node'><b>业务请求 / Agent 回合</b><small>Prompt、工具、Context、风险、轨迹</small></div>
         <div class='arrow'>→</div>
-        <div class='node highlighted'><b>Smart Model Resolver</b><small>估计不同档位完成任务的概率，选择满足质量下限的最低成本模型</small></div>
+        <div class='node'><b>Smart Model Resolver</b><small>本地规则优先；uncertain 时可调用第三方 Classifier</small></div>
         <div class='arrow'>→</div>
-        <div class='node'><b>TokenHub Route Planner</b><small>Provider、Resource、健康、价格、延迟、Affinity 与 Failover</small></div>
+        <div class='node'><b>现有 Route Planner</b><small>Provider、Resource、Affinity、Breaker 与 Failover</small></div>
       </div>
     </header>
 
     <section id='summary'>
-      <div class='head'><div class='num'>0</div><div><h2>核心结论</h2><p>智能模型路由不是再增加一种 Provider 排序策略，而是在现有路由之前增加模型能力决策层。</p></div></div>
+      <div class='head'><div class='num'>0</div><div><h2>核心结论</h2><p>当前 TokenHub 基础路由不需要第三方模型；本方案只在确定性方法无法判断时，选择性调用一个决策模型。</p></div></div>
       <div class='takeaways'>
-        <div class='card'><em>01</em><b>边界要清楚</b>现有路由解决“同一模型由谁执行”；新增能力解决“本次到底该使用哪个模型档位”。</div>
-        <div class='card'><em>02</em><b>预测成功概率</b>目标是 <code>P(success | request, model)</code>，而不是给请求贴一个脱离业务损失函数的“简单/困难”标签。</div>
-        <div class='card'><em>03</em><b>MVP 只做两档</b><code>efficient</code> 与 <code>capable</code> 足以验证收益；三档会显著增加阈值和评测复杂度。</div>
-        <div class='card'><em>04</em><b>确定性级联</b>硬约束和规则先行，仅对 uncertain 请求调用 Classifier；任何异常默认 capable。</div>
-        <div class='card'><em>05</em><b>按成功任务核算</b>Router、Judge、重试、跨档 Fallback、缓存损失与人工接管都必须计入成本。</div>
+        <div class='card'><em>01</em><b>当前实现不依赖 LLM 决策</b>现有路由主要依据模型名、策略、权重、成本、质量、成功率和延迟选择 Provider / Resource。</div>
+        <div class='card'><em>02</em><b>第三方模型是可选层</b>硬约束与规则输出 uncertain 时，Classifier 才预测高效模型的 <code>p_solve</code>。</div>
+        <div class='card'><em>03</em><b>模型不直接控制流量</b>决策模型只返回结构化证据；TokenHub 应用阈值、风险下限和 Allowlist 得出最终目标。</div>
+        <div class='card'><em>04</em><b>数据边界优先</b>默认发送脱敏、裁剪后的 RouterInput；高敏场景可关闭第三方调用或使用自托管模型。</div>
+        <div class='card'><em>05</em><b>判断失败走 capable</b>超时、429、无效 JSON、空 content 或低置信都不能把业务请求留在低档模型。</div>
       </div>
-      <div class='ok'><strong>推荐起点</strong>显式虚拟模型 <code>model:auto</code> + 两档模型 + 规则级联 + uncertain Classifier + task-sticky + observe-only + 强模型兜底。Stage Router 放到第二阶段。</div>
+      <div class='ok'><strong>推荐 MVP</strong><code>model:auto</code> + efficient / capable 两档 + Constraint + Rule / Stage Signal + task-sticky + observe-only + capable 兜底。第三方 Classifier 只在后续阶段处理低置信、歧义区间，不是首版必经路径，也不能选择任意 Provider Endpoint。</div>
     </section>
 
     <section id='boundary'>
-      <div class='head'><div class='num'>1</div><div><h2>TokenHub 已有能力与本次新增能力</h2><p>当前代码已能稳定选择具体模型的 Provider / Resource；新方案应复用这条链路，而不是重写它。</p></div></div>
+      <div class='head'><div class='num'>1</div><div><h2>已有路由与新增模型决策层</h2><p>模型档位选择和 Provider 执行路径选择是两个不同问题。</p></div></div>
       <div class='scope'>
         <div class='card'>
-          <span class='fact'>当前实现</span>
+          <span class='fact'>当前 TokenHub</span>
           <h3>Provider / Resource Routing</h3>
-          <p class='question'>已确定 <code>model=gpt-x</code> 后，选择哪条 Route、Provider、账号、区域或 Resource？</p>
+          <p>模型名已经确定后，选择哪条 Route、Provider、账号、区域或 Resource。</p>
           <ul class='clean'>
             <li><code>balanced</code>、<code>adaptive</code>、<code>cost</code>、<code>quality</code></li>
-            <li><code>priority_weighted</code>、<code>priority_only</code></li>
-            <li>健康过滤、熔断、半开恢复和顺序 Failover</li>
-            <li>Project / API Key 策略、标签、区域和环境约束</li>
-            <li>Session / Cache Affinity</li>
+            <li>Priority、Weight、健康过滤、熔断和半开恢复</li>
+            <li>API Key → Project → Global Scoped Policy</li>
+            <li>Session / Cache Affinity 与顺序 Failover</li>
           </ul>
-          <p class='muted'>当前候选入口是 <code>SelectRouteCandidates(modelName)</code>，因此 modelName 在进入现有 Route Planner 前已经确定。</p>
+          <p class='muted'>候选入口为 <code>SelectRouteCandidates(modelName)</code>，因此不会读取 Prompt 来决定模型档位。</p>
         </div>
         <div class='scope-arrow'>+</div>
         <div class='card'>
-          <span class='proposal'>新增能力</span>
+          <span class='proposal'>新增 L1</span>
           <h3>Capability-aware Model Routing</h3>
-          <p class='question'>面对当前请求或 Agent 回合，应该使用高效模型还是前沿模型？</p>
+          <p>根据请求与 Agent 状态，解析为 efficient 或 capable 具体模型。</p>
           <ul class='clean'>
-            <li>模态、Context、Tool、Structured Output 等硬约束</li>
-            <li>任务类型、风险下限与高置信规则</li>
-            <li>高效模型完成任务的概率 <code>p_solve</code></li>
-            <li>错误、探索、写入、测试和 churn 等轨迹信号</li>
-            <li>质量下限、预算、Session 和跨档兜底</li>
+            <li>Context、模态、工具、结构化输出等硬约束</li>
+            <li>高置信任务规则和风险强制升级</li>
+            <li>可选第三方 / 自托管 Classifier</li>
+            <li>可选 Stage Tie-breaker 与 Escalation Judge</li>
           </ul>
-          <p class='muted'>输出语义档位或具体外部模型，随后继续调用现有 Provider / Resource 候选链路。</p>
+          <p class='muted'>输出 actual model 后，仍交由当前 Route Planner 选择执行资源。</p>
         </div>
       </div>
       <div class='layers' style='margin-top:22px'>
-        <div class='layer new-layer'><div class='label'>新增 L1</div><div><b>Smart Model Resolver</b><div class='desc'>Prompt / Agent 轨迹 → efficient / capable / target model</div></div><div class='out'>决定能力成本</div></div>
-        <div class='layer existing-layer'><div class='label'>复用 L2</div><div><b>TokenHub Route Planner</b><div class='desc'>模型 → Provider / Resource / Region / Account</div></div><div class='out'>决定交付路径</div></div>
-        <div class='layer execution-layer'><div class='label'>执行 L3</div><div><b>Provider / Inference Service</b><div class='desc'>请求执行、缓存、流式返回、计量和错误反馈</div></div><div class='out'>产生真实结果</div></div>
+        <div class='layer new-layer'><div class='label'>L1 新增</div><div><b>Smart Model Resolver</b><div class='desc'>Request / Trajectory → semantic tier → concrete model</div></div><div class='out'>决定能力成本</div></div>
+        <div class='layer existing-layer'><div class='label'>L2 复用</div><div><b>TokenHub Route Planner</b><div class='desc'>Concrete model → Provider / Resource / Region</div></div><div class='out'>决定交付路径</div></div>
+        <div class='layer execution-layer'><div class='label'>L3 执行</div><div><b>Provider / Inference Service</b><div class='desc'>执行、流式、Usage、缓存和错误反馈</div></div><div class='out'>产生真实结果</div></div>
       </div>
     </section>
 
     <section id='principle'>
-      <div class='head'><div class='num'>2</div><div><h2>第一性原理：优化“成功任务成本”</h2><p>Prompt 长度、是否包含代码只能作为特征；真正的约束是不同模型在当前任务上的成功概率。</p></div></div>
+      <div class='head'><div class='num'>2</div><div><h2>第一性原理：优化成功任务成本</h2><p>请求长度和关键词只是特征，最终应估计不同模型完成当前任务的概率。</p></div></div>
       <div class='equation'>
-        <div><span class='a'>候选集合：</span> Mᵉ(x) = { m | modality ∧ context ∧ tools ∧ protocol ∧ region ∧ policy }</div>
+        <div><span class='a'>候选集合：</span> Mᵉ(x) = { m | modality ∧ context ∧ tools ∧ protocol ∧ policy }</div>
         <div><span class='a'>质量约束：</span> P(success | x, m) ≥ Q<sub>min</sub></div>
         <div><span class='a'>模型选择：</span> m* = argmin E[WorkflowCost(m | x)]</div>
       </div>
       <div class='grid three' style='margin-top:17px'>
-        <div class='card'><h4>成功概率</h4><p>针对当前请求、模型版本和业务成功标准估计，不能把模型永久贴成“强/弱”。</p></div>
-        <div class='card'><h4>工作流成本</h4><p>模型调用 + Router + Judge + 重试 + Fallback + 缓存损失 + 工具失败 + 人工接管。</p></div>
-        <div class='card'><h4>损失函数</h4><p>普通摘要和生产变更的错误代价不同；高风险任务应提高质量下限或直接固定 capable。</p></div>
+        <div class='card'><h4>成功概率</h4><p>由规则、历史样本或决策模型估计，必须按模型版本和业务类型校准。</p></div>
+        <div class='card'><h4>工作流成本</h4><p>业务模型 + 决策模型 + Judge + 重试 + 跨档 Fallback + 缓存损失。</p></div>
+        <div class='card'><h4>任务损失</h4><p>不可逆写入、安全修复和监管任务应提高 Q<sub>min</sub>，甚至固定 capable。</p></div>
       </div>
-      <h3>净收益条件</h3>
-      <div class='equation'><span class='a'>α · (C<sub>strong</sub> − C<sub>efficient</sub>)</span> &gt; C<sub>router</sub> + C<sub>retry/fallback/cache-loss</sub></div>
-      <div class='warn'><strong>不要把“小模型占比”当北极星</strong>即使账单下降，如果错误降级带来更多重试，<code>Cost per Successful Task</code> 仍可能上升。</div>
+      <div class='warn'><strong>净收益条件</strong><code>安全下放收益 &gt; Router 模型成本 + 错误路由成本 + 缓存与重试损失</code>。因此决策模型不能对所有请求无差别调用。</div>
     </section>
 
     <section id='strategy'>
-      <div class='head'><div class='num'>3</div><div><h2>智能路由技术路线与推荐级联</h2><p>先用便宜、稳定、可解释的方法处理确定流量，再把昂贵判断留给 uncertain 请求。</p></div></div>
-      <div class='methods'>
-        <article class='method'><span class='level'>P0</span><h4>硬约束过滤</h4><p>Context、模态、工具、结构化输出、协议、地域、合规和风险下限。</p><dl><dt>成本</dt><dd>接近零</dd><dt>作用</dt><dd>排除根本无法执行的模型</dd></dl></article>
-        <article class='method'><span class='level'>P0</span><h4>确定性规则</h4><p>抽取、格式化等高置信任务可下放；安全修复、不可逆写入直接 capable。</p><dl><dt>成本</dt><dd>接近零</dd><dt>作用</dt><dd>覆盖稳定头部流量</dd></dl></article>
-        <article class='method'><span class='level'>MVP</span><h4>Capability Classifier</h4><p>预测高效模型完成整个任务的 <code>p_solve</code>，阈值不足则 capable。</p><dl><dt>成本</dt><dd>一次轻量判断</dd><dt>作用</dt><dd>处理语义边界请求</dd></dl></article>
-        <article class='method'><span class='level'>Agent</span><h4>Stage Router</h4><p>根据工具结果、错误、探索、写入和测试进度逐回合升降档。</p><dl><dt>前提</dt><dd>结构化轨迹</dd><dt>作用</dt><dd>把强模型预算集中在关键回合</dd></dl></article>
-        <article class='method'><span class='level'>可验证</span><h4>Escalation / Verifier</h4><p>高效模型先完成，再依据测试、Schema 或 Judge 判断是否升级重做。</p><dl><dt>代价</dt><dd>尾延迟和重复调用</dd><dt>适合</dt><dd>可重试、无副作用任务</dd></dl></article>
-        <article class='method'><span class='level'>后期</span><h4>在线校准 / Bandit</h4><p>利用真实反馈更新阈值或模型选择，但探索必须受业务风险约束。</p><dl><dt>前提</dt><dd>稳定反馈和因果评测</dd><dt>风险</dt><dd>在线探索伤害业务</dd></dl></article>
-      </div>
-      <h3>推荐决策链路</h3>
+      <div class='head'><div class='num'>3</div><div><h2>推荐的决策级联</h2><p>第三方模型只负责确定性方法留下的 uncertain 流量。</p></div></div>
       <div class='mini-flow'>
-        <div class='mini-step'><b>① 硬约束</b><small>不支持工具、Context 或高风险 → capable</small></div><div class='mini-arrow'>→</div>
-        <div class='mini-step'><b>② 零成本规则</b><small>高置信简单任务 → efficient</small></div><div class='mini-arrow'>→</div>
-        <div class='mini-step'><b>③ uncertain 分类</b><small>Classifier 输出 p_solve、边界与原因</small></div><div class='mini-arrow'>→</div>
-        <div class='mini-step'><b>④ Session</b><small>MVP task-sticky，避免工具回合重复判断</small></div><div class='mini-arrow'>→</div>
-        <div class='mini-step'><b>⑤ 可信兜底</b><small>判断异常、协议不兼容、低置信 → capable</small></div>
+        <div class='mini-step'><b>① Constraint</b><small>不支持 Tool / Context / 协议 → capable 或排除</small></div><div class='mini-arrow'>→</div>
+        <div class='mini-step'><b>② Risk Rules</b><small>安全、高风险、不可逆工具 → capable</small></div><div class='mini-arrow'>→</div>
+        <div class='mini-step'><b>③ Easy Rules</b><small>抽取、格式化、机械修改 → efficient</small></div><div class='mini-arrow'>→</div>
+        <div class='mini-step'><b>④ Classifier</b><small>仅 uncertain；输出 p_solve 与边界</small></div><div class='mini-arrow'>→</div>
+        <div class='mini-step'><b>⑤ Policy</b><small>阈值、风险下限、Session 与 observe/enforce</small></div>
       </div>
-      <div class='ok'><strong>MVP 不建议</strong>所有请求先调用 Router LLM；三档以上模型池；直接在线 Bandit；显式请求具体模型时偷偷降级。</div>
+      <div class='detail-grid'>
+        <div class='detail-card'><span class='phase-pill'>默认</span><h4>Rules-only</h4><p>不调用任何第三方模型，成本与数据风险最低；适合流量稳定、任务类型清晰的场景。</p></div>
+        <div class='detail-card'><span class='phase-pill'>Phase 2</span><h4>Capability Classifier</h4><p>请求开始前预测高效模型能否完成整个任务；判断异常默认 capable。</p></div>
+        <div class='detail-card'><span class='phase-pill'>Agent</span><h4>Stage Router</h4><p>结构化轨迹先打分，只有信号不明确时再调用 Classifier 打破平局。</p></div>
+        <div class='detail-card'><span class='phase-pill'>后期</span><h4>Escalation Judge</h4><p>高效模型完成后，由 Judge 评估是否升级；仅适用于可缓冲、可重试、无副作用任务。</p></div>
+        <div class='detail-card'><span class='phase-pill'>离线</span><h4>Router Trainer / Eval</h4><p>可用第三方强模型生成弱监督标签，但线上策略必须使用独立测试集验证。</p></div>
+        <div class='detail-card'><span class='phase-pill'>不建议</span><h4>LLM 直接选 URL</h4><p>模型不能持有凭证、构造 Endpoint 或绕过 Allowlist；它只返回语义判断。</p></div>
+      </div>
     </section>
 
     <section id='switchyard'>
-      <div class='head'><div class='num'>4</div><div><h2>附件案例：Switchyard × Deep Agents</h2><p>附件提供了轨迹级路由案例；其中数字应按厂商集成评测而非行业基准理解。</p></div></div>
+      <div class='head'><div class='num'>4</div><div><h2>附件案例：Switchyard 的模型决策</h2><p>附件明确包含 LLM Classifier 与 Escalation Judge，因此第三方模型参与决策是可参考路径，但并非 Stage Router 的全部。</p></div></div>
       <div class='case-stats'>
         <div class='case-stat'><strong>145</strong><small>多步 Agent 任务</small></div>
-        <div class='case-stat'><strong>93%</strong><small>回合交给 30B 高效模型</small></div>
-        <div class='case-stat'><strong>7%</strong><small>回合交给 Claude Opus 4.8</small></div>
-        <div class='case-stat'><strong>≈70%</strong><small>报告称总成本下降</small></div>
+        <div class='case-stat'><strong>93%</strong><small>回合交给 30B 模型</small></div>
+        <div class='case-stat'><strong>7%</strong><small>回合使用 Opus</small></div>
+        <div class='case-stat'><strong>≈70%</strong><small>报告称成本下降</small></div>
       </div>
-      <div class='warn'><strong>数字的正确读法</strong>约 90% 的 Opus 准确率保留来自特定 Harness、145 个任务和特定模型组合，尚无完整任务明细、置信区间与独立复现，不能直接外推为 TokenHub 的收益承诺。</div>
-      <h3>Stage Router：难度是运行状态</h3>
-      <div class='signals'>
-        <div class='signal wrong'><h4>WRONG → capable</h4><ul><li>窗口内错误严重度升高</li><li>长时间 churn、没有读写进展</li><li>持续读取和规划但不产出</li><li>关键测试失败或严重错误</li><li>上下文压缩、恢复和卡住</li></ul></div>
-        <div class='signal progressing'><h4>PROGRESS → efficient</h4><ul><li>近期持续写入或编辑</li><li>进入机械实现阶段</li><li>修改范围和计划明确</li><li>测试通过且无窗口错误</li><li>格式化、总结、重跑和收尾</li></ul></div>
+      <h3>哪些环节调用模型做决策？</h3>
+      <div class='role-grid'>
+        <div class='role'><div class='when'>请求开始前</div><h4>LLM Capability Classifier</h4><p>返回 <code>p_solve</code>、capability boundary、primary rule 与 crux；确定性阈值再决定 strong / weak。</p></div>
+        <div class='role'><div class='when'>轨迹信号不明确时</div><h4>Stage Tie-breaker</h4><p>Stage Router 主要读取 tool-result history；可配置 Classifier 处理低置信回合，并非每回合必调。</p></div>
+        <div class='role'><div class='when'>高效模型完成后</div><h4>Escalation Judge</h4><p>Judge 评估持续错误、循环或漂移；达到连续确认条件后把 Session 锁定到强模型。</p></div>
       </div>
-      <p>Switchyard 将多种信号组合后通过 <code>tanh</code> 压缩为 0～1 的置信度；严重错误可硬升级。官方起始阈值 <code>0.5</code> 来自 SWE-Bench Pro Python-75 校准，不应原样复制到其他业务。</p>
-      <h3>三类 Router 的失败语义</h3>
-      <div class='semantic-table'>
-        <table><thead><tr><th>Router</th><th>判断时点</th><th>正常行为</th><th>判断失败时</th><th>TokenHub 建议</th></tr></thead><tbody>
-          <tr><td>Capability Classifier</td><td>请求开始前</td><td>依据 p_solve 和 capability boundary 选强/弱</td><td>无效或不可解析 verdict → strong</td><td>MVP 默认语义</td></tr>
-          <tr><td>Stage Router</td><td>Agent 回合前</td><td>轨迹信号明确时改变档位</td><td>信号不明确 → picker 默认档位</td><td>高风险项目设置 capable 下限</td></tr>
-          <tr><td>Escalation</td><td>高效模型完成后</td><td>缓冲结果，Judge 连续确认后锁定 strong</td><td>Judge 失败 → 返回弱模型缓冲结果</td><td>仅低风险、可验证任务允许</td></tr>
-        </tbody></table>
+      <div class='signals' style='margin-top:16px'>
+        <div class='signal wrong'><h4>轨迹直接升级</h4><ul><li>严重错误</li><li>持续 churn、没有读写</li><li>只探索不产出</li><li>关键测试失败</li></ul></div>
+        <div class='signal progressing'><h4>轨迹允许降档</h4><ul><li>持续写入或编辑</li><li>计划与范围明确</li><li>测试通过</li><li>机械实现与收尾</li></ul></div>
       </div>
-      <div class='danger-note'><strong>生产边界</strong>Switchyard 官方仍标注 pre-alpha / experimental / not for production use。TokenHub 应借鉴算法、事件模型与 Eval 方法，而不是固化其当前 API。</div>
+      <div class='warn'><strong>正确解读</strong>附件也强调无效 Classifier JSON、Judge 失败、协议不兼容和低置信要有 trusted fallback，并先运行 observe-only；145 项结果不能直接作为 TokenHub 的收益承诺。</div>
     </section>
 
     <section id='architecture'>
-      <div class='head'><div class='num'>5</div><div><h2>推荐的 TokenHub 分层架构</h2><p>智能 Router 只返回语义目标；凭证、目标白名单、执行、重试、计费和审计继续由 TokenHub 掌握。</p></div></div>
+      <div class='head'><div class='num'>5</div><div><h2>推荐的 TokenHub 分层架构</h2><p>第三方决策模型通过 TokenHub 受控调用，不能成为旁路控制平面。</p></div></div>
       <div class='arch'>
-        <div class='arch-row'><span class='fact'>现有</span><b>Auth / Preliminary Admission / Guardrail</b><small>校验调用者、虚拟模型访问、IP、请求体和内容安全</small></div>
-        <div class='arch-row new'><span class='proposal'>新增</span><b>Smart Model Resolver</b><small>Policy → Constraint → Rule → Classifier / Stage → Session → 风险下限</small></div>
-        <div class='arch-row keep'><span class='fact'>复用</span><b>Model-specific Admission + Route Planner</b><small>按实际模型完成 TPM / 成本预留，再做 Provider / Resource 候选和 Failover</small></div>
-        <div class='arch-row'><span class='fact'>现有</span><b>Provider Adapter / Protocol Translation</b><small>执行 OpenAI、Anthropic、Gemini、Codex 等兼容请求</small></div>
-        <div class='arch-row feedback'><span class='proposal'>扩展</span><b>Decision Log / Usage / Outcome Feedback</b><small>关联理论选择、实际模型、成本、最终结果和人工反馈</small></div>
+        <div class='arch-row'><span class='fact'>现有</span><b>Auth / Preliminary Admission / Guardrail</b><small>校验调用者、虚拟模型访问、IP 和内容安全</small></div>
+        <div class='arch-row new'><span class='proposal'>新增</span><b>Smart Model Resolver</b><small>Constraint → Rules → optional Classifier / Judge → deterministic policy</small></div>
+        <div class='arch-row keep'><span class='fact'>复用</span><b>Internal Classifier Call + Existing L2</b><small>决策模型使用 concrete model，绕过 L1 但继续经过 Provider 路由、配额和审计</small></div>
+        <div class='arch-row keep'><span class='fact'>复用</span><b>Actual Model Admission + Route Planner</b><small>按业务 actual model 预留 Token / 成本，再选择 Provider / Resource</small></div>
+        <div class='arch-row feedback'><span class='proposal'>扩展</span><b>Decision Log / Usage / Outcome Feedback</b><small>分别核算 Router 与业务模型成本，关联最终任务结果</small></div>
       </div>
-      <h3>显式虚拟模型，而不是隐式篡改</h3>
-      <pre><code>POST /v1/responses
-{
-  "model": "auto-code",
-  "input": "修复这个并发问题并运行测试",
-  "metadata": {
-    "routing_session_id": "task_123",
-    "agent_context_version": 7
-  }
-}</code></pre>
-      <div class='note'><strong>兼容原则</strong>客户端明确请求具体模型时默认保持其语义；只有请求 <code>auto</code> / <code>auto-code</code> 或 Project 明确启用 opt-in 策略时才做能力路由。</div>
+      <div class='invariant-list' style='margin-top:16px'>
+        <div class='invariant'><b>凭证仍归 TokenHub</b>决策模型看不到 Provider API Key，也不能返回自定义 Endpoint。</div>
+        <div class='invariant'><b>Concrete model 防递归</b>Classifier 配置不能引用 <code>auto</code>；内部调用标记 <code>internal_router_call</code>。</div>
+        <div class='invariant'><b>业务访问权不被绕过</b>调用者必须同时有虚拟模型和最终 actual model 的权限。</div>
+        <div class='invariant'><b>决策模型结果不可信</b>JSON Schema 校验、阈值和风险规则始终在本地确定性执行。</div>
+      </div>
     </section>
 
-    <section id='detailed-design'>
-      <div class='head'><div class='num'>6</div><div><h2>TokenHub 详细技术设计</h2><p>以下方案尽量沿用 TokenHub 当前的 AdminResource、API Key → Project → Global 优先级、CallContext、Route Attempt、计费结算和多实例边界。</p></div></div>
+    <section id='third-party-model'>
+      <div class='head'><div class='num'>6</div><div><h2>第三方决策模型：角色、部署与数据边界</h2><p>有使用，但应当是可关闭、可替换、可计量的辅助组件，而不是所有请求的强依赖。</p></div></div>
+      <div class='note'><strong>现状与方案要区分</strong>TokenHub 当前基础 Provider 路由没有通过第三方 LLM 阅读问题并选模型；以下内容是智能路由新增方案。决策模型可以来自外部 Provider，也可以是内部 vLLM、Kronk 或其他 OpenAI-compatible 服务。</div>
 
-      <h3>6.1 MVP 组件拆分</h3>
+      <h3>6.1 决策权如何划分</h3>
+      <div class='decision-flow'>
+        <div class='decision-node'><b>TokenHub 本地预处理</b><small>脱敏、特征提取、硬约束、风险规则和候选模型卡</small></div>
+        <div class='decision-arrow'>→</div>
+        <div class='decision-node third'><b>第三方 / 自托管模型</b><small>只输出 p_solve、boundary、crux、置信度或 escalate / decline</small></div>
+        <div class='decision-arrow'>→</div>
+        <div class='decision-node policy'><b>TokenHub 确定性 Policy</b><small>Schema 校验、阈值、风险下限、Allowlist、Session 与 fallback</small></div>
+      </div>
+      <div class='ok'><strong>核心原则</strong>第三方模型提供的是“证据”，不是“执行命令”。最终选择只能落在策略预先声明的 Tier 和具体模型集合中。</div>
+
+      <h3>6.2 三种部署模式</h3>
+      <div class='table-box'>
+        <table><thead><tr><th>模式</th><th>调用方式</th><th>优势</th><th>风险 / 适用场景</th></tr></thead><tbody>
+          <tr><td><b>Rules-only</b><br><span class='optional'>不使用模型</span></td><td>Constraint + RuleEngine</td><td>零模型延迟、无数据外发、最易解释</td><td>任务边界复杂时召回不足；作为默认安全基线</td></tr>
+          <tr><td><b>TokenHub-managed concrete model</b><br><span class='proposal'>推荐 Phase 2</span></td><td>内部 ClassifierClient 指向 Model Directory 中的具体模型，经现有 L2 路由调用外部或内部 Provider</td><td>复用凭证、配额、Provider Failover、Usage 与审计</td><td>需要隔离 Router Project、Timeout、预算和数据驻留</td></tr>
+          <tr><td><b>External Router Service</b><br><span class='optional'>后期插件</span></td><td>TokenHub 发送受限 RouterInput，服务返回语义决策</td><td>可独立训练、快速替换算法、跨 Gateway 复用</td><td>增加网络依赖和供应商锁定；必须 mTLS、Allowlist、版本和熔断</td></tr>
+          <tr><td><b>Self-hosted classifier</b><br><span class='fact'>高敏场景</span></td><td>通过 vLLM、Kronk、NIM 或兼容服务接入 TokenHub</td><td>数据边界可控、成本稳定</td><td>需要维护模型、容量、版本和校准</td></tr>
+        </tbody></table>
+      </div>
+
+      <h3>6.3 发送给决策模型的内容</h3>
+      <div class='table-box'>
+        <table><thead><tr><th>输入模式</th><th>包含内容</th><th>建议</th></tr></thead><tbody>
+          <tr><td><code>features_only</code></td><td>Token 数、Endpoint、工具能力、代码/文件数量、风险标签、轨迹聚合值，不含原文</td><td>隐私最好，但语义判断能力有限；适合受监管流量</td></tr>
+          <tr><td><code>sanitized_text</code></td><td>脱敏后的首个任务、最新用户消息、Tool 名称摘要、Context 统计和模型能力卡</td><td><b>默认推荐</b>；兼顾语义能力与数据最小化</td></tr>
+          <tr><td><code>full_context</code></td><td>裁剪后的完整会话与 Tool Result</td><td>仅可信边界和明确授权；不作为默认配置</td></tr>
+        </tbody></table>
+      </div>
+      <div class='invariant-list' style='margin-top:13px'>
+        <div class='invariant'><b>先 Guardrail 后 Classifier</b>本地 Mask 已识别的敏感值后，才能构造 RouterInput。</div>
+        <div class='invariant'><b>不发送凭证和隐藏控制信息</b>API Key、Provider Header、内部系统密钥、原始审计字段不得进入 Prompt。</div>
+        <div class='invariant'><b>不要求思维链</b>只保存严格结构化 Verdict，不请求或记录自由形式 Chain-of-Thought。</div>
+        <div class='invariant'><b>按租户隔离</b>决策缓存和 Session Key 必须包含 Policy Version、Project / Key 边界与模型版本。</div>
+      </div>
+
+      <h3>6.4 决策模型输出契约</h3>
+      <div class='code-grid'>
+        <pre><code>{
+  &quot;schema_version&quot;: 1,
+  &quot;p_solve&quot;: 0.83,
+  &quot;capability_boundary&quot;: &quot;supported&quot;,
+  &quot;primary_rule&quot;: &quot;localized_code_change&quot;,
+  &quot;crux&quot;: &quot;preserve lock ordering&quot;,
+  &quot;risk_flags&quot;: [],
+  &quot;confidence&quot;: 0.86
+}</code></pre>
+        <pre><code>// TokenHub 本地执行
+threshold = baseThreshold
+if boundary == &quot;uncertain&quot; {
+    threshold += thresholdStep
+}
+if boundary == &quot;unsupported&quot; {
+    threshold += 2 * thresholdStep
+}
+if invalidVerdict || riskFloor == &quot;capable&quot; || pSolve &lt; threshold {
+    choose(&quot;capable&quot;)
+} else {
+    choose(&quot;efficient&quot;)
+}</code></pre>
+      </div>
+
+      <h3>6.5 决策模型选择标准</h3>
       <div class='detail-grid'>
-        <div class='detail-card'><span class='phase-pill'>编排</span><h4>SmartRouteResolver</h4><p>串联策略、候选、Session、规则和 Classifier，产出唯一 RouterDecision。</p><dl><dt>输入</dt><dd>标准化请求、调用者、策略、Agent Context</dd><dt>输出</dt><dd>observed / actual model、原因与开销</dd><dt>失败</dt><dd>默认 capable</dd></dl></div>
-        <div class='detail-card'><span class='phase-pill'>纯函数</span><h4>ConstraintFilter</h4><p>基于 Model 元数据和请求能力需求过滤不可能执行的 Tier。</p><dl><dt>检查</dt><dd>Context、模态、Tool、Response Format、协议</dd><dt>特点</dt><dd>不调用网络，可完整单测</dd><dt>失败</dt><dd>无候选时返回明确错误</dd></dl></div>
-        <div class='detail-card'><span class='phase-pill'>低成本</span><h4>RuleEngine</h4><p>执行版本化规则，覆盖确定性简单任务与风险强制升级。</p><dl><dt>输出</dt><dd>efficient / capable / uncertain</dd><dt>解释</dt><dd>稳定 reason_codes</dd><dt>原则</dt><dd>风险规则优先于降级规则</dd></dl></div>
-        <div class='detail-card'><span class='phase-pill'>可插拔</span><h4>ClassifierClient</h4><p>仅处理 uncertain，使用具体模型而不是虚拟模型，避免递归路由。</p><dl><dt>调用</dt><dd>复用 TokenHub L2 Provider 路由</dd><dt>隔离</dt><dd>专用内部 Project / Quota / Timeout</dd><dt>失败</dt><dd>invalid JSON、429、超时 → capable</dd></dl></div>
-        <div class='detail-card'><span class='phase-pill'>状态</span><h4>RouterSessionStore</h4><p>MVP 保存 task-sticky 选择；Stage 阶段再保存 turn、churn、错误与 latch。</p><dl><dt>键</dt><dd>policy_version + caller + session_id</dd><dt>一致性</dt><dd>唯一约束 + revision / lease</dd><dt>过期</dt><dd>策略 TTL 配置</dd></dl></div>
-        <div class='detail-card'><span class='phase-pill'>反馈</span><h4>DecisionRecorder</h4><p>把路由决策与 RequestLog、RouteAttemptLog、UsageRecord 和业务结果关联。</p><dl><dt>立即</dt><dd>来源、置信度、Router 开销、实际模型</dd><dt>异步</dt><dd>任务成功、人工接管、回滚</dd><dt>用途</dt><dd>Replay、阈值校准和审计</dd></dl></div>
+        <div class='detail-card'><h4>结构化输出稳定性</h4><p>JSON Schema 成功率比通用榜单更重要；空 content 或截断 Verdict 必须被监控。</p></div>
+        <div class='detail-card'><h4>校准能力</h4><p><code>p_solve</code> 要在 TokenHub 自身任务上做 reliability curve / Brier Score 校准。</p></div>
+        <div class='detail-card'><h4>成本与时延</h4><p>Classifier 的 P95 和单次成本应显著低于强弱模型价差；只判断 uncertain 流量。</p></div>
+        <div class='detail-card'><h4>版本稳定性</h4><p>固定具体版本，模型升级触发新的 Policy Version 和 Replay，不静默漂移。</p></div>
+        <div class='detail-card'><h4>数据与地域</h4><p>Provider、Region、保留策略和训练使用条款必须满足项目的数据边界。</p></div>
+        <div class='detail-card'><h4>独立性</h4><p>可考虑与 capable 模型不同供应商，避免同一 Provider 故障同时影响判断与执行；也要衡量额外锁定。</p></div>
       </div>
 
-      <h3>6.2 同步请求时序</h3>
+      <h3>6.6 成本、配额与可用性</h3>
+      <div class='table-box'>
+        <table><thead><tr><th>控制项</th><th>建议</th></tr></thead><tbody>
+          <tr><td>内部身份</td><td>建立专用 Router System Project / API Key；不复用业务调用者凭证。</td></tr>
+          <tr><td>路由配额</td><td>独立 RPM、TPM、并发和日 / 月成本上限；避免 Router 成为免费调用放大器。</td></tr>
+          <tr><td>Timeout</td><td>设置较短硬超时；超时直接 capable，不阻塞业务链路等待重试风暴。</td></tr>
+          <tr><td>缓存</td><td>可按 policy version + classifier version + sanitized task hash 缓存 task-sticky Verdict；不得跨租户共享。</td></tr>
+          <tr><td>健康</td><td>决策模型不可用时自动绕过 Classifier 并选择 capable；不要让业务整体 503。</td></tr>
+          <tr><td>成本归属</td><td>Router Usage 单独记账，可选择平台承担或按 Project chargeback，但必须与业务模型成本分开显示。</td></tr>
+        </tbody></table>
+      </div>
+    </section>
+
+    <section id='runtime'>
+      <div class='head'><div class='num'>7</div><div><h2>TokenHub 运行时设计</h2><p>关键插入点是 Guardrail 之后、业务模型 StartCall 之前；决策模型自身走一条受控的内部调用链。</p></div></div>
+      <h3>7.1 同步请求时序</h3>
       <div class='sequence'>
-        <div class='seq-row'><div class='seq-no'>0</div><div class='seq-lane'>Gateway 入口</div><div class='seq-main'><b>解析协议并完成预校验</b>：API Key、Project、IP、请求体上限；识别具体模型还是虚拟模型。</div><div class='seq-note'>Guardrail block、无效请求和未授权请求在此终止，不调用 Router。</div></div>
-        <div class='seq-row'><div class='seq-no'>1</div><div class='seq-lane'>访问与安全</div><div class='seq-main'><b>检查虚拟模型访问 + 执行内容安全</b>，为 Classifier 构造脱敏后的标准化 RouterInput。</div><div class='seq-note'>Classifier 不应看到本地 mask 规则已识别的原始敏感值。</div></div>
-        <div class='seq-row'><div class='seq-no'>2</div><div class='seq-lane'>Policy Resolver</div><div class='seq-main'><b>解析有效策略</b>：沿用 API Key → Project → Global 优先级；同一 Scope 多绑定按 conflict 失败。</div><div class='seq-note'>建议新建 <code>smart-routing-policies</code> AdminResource kind。</div></div>
-        <div class='seq-row'><div class='seq-no'>3</div><div class='seq-lane'>Candidate Builder</div><div class='seq-main'><b>生成 efficient / capable 候选</b>，同时检查实际模型访问权和 Model 元数据硬约束。</div><div class='seq-note'>调用者既要有 auto 模型权限，也必须有最终目标模型权限。</div></div>
-        <div class='seq-row'><div class='seq-no'>4</div><div class='seq-lane'>Smart Resolver</div><div class='seq-main'><b>Session 命中 → 复用；否则 Constraint → Rule → Classifier</b>，产出 observed target。</div><div class='seq-note'>Classifier 使用 concrete model，并设置 <code>internal_router_call</code> 防止递归。</div></div>
-        <div class='seq-row'><div class='seq-no'>5</div><div class='seq-lane'>Mode Switch</div><div class='seq-main'><b>observe_only</b>：记录 observed target，但 actual target 固定 capable；<b>enforce</b>：actual = observed。</div><div class='seq-note'>同一决策同时保存策略版本，确保回放可复现。</div></div>
-        <div class='seq-row'><div class='seq-no'>6</div><div class='seq-lane'>Existing Admission</div><div class='seq-main'><b>使用 actual model 估算 Token / 价格并进入现有 StartCall</b>，完成 TPM、成本与并发预留。</div><div class='seq-note'>为避免 Router 成为免费放大器，分类前另设轻量 Router RPM / Budget。</div></div>
-        <div class='seq-row'><div class='seq-no'>7</div><div class='seq-lane'>Existing Routing</div><div class='seq-main'><b>调用 SelectRouteCandidates(actualModel)</b>，继续执行 Scoped Policy、Adaptive、Affinity、Breaker 与 Provider Failover。</div><div class='seq-note'>L1 不直接持有 Provider Credential，也不构造任意 Endpoint。</div></div>
-        <div class='seq-row'><div class='seq-no'>8</div><div class='seq-lane'>Settlement</div><div class='seq-main'><b>流式/缓冲返回并结算实际 Usage</b>；RouterDecisionLog 关联 Request、Attempts 和最终业务 Outcome。</div><div class='seq-note'>请求日志同时保留 requested_model、observed_model 和 actual_model。</div></div>
+        <div class='seq-row'><div class='seq-no'>0</div><div class='seq-lane'>Gateway 入口</div><div class='seq-main'><b>解析请求并预校验</b>：API Key、Project、IP、请求体、虚拟模型访问。</div><div class='seq-note'>无效请求不调用任何 Router 模型。</div></div>
+        <div class='seq-row'><div class='seq-no'>1</div><div class='seq-lane'>Guardrail</div><div class='seq-main'><b>内容安全和脱敏</b>，生成不可变原始业务请求与 Sanitized RouterInput。</div><div class='seq-note'>外部 Classifier 只读取允许字段。</div></div>
+        <div class='seq-row'><div class='seq-no'>2</div><div class='seq-lane'>Policy</div><div class='seq-main'><b>API Key → Project → Global</b> 解析 SmartRoutingPolicy，构建 Tier 候选并检查实际模型访问权。</div><div class='seq-note'>同 Scope 多绑定 conflict；虚拟模型无策略 fail closed。</div></div>
+        <div class='seq-row'><div class='seq-no'>3</div><div class='seq-lane'>Local Decision</div><div class='seq-main'><b>Session → Constraint → Risk Rule → Easy Rule</b>，有明确结果则跳过 Classifier。</div><div class='seq-note'>应记录 decision_source。</div></div>
+        <div class='seq-row'><div class='seq-no'>4</div><div class='seq-lane'>Internal Classifier</div><div class='seq-main'><b>仅 uncertain 调用 concrete decision model</b>：使用 Router System Project，经 TokenHub L2 选择 Provider。</div><div class='seq-note'>设置 bypass L1，防止 auto → classifier → auto 递归。</div></div>
+        <div class='seq-row'><div class='seq-no'>5</div><div class='seq-lane'>Deterministic Policy</div><div class='seq-main'><b>校验 Verdict + 应用阈值 / 风险下限</b>，得到 observed model；observe_only 时 actual 固定 capable。</div><div class='seq-note'>保存 classifier model / provider / version / cost。</div></div>
+        <div class='seq-row'><div class='seq-no'>6</div><div class='seq-lane'>Business Admission</div><div class='seq-main'><b>按 actual model 进入现有 StartCall</b>，完成 TPM、成本与并发预留。</div><div class='seq-note'>Router 成本已由独立内部调用结算。</div></div>
+        <div class='seq-row'><div class='seq-no'>7</div><div class='seq-lane'>Existing Route</div><div class='seq-main'><b>SelectRouteCandidates(actualModel)</b> → Scoped Policy → Provider / Resource → Failover。</div><div class='seq-note'>L1 不修改现有候选算法。</div></div>
+        <div class='seq-row'><div class='seq-no'>8</div><div class='seq-lane'>Settlement</div><div class='seq-main'><b>返回业务响应并结算 Usage</b>；DecisionLog 关联 Router Call、Business Call、Attempts 与 Feedback。</div><div class='seq-note'>同时保留 requested / observed / actual model。</div></div>
       </div>
 
-      <h3>6.3 核心 Go 接口与决策伪代码</h3>
+      <h3>7.2 核心 Go 接口</h3>
       <div class='code-grid'>
         <pre><code>type ModelRouter interface {
     Resolve(ctx context.Context, in ResolveInput) (RouterDecision, error)
+}
+
+type ClassifierClient interface {
+    Predict(ctx context.Context, in ClassifierInput) (ClassifierVerdict, RouterUsage, error)
 }
 
 type ResolveInput struct {
@@ -255,158 +318,89 @@ type ResolveInput struct {
     Envelope       RequestEnvelope
     AgentContext   *AgentRoutingContext
     Policy         CompiledSmartRoutingPolicy
-    Now            time.Time
-}
-
-type RouterDecision struct {
-    PolicyID       string
-    PolicyVersion  int64
-    Mode            string
-    Tier            string
-    ObservedModel   string
-    ActualModel     string
-    Source          string
-    Confidence      float64
-    ReasonCodes     []string
-    RouterUsage     RouterUsage
-    FallbackReason  string
 }</code></pre>
-        <pre><code>if !isVirtualModel(req.Model) && !policy.OptInConcrete {
-    return passthrough(req.Model)
-}
+        <pre><code>if sessionHit() { return cachedDecision() }
+if d := constraints(); d.Decided { return d }
+if d := rules(); d.Decided { return d }
 
-policy := effectivePolicy(apiKey, project, global)
-candidates := buildTiers(policy, modelCatalog, access)
-
-if b := sessionStore.Get(sessionKey); b.Valid(policy.Version) {
-    return applyMode(b.Decision, policy.Mode)
+verdict, usage, err := classifier.Predict(ctx, sanitized)
+if err != nil || !verdict.Valid() {
+    return capable(&quot;classifier_fallback&quot;, usage)
 }
-if d := hardConstraints(candidates, request); d.Decided {
-    return persist(applyMode(d, policy.Mode))
-}
-if d := rules.Evaluate(request, agentContext); d.Decided {
-    return persist(applyMode(d, policy.Mode))
-}
-
-d := classifier.Predict(sanitizedInput)
-if d.Invalid || d.PSolve &lt; threshold(d.Boundary) {
-    d = capable("classifier_fallback")
-}
-return persist(applyMode(d, policy.Mode))</code></pre>
+return deterministicPolicy(verdict, policy)</code></pre>
       </div>
       <div class='invariant-list' style='margin-top:13px'>
-        <div class='invariant'><b>不递归</b>Classifier 必须指向 concrete model，内部调用显式绕过 L1，但继续经过 TokenHub L2。</div>
-        <div class='invariant'><b>不越权</b>策略中的 Tier 模型不能绕过 Project / API Key 的模型访问交集。</div>
-        <div class='invariant'><b>不信任客户端降风险</b>客户端 Agent Context 可以触发升级；只有可信 SDK 签名或服务端事件才能触发降级。</div>
-        <div class='invariant'><b>不丢失原请求</b>跨档重试始终从不可变原始请求重新构造，不能沿用已被 Provider 改写的 payload。</div>
-      </div>
-
-      <h3>6.4 数据模型与索引</h3>
-      <div class='table-box'>
-        <table><thead><tr><th>对象</th><th>核心字段</th><th>关键索引 / 一致性</th><th>生命周期</th></tr></thead><tbody>
-          <tr><td><b>SmartRoutingPolicy</b><br><small>建议复用 AdminResource 持久化，编译成 typed runtime view</small></td><td>scope、scope_id、virtual_models、mode、tiers、rules、classifier、session、version、status</td><td><code>unique(kind, scope, scope_id)</code>；API Key → Project → Global；多绑定 conflict</td><td>版本化、审计、支持快速回滚</td></tr>
-          <tr><td><b>RouterSessionBinding</b></td><td>policy_id/version、project_id、key_id、session_hash、tier/model、stage、latch、revision、expires_at</td><td><code>unique(policy_version, key_id, session_hash)</code>；CAS revision 防止乱序回合覆盖</td><td>TTL；策略升级后自动失效</td></tr>
-          <tr><td><b>RouterDecisionLog</b></td><td>request_id、requested/observed/actual model、source、confidence、reasons、classifier tokens/cost/latency、fallback</td><td><code>unique(request_id)</code>；按 policy、project、created_at 建索引</td><td>跟随 RequestLog 保留策略</td></tr>
-          <tr><td><b>RouterFeedback</b></td><td>request_id、outcome、score、label_source、human_override、task_id</td><td>request_id 幂等；允许多维 outcome version</td><td>用于 Eval、Replay 和阈值校准</td></tr>
-        </tbody></table>
-      </div>
-      <div class='note'><strong>多实例建议</strong>Policy 使用数据库持久化 + 进程内 compiled snapshot；task-sticky Session 先使用 PostgreSQL 共享状态和唯一约束。Stage Router 高频状态成熟后再评估 Redis，避免 MVP 新增强依赖。</div>
-
-      <h3>6.5 协议、流式与后台任务语义</h3>
-      <div class='semantic-table'>
-        <table><thead><tr><th>场景</th><th>推荐语义</th><th>原因</th></tr></thead><tbody>
-          <tr><td>Chat / Responses / Messages</td><td>MVP 首批支持；先统一成 RequestEnvelope，再做 L1 决策。</td><td>三类请求包含任务语义，且能映射到现有 Provider Adapter。</td></tr>
-          <tr><td>Embeddings / Image / count_tokens</td><td>MVP 不启用智能模型路由，只保留现有显式模型路由。</td><td>能力维度和计费语义不同，避免一次扩展过宽。</td></tr>
-          <tr><td>Streaming</td><td>Classifier 和跨档选择必须在首字节前完成；输出开始后禁止透明切换模型。</td><td>流式响应无法安全撤回，现有 TokenHub 也不能在输出后切换 upstream。</td></tr>
-          <tr><td>Escalation</td><td>仅 <code>stream=false</code> 或显式缓冲模式；不进入第一版。</td><td>弱模型 + Judge + 强模型会增加尾延迟和重复成本。</td></tr>
-          <tr><td>Background Responses</td><td>提交时冻结 policy id/version；Worker 获得 fenced lease 后做 L1 决策并在 Provider dispatch 前持久化。</td><td>保证重启、重复 claim 和策略更新时可审计、可复现。</td></tr>
-          <tr><td>Agent Stage</td><td>要求 session_id + turn_id + revision；乱序回合不得覆盖更新状态。</td><td>多实例和并发工具回合下必须保持单调状态。</td></tr>
-        </tbody></table>
-      </div>
-
-      <h3>6.6 失败语义与跨档兜底</h3>
-      <div class='table-box'>
-        <table><thead><tr><th>失败点</th><th>默认处理</th><th>是否调用 Provider</th><th>记录原因</th></tr></thead><tbody>
-          <tr><td>没有有效策略 / 同 Scope 冲突</td><td>虚拟模型请求 fail closed；返回明确 <code>smart_routing_policy_unavailable</code> / conflict</td><td>否</td><td>policy_missing / policy_conflict</td></tr>
-          <tr><td>Classifier 超时、429、无效 JSON、空 content</td><td>选择 capable；不把判断错误暴露成业务失败</td><td>调用 capable</td><td>classifier_timeout / invalid_verdict</td></tr>
-          <tr><td>Session Store 不可用</td><td>task-sticky 请求默认 capable；禁止悄悄变成每回合随机决策</td><td>调用 capable</td><td>session_store_unavailable</td></tr>
-          <tr><td>efficient 无可用 Provider / 所有 retryable attempt 失败</td><td>在首字节前按策略最多跨档到 capable 一次</td><td>可调用 capable</td><td>execution_fallback_to_capable</td></tr>
-          <tr><td>上游已输出首字节后失败</td><td>保持现有流式错误语义，不跨模型重放</td><td>不再调用</td><td>stream_started_no_cross_tier_retry</td></tr>
-          <tr><td>请求 4xx、Guardrail、Quota、权限失败</td><td>直接返回，不触发 Classifier 或跨档兜底</td><td>否</td><td>沿用原错误码</td></tr>
-        </tbody></table>
-      </div>
-      <div class='warn'><strong>跨档兜底不是“第二套普通 Failover”</strong>只允许 retryable、首字节前、幂等请求，并设置单次上限；否则错误路由会变成双倍调用和不可控尾延迟。</div>
-
-      <h3>6.7 控制面与运行时 API</h3>
-      <div class='endpoint-grid'>
-        <div class='endpoint'><code>GET/POST /api/admin/smart-routing-policies</code><p>策略 CRUD、Scope 绑定、版本、状态和审计；权限模型沿用 Routing Policy。</p></div>
-        <div class='endpoint'><code>POST /api/admin/smart-routing-policies/{id}/simulate</code><p>输入请求样例，返回 Constraint、Rule、Classifier 和最终决策解释，不真实调用业务模型。</p></div>
-        <div class='endpoint'><code>POST /api/admin/smart-routing/replay</code><p>针对历史 RequestLog 离线回放新策略，输出选择变化和预计成本，不影响线上。</p></div>
-        <div class='endpoint'><code>POST /api/router/feedback</code><p>Agent Harness 或业务系统按 request_id 回传 task success、测试、人工接管等结果；幂等写入。</p></div>
-        <div class='endpoint'><code>x-tokenhub-routing-session-id</code><p>可作为 metadata 的协议无关补充；不得包含原始敏感信息，服务端仅保存哈希。</p></div>
-        <div class='endpoint'><code>x-tokenhub-selected-model</code><p>返回实际模型；完整决策、Provider 和原因仅对有 routing-read 权限的角色可见。</p></div>
+        <div class='invariant'><b>Classifier 调用走现有 L2</b>复用 Provider Credential、Breaker、Failover 和 Usage，但绕过智能 L1。</div>
+        <div class='invariant'><b>不复用业务 CallContext</b>Router Call 与 Business Call 分开 request_id / quota / cost，并通过 parent_request_id 关联。</div>
+        <div class='invariant'><b>不允许隐式降风险</b>未签名 Agent Context 只能提高风险和升级模型，不能触发降档。</div>
+        <div class='invariant'><b>流式首字节边界</b>所有模型档位选择在输出前完成；输出开始后禁止透明跨模型重放。</div>
       </div>
     </section>
 
     <section id='contract'>
-      <div class='head'><div class='num'>7</div><div><h2>控制面策略契约</h2><p>不要把智能模型路由塞进现有 ModelRoute 的 strategy 字段；建立独立、可版本化、可审计的策略对象。</p></div></div>
-      <div class='schema-grid'>
-        <div class='schema'><h4>SmartRoutingPolicy</h4><p>定义虚拟模型、模式、Tier、端点范围、Classifier、Session 与跨档兜底。</p><code>disabled | observe_only | enforce</code></div>
-        <div class='schema'><h4>AgentRoutingContext</h4><p>由 Agent SDK 提供结构化轨迹；未经签名的客户端字段只允许触发升级。</p><code>turn_id / revision / reads / writes / tests / errors</code></div>
-        <div class='schema'><h4>RouterDecision</h4><p>保存理论选择与实际选择，支持 Observe-only 对照和后续 Outcome 关联。</p><code>observed_model / actual_model / source / reasons</code></div>
-      </div>
+      <div class='head'><div class='num'>8</div><div><h2>策略与数据契约</h2><p>策略需显式声明决策模型、输入模式、成本上限与失败语义。</p></div></div>
       <pre><code>{
-  "id": "smart_code_default",
-  "scope": "project",
-  "scope_id": "project_123",
-  "virtual_models": ["auto-code"],
-  "mode": "observe_only",
-  "endpoints": ["chat_completions", "responses", "messages"],
-  "tiers": {
-    "efficient": {"model": "code-efficient"},
-    "capable": {"model": "code-capable", "trusted_fallback": true}
+  &quot;id&quot;: &quot;smart_code_default&quot;,
+  &quot;scope&quot;: &quot;project&quot;,
+  &quot;scope_id&quot;: &quot;project_123&quot;,
+  &quot;virtual_models&quot;: [&quot;auto-code&quot;],
+  &quot;mode&quot;: &quot;observe_only&quot;,
+  &quot;tiers&quot;: {
+    &quot;efficient&quot;: {&quot;model&quot;: &quot;code-efficient&quot;},
+    &quot;capable&quot;: {&quot;model&quot;: &quot;code-capable&quot;, &quot;trusted_fallback&quot;: true}
   },
-  "rules": {"rule_set": "code-v1", "uncertain_action": "classify"},
-  "classifier": {
-    "model": "router-small-concrete",
-    "base_threshold": 0.72,
-    "threshold_step": 0.08,
-    "timeout_ms": 800,
-    "failure_mode": "capable"
+  &quot;classifier&quot;: {
+    &quot;enabled&quot;: false,
+    &quot;execution_mode&quot;: &quot;tokenhub_concrete_model&quot;,
+    &quot;model&quot;: &quot;router-small-concrete&quot;,
+    &quot;input_mode&quot;: &quot;sanitized_text&quot;,
+    &quot;response_format&quot;: &quot;json_schema&quot;,
+    &quot;base_threshold&quot;: 0.72,
+    &quot;threshold_step&quot;: 0.08,
+    &quot;timeout_ms&quot;: 800,
+    &quot;max_output_tokens&quot;: 256,
+    &quot;max_cost_usd_per_call&quot;: 0.001,
+    &quot;internal_project_id&quot;: &quot;router_system&quot;,
+    &quot;bypass_smart_routing&quot;: true,
+    &quot;failure_mode&quot;: &quot;capable&quot;
   },
-  "session": {"mode": "task_sticky", "ttl_seconds": 3600},
-  "execution": {
-    "fallback_to_capable": true,
-    "max_cross_tier_fallbacks": 1,
-    "before_first_byte_only": true
-  },
-  "risk_policy": {
-    "force_capable": ["security_fix", "production_change", "irreversible_tool"]
+  &quot;session&quot;: {&quot;mode&quot;: &quot;task_sticky&quot;, &quot;ttl_seconds&quot;: 3600},
+  &quot;execution&quot;: {
+    &quot;fallback_to_capable&quot;: true,
+    &quot;max_cross_tier_fallbacks&quot;: 1,
+    &quot;before_first_byte_only&quot;: true
   }
 }</code></pre>
-      <h3>决策日志示例</h3>
-      <pre><code>{
-  "request_id": "req_01...",
-  "requested_model": "auto-code",
-  "observed_model": "code-efficient",
-  "actual_model": "code-capable",
-  "mode": "observe_only",
-  "decision_source": "llm_classifier",
-  "confidence": 0.84,
-  "reason_codes": ["tool_supported", "low_risk", "p_solve_above_threshold"],
-  "policy_id": "smart_code_default",
-  "policy_version": 12,
-  "router_latency_ms": 41,
-  "router_input_tokens": 286,
-  "router_output_tokens": 54,
-  "router_cost_usd": 0.0007,
-  "fallback_reason": "observe_only_capable_baseline",
-  "actual_outcome": "pending"
-}</code></pre>
+      <h3>核心持久化对象</h3>
+      <div class='table-box'>
+        <table><thead><tr><th>对象</th><th>核心字段</th><th>关键约束</th></tr></thead><tbody>
+          <tr><td><b>SmartRoutingPolicy</b></td><td>scope、virtual models、tiers、classifier、session、execution、version</td><td><code>unique(kind, scope, scope_id)</code>；版本化和审计</td></tr>
+          <tr><td><b>RouterSessionBinding</b></td><td>policy / classifier version、session hash、tier、revision、expires_at</td><td>按租户隔离；CAS 防乱序覆盖</td></tr>
+          <tr><td><b>RouterDecisionLog</b></td><td>requested / observed / actual model、source、reasons、confidence、router call id</td><td><code>unique(request_id)</code>；关联业务 RequestLog</td></tr>
+          <tr><td><b>RouterModelCall</b></td><td>parent request、role、model、provider、tokens、cost、latency、verdict status</td><td>与 Business Usage 分开结算和展示</td></tr>
+          <tr><td><b>RouterFeedback</b></td><td>task outcome、score、tests、human override、label source</td><td>幂等写入；用于 Replay 和校准</td></tr>
+        </tbody></table>
+      </div>
     </section>
 
-    <section id='economics'>
-      <div class='head'><div class='num'>8</div><div><h2>交互式成本收益测算</h2><p>以下计算用于理解变量关系，不代表任何模型组合的真实收益。核心比较每个成功任务成本。</p></div></div>
+    <section id='failure'>
+      <div class='head'><div class='num'>9</div><div><h2>失败语义与安全兜底</h2><p>第三方模型的失败不能升级为整个业务链路不可用。</p></div></div>
+      <div class='table-box'>
+        <table><thead><tr><th>失败点</th><th>默认处理</th><th>Reason Code</th></tr></thead><tbody>
+          <tr><td>决策模型超时 / 429 / 5xx</td><td>立即选择 capable；不在业务请求内反复重试 Classifier</td><td>classifier_timeout / unavailable</td></tr>
+          <tr><td>无效 JSON、空 content、Schema 不一致</td><td>选择 capable，并记录原始响应摘要哈希</td><td>classifier_invalid_verdict</td></tr>
+          <tr><td>决策模型无可用 Provider</td><td>绕过 Classifier，选择 capable</td><td>classifier_no_route</td></tr>
+          <tr><td>Session Store 不可用</td><td>task-sticky 默认 capable；不能退化成每回合重新随机判断</td><td>router_session_unavailable</td></tr>
+          <tr><td>efficient 执行路径全部失败</td><td>仅在幂等、首字节前、retryable 情况下跨档到 capable 一次</td><td>execution_fallback_to_capable</td></tr>
+          <tr><td>第三方模型判断 efficient，但风险规则要求 capable</td><td>本地风险下限覆盖 Verdict</td><td>risk_floor_override</td></tr>
+          <tr><td>具体模型请求而非 auto</td><td>默认透传，不调用 Classifier</td><td>explicit_model_passthrough</td></tr>
+        </tbody></table>
+      </div>
+      <div class='warn'><strong>Judge 的语义需单独配置</strong>Switchyard Escalation 在 Judge 失败时返回已缓冲的弱模型结果；TokenHub 若实现该模式，必须仅对低风险、可验证任务显式允许 fail-open，不能沿用到 Capability Classifier。</div>
+    </section>
+
+    <section id='evaluation'>
+      <div class='head'><div class='num'>10</div><div><h2>成本收益与决策模型评测</h2><p>除了业务成功率，还必须单独评估第三方 Classifier 的校准、成本、延迟和数据风险。</p></div></div>
       <div class='scenario-row' style='margin-bottom:13px'>
         <button class='scenario' data-scenario='conservative'>保守</button>
         <button class='scenario active' data-scenario='neutral'>中性</button>
@@ -416,8 +410,8 @@ return persist(applyMode(d, policy.Mode))</code></pre>
         <div class='calc-controls'>
           <div class='calc-control'><label>全强模型单任务成本 <span id='strongCostV'>$0.1200</span></label><input id='strongCost' type='range' min='0.01' max='0.5' step='0.005' value='0.12'></div>
           <div class='calc-control'><label>高效模型单任务成本 <span id='efficientCostV'>$0.0250</span></label><input id='efficientCost' type='range' min='0.001' max='0.2' step='0.001' value='0.025'></div>
-          <div class='calc-control'><label>下放到高效模型的比例 <span id='efficientShareV'>70%</span></label><input id='efficientShare' type='range' min='0' max='100' step='1' value='70'></div>
-          <div class='calc-control'><label>每请求 Router 成本 <span id='routerCostV'>$0.0015</span></label><input id='routerCost' type='range' min='0' max='0.02' step='0.0005' value='0.0015'></div>
+          <div class='calc-control'><label>下放到高效模型比例 <span id='efficientShareV'>70%</span></label><input id='efficientShare' type='range' min='0' max='100' step='1' value='70'></div>
+          <div class='calc-control'><label>平均 Router 模型成本 <span id='routerCostV'>$0.0015</span></label><input id='routerCost' type='range' min='0' max='0.02' step='0.0005' value='0.0015'></div>
           <div class='calc-control'><label>高效模型跨档 Fallback 率 <span id='fallbackRateV'>8%</span></label><input id='fallbackRate' type='range' min='0' max='50' step='1' value='8'></div>
           <div class='calc-control'><label>全强模型成功率 <span id='baselineSuccessV'>95.0%</span></label><input id='baselineSuccess' type='range' min='60' max='100' step='0.1' value='95'></div>
           <div class='calc-control'><label>路由后成功率 <span id='routedSuccessV'>94.5%</span></label><input id='routedSuccess' type='range' min='60' max='100' step='0.1' value='94.5'></div>
@@ -433,108 +427,66 @@ return persist(applyMode(d, policy.Mode))</code></pre>
           <div class='verdict' id='economicVerdict'>经济性与质量均较优：值得进入 Observe-only / Canary 验证。</div>
         </div>
       </div>
-      <div class='warn'><strong>现实成本</strong>输出长度、Router 分类比例、工具副作用、Prompt Cache 命中下降、强模型接管上下文、人工回滚与业务损失都需要从真实日志核算。</div>
-    </section>
-
-    <section id='evaluation'>
-      <div class='head'><div class='num'>9</div><div><h2>评测体系：先证明，再放量</h2><p>Router 分类准确率不是最终答案，必须比较完整工作流的质量、成本与延迟。</p></div></div>
-      <div class='grid three'>
-        <div class='card'><h4>capable-only</h4><p>全部使用强模型，提供质量上限、基线成本和轨迹信号。</p></div>
-        <div class='card'><h4>efficient-only</h4><p>全部使用高效模型，识别安全下放范围和能力边界。</p></div>
-        <div class='card'><h4>routed</h4><p>应用真实策略，测量 Router 开销、错误路由、Fallback 和缓存变化。</p></div>
-      </div>
-      <h3>模型互补四象限</h3>
-      <div class='quadrants'>
-        <div class='quad'><div class='quadrant-label'>SAFE</div><h4>强模型通过，高效模型也通过</h4><p>最适合安全降级。</p></div>
-        <div class='quad'><div class='quadrant-label'>LOSS</div><h4>强模型通过，高效模型失败</h4><p class='danger'>最关键的错误降级象限，必须重点压低。</p></div>
-        <div class='quad'><div class='quadrant-label'>RESCUE</div><h4>强模型失败，高效模型通过</h4><p>说明模型存在互补，不能只按总榜单排序。</p></div>
-        <div class='quad'><div class='quadrant-label'>HARD</div><h4>两个模型都失败</h4><p>应改进 Harness、工具、上下文或引入人工。</p></div>
-      </div>
-      <h3>核心指标与 Prometheus 观测</h3>
+      <h3>必须新增的决策模型指标</h3>
       <div class='metrics'>
-        <div class='metric'><b>Cost per Successful Task</b><small>北极星指标</small></div>
-        <div class='metric'><b>Task Success Rate</b><small>最终任务成功而非 HTTP 200</small></div>
-        <div class='metric'><b>False Downgrade Rate</b><small>LOSS / capable-pass</small></div>
-        <div class='metric'><b>Router Cost Ratio</b><small>Router 成本 / 总模型成本</small></div>
-        <div class='metric'><b>Cross-tier Fallback</b><small>错误路由和执行故障</small></div>
-        <div class='metric'><b>Cache Hit Delta</b><small>跨模型切换影响</small></div>
-        <div class='metric'><b>P95 End-to-End Latency</b><small>含分类与跨档重试</small></div>
-        <div class='metric'><b>Decision Source Mix</b><small>constraint / rule / classifier / session</small></div>
+        <div class='metric'><b>Verdict Schema Success</b><small>严格 JSON 成功率</small></div>
+        <div class='metric'><b>Calibration / Brier</b><small>p_solve 可信度</small></div>
+        <div class='metric'><b>Classifier P95</b><small>额外前置延迟</small></div>
+        <div class='metric'><b>Router Cost Ratio</b><small>决策模型成本占比</small></div>
+        <div class='metric'><b>False Downgrade</b><small>LOSS 象限</small></div>
+        <div class='metric'><b>Fallback by Cause</b><small>判断失败 vs 执行失败</small></div>
+        <div class='metric'><b>Provider Concentration</b><small>判断与执行是否同故障域</small></div>
+        <div class='metric'><b>Data Boundary Violations</b><small>外发字段审计</small></div>
       </div>
-      <pre><code>tokenhub_smart_router_decisions_total{mode,tier,source,policy}
-tokenhub_smart_router_latency_seconds{source}
-tokenhub_smart_router_classifier_tokens_total{policy}
-tokenhub_smart_router_fallback_total{reason,from_tier,to_tier}
-tokenhub_smart_router_cost_usd_total{kind="classifier|execution"}
-tokenhub_smart_router_feedback_total{outcome,label_source}</code></pre>
+      <pre><code>tokenhub_smart_router_model_calls_total{role,model,provider,outcome}
+tokenhub_smart_router_model_latency_seconds{role,model}
+tokenhub_smart_router_model_cost_usd_total{role,project}
+tokenhub_smart_router_verdict_total{boundary,valid}
+tokenhub_smart_router_decisions_total{tier,source,mode}
+tokenhub_smart_router_fallback_total{reason,from_tier,to_tier}</code></pre>
     </section>
 
     <section id='engineering'>
-      <div class='head'><div class='num'>10</div><div><h2>TokenHub 工程改造映射</h2><p>保持现有 Provider 路由和计费主链路不动，把模型解析做成前置 Resolver，并以小 PR 分步落地。</p></div></div>
+      <div class='head'><div class='num'>11</div><div><h2>TokenHub 工程改造映射</h2><p>将第三方模型调用作为独立内部请求，而不是在 Resolver 内直接拼 HTTP。</p></div></div>
       <div class='file-map card'>
-        <div class='file-row'><code>smart_routing_policy.go</code><div>Typed policy、Scope 解析、编译与校验；复用 scoped_routing_policy 的优先级和 conflict 语义。</div><small>新增</small></div>
-        <div class='file-row'><code>smart_router.go</code><div>ModelRouter 接口、Constraint / Rule 级联、Mode Switch、跨档兜底计划。</div><small>新增</small></div>
-        <div class='file-row'><code>smart_router_classifier.go</code><div>内部 concrete-model 调用、结构化 verdict 校验、Timeout、Usage 和防递归标记。</div><small>新增</small></div>
-        <div class='file-row'><code>store_smart_routing.go</code><div>Policy typed view、Session Binding、Decision Log、Feedback、幂等和索引。</div><small>新增</small></div>
-        <div class='file-row'><code>gateway_http.go</code><div>识别虚拟模型；Guardrail 后、StartCall 前执行 Smart Resolver；把 actual model 交给现有 Route Planner。</div><small>集成点</small></div>
-        <div class='file-row'><code>anthropic_messages.go</code><div>将 Messages 请求归一为 RequestEnvelope，并复用同一 Resolver，不复制算法。</div><small>集成点</small></div>
-        <div class='file-row'><code>store_routing_calls.go</code><div>CallContext 增加 requested_model / router_decision_id；按 actual model 完成 reservation 与 settlement。</div><small>扩展</small></div>
-        <div class='file-row'><code>store_route_candidates.go</code><div>原则上不改算法，只接收已解析 actual model；上层捕获无候选以决定一次跨档兜底。</div><small>尽量不改</small></div>
-        <div class='file-row'><code>admin_smart_routing_http.go</code><div>Policy CRUD、simulate、replay、metrics 与 role-based routing-read。</div><small>新增</small></div>
-        <div class='file-row'><code>background response worker</code><div>冻结 policy version，在 fenced lease 内持久化 L1 决策，再 dispatch Provider。</div><small>第二阶段</small></div>
-      </div>
-      <h3>建议拆成四个 PR</h3>
-      <div class='pr-grid'>
-        <div class='pr-card'><span class='phase-pill'>PR 1</span><h4>Schema + Observe</h4><ul><li>Policy typed view</li><li>Decision Log</li><li>虚拟模型解析骨架</li><li>actual 固定 capable</li></ul></div>
-        <div class='pr-card'><span class='phase-pill'>PR 2</span><h4>Rule Router</h4><ul><li>ConstraintFilter</li><li>RuleEngine</li><li>simulate API</li><li>Shadow 指标</li></ul></div>
-        <div class='pr-card'><span class='phase-pill'>PR 3</span><h4>Classifier + Session</h4><ul><li>内部 concrete target</li><li>task-sticky</li><li>结构化 verdict</li><li>防递归与 Router quota</li></ul></div>
-        <div class='pr-card'><span class='phase-pill'>PR 4</span><h4>Enforce + Eval</h4><ul><li>Canary</li><li>跨档兜底</li><li>Feedback / Replay</li><li>质量与成本门禁</li></ul></div>
+        <div class='file-row'><code>smart_routing_policy.go</code><div>Typed policy、Classifier / Judge 配置、Scope 解析、版本与校验。</div><small>新增</small></div>
+        <div class='file-row'><code>smart_router.go</code><div>Constraint、Rule、Session、Deterministic Policy 与 Mode Switch。</div><small>新增</small></div>
+        <div class='file-row'><code>smart_router_classifier.go</code><div>构造 Sanitized Input；通过内部 concrete-model 调用；Schema 校验、Usage 和防递归。</div><small>新增</small></div>
+        <div class='file-row'><code>smart_router_judge.go</code><div>Stage tie-breaker / Escalation Judge；与 Capability Classifier 分角色计量。</div><small>后期</small></div>
+        <div class='file-row'><code>store_smart_routing.go</code><div>Policy、Session Binding、Decision Log、RouterModelCall、Feedback 与索引。</div><small>新增</small></div>
+        <div class='file-row'><code>gateway_http.go</code><div>Guardrail 后执行 L1；Classifier internal call 绕过 L1；业务 actual model 进入 StartCall。</div><small>集成点</small></div>
+        <div class='file-row'><code>store_routing_calls.go</code><div>支持 parent_request_id、call_kind=router/business、requested / actual model 和独立结算。</div><small>扩展</small></div>
+        <div class='file-row'><code>store_route_candidates.go</code><div>算法尽量不改；同时服务 decision model concrete route 与业务 actual model route。</div><small>复用</small></div>
+        <div class='file-row'><code>admin_smart_routing_http.go</code><div>Policy CRUD、simulate、Replay、Decision Model 健康与成本面板。</div><small>新增</small></div>
+        <div class='file-row'><code>frontend Smart Routing</code><div>显示是否外发、Decision Model、输入模式、阈值、成本上限和 fallback。</div><small>新增</small></div>
       </div>
     </section>
 
     <section id='roadmap'>
-      <div class='head'><div class='num'>11</div><div><h2>0～90 天落地路线</h2><p>先建立可观测和反事实数据，再从“建议路由”走向“真实路由”。</p></div></div>
-      <div class='roadmap'>
-        <div class='phase'><div class='time'>0～2 周</div><h4>数据与基线</h4><ul><li>定义 task outcome</li><li>capable / efficient 双基线</li><li>Policy + Decision Log</li><li>离线 Replay</li></ul></div>
-        <div class='phase'><div class='time'>第 3～5 周</div><h4>Observe-only MVP</h4><ul><li><code>model:auto</code></li><li>两档模型</li><li>Constraint + Rule</li><li>uncertain Classifier</li></ul></div>
-        <div class='phase'><div class='time'>第 6～9 周</div><h4>小流量 Enforce</h4><ul><li>低风险 Project</li><li>task-sticky</li><li>1% → 5% → 20%</li><li>LOSS 与质量门禁</li></ul></div>
-        <div class='phase'><div class='time'>第 10～13 周</div><h4>Agent Stage Pilot</h4><ul><li>可信轨迹 SDK</li><li>turn revision</li><li>回合级升降档</li><li>可验证任务 Escalation</li></ul></div>
+      <div class='head'><div class='num'>12</div><div><h2>0～90 天落地路线</h2><p>第三方模型应在 TokenHub-native Rule / Stage Signal 基线之后引入，而不是第一天成为同步强依赖。</p></div></div>
+      <div class='pr-grid'>
+        <div class='pr-card'><span class='phase-pill'>0～2 周</span><h4>Schema + Observe</h4><ul><li>Policy / Decision Log</li><li>Rules-only shadow</li><li>capable / efficient 基线</li><li>数据外发清单</li></ul></div>
+        <div class='pr-card'><span class='phase-pill'>第 3～5 周</span><h4>Rule / Stage Shadow</h4><ul><li>Constraint + Rule</li><li>结构化轨迹信号</li><li>task-sticky</li><li>actual 固定 capable</li></ul></div>
+        <div class='pr-card'><span class='phase-pill'>第 6～9 周</span><h4>Classifier Shadow</h4><ul><li>内部 concrete model call</li><li>仅低置信区间</li><li>sanitized_text</li><li>Router quota / cost</li></ul></div>
+        <div class='pr-card'><span class='phase-pill'>第 10～13 周</span><h4>小流量 Enforce</h4><ul><li>低风险 Project</li><li>Classifier tie-breaker</li><li>1% → 5% → 20%</li><li>Judge 仅独立评测</li></ul></div>
       </div>
-      <div class='ok'><strong>放量门槛示例</strong>质量保留达到业务下限；LOSS 不超过阈值；成功任务成本显著下降；P95 可接受；高风险请求没有错误降级；策略可分钟级回滚。</div>
-    </section>
-
-    <section id='risks'>
-      <div class='head'><div class='num'>12</div><div><h2>风险、反模式与明确边界</h2><p>模型路由减少单模型依赖，但会增加协议、轨迹、缓存、评测和策略治理复杂度。</p></div></div>
-      <div class='grid two'>
-        <div class='card'><h4>协议能力不等价</h4><p>system / developer message、tool schema、structured output、reasoning field 和 streaming event 不能只靠替换 model ID。</p></div>
-        <div class='card'><h4>缓存与上下文连续性</h4><p>跨模型可能降低 Prompt Cache 命中；强模型接手时还要理解高效模型留下的轨迹。</p></div>
-        <div class='card'><h4>工具副作用</h4><p>支付、删除、发布等不可逆工具应固定 capable 或人工门禁，不能依赖事后 Escalation。</p></div>
-        <div class='card'><h4>Classifier 漂移</h4><p>模型版本、流量和价格变化都会改变阈值；策略必须按版本记录并定期回放。</p></div>
-        <div class='card'><h4>计费语义</h4><p>必须明确按 virtual model 还是 actual model 计价，并同时保留 Provider 实际成本，避免账单不可解释。</p></div>
-        <div class='card'><h4>不要承诺 70% 降本</h4><p>附件数字依赖特定 Harness、任务和模型组合；TokenHub 必须用自身流量重新测量。</p></div>
-      </div>
-      <div class='danger-note'><strong>默认安全选择</strong>Classifier JSON 无效、Router 超时、目标协议不兼容、Session 不可用或低置信时选择 capable；虚拟模型没有有效策略时 fail closed，而不是随机选择模型。</div>
+      <div class='ok'><strong>放量门槛</strong>Router Verdict 稳定、数据边界通过安全评审、质量保留达标、Cost per Successful Task 明显下降、P95 可接受、第三方决策模型故障时能分钟级或自动回退 capable。</div>
     </section>
 
     <section id='sources'>
-      <div class='head'><div class='num'>13</div><div><h2>资料来源</h2><p>附件用于案例与生产风险框架；TokenHub 结论来自当前官方代码和文档；新增技术细节为结合现有架构给出的设计推导。</p></div></div>
+      <div class='head'><div class='num'>13</div><div><h2>资料来源与事实边界</h2><p>附件支持“LLM Classifier / Judge 可参与决策”这一事实；TokenHub 具体接口、字段和工程拆分属于方案设计。</p></div></div>
       <ol class='source-list'>
-        <li><span class='source-tag pdf'>附件 PDF</span><b>《Agent 模型路由进入轨迹级决策：何时该用前沿模型》</b><small>用于 145 项任务案例、Stage Router 信号、observe-only、强模型兜底、协议与缓存风险。</small></li>
-        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/docs/architecture.md' target='_blank' rel='noreferrer'>TokenHub Architecture</a><small>现有 Model API、Governance、Routing、Adapter、Usage 和 Background Responses 请求链路。</small></li>
-        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/docs/administrator-guide.md' target='_blank' rel='noreferrer'>TokenHub Administrator Guide</a><small>Provider 路由、成本、质量、Adaptive、健康、Affinity 和观测。</small></li>
-        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/backend/internal/server/scoped_routing_policy.go' target='_blank' rel='noreferrer'>Scoped Routing Policy</a><small>AdminResource typed view、API Key → Project → Global 优先级、冲突与 fail-closed 语义。</small></li>
-        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/backend/internal/server/types.go' target='_blank' rel='noreferrer'>Routing Strategy Types</a><small>balanced、adaptive、cost、quality、priority_weighted、priority_only。</small></li>
-        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/backend/internal/server/store_route_candidates.go' target='_blank' rel='noreferrer'>SelectRouteCandidates</a><small>以 modelName 为入口，处理 Provider / Resource 可用性。</small></li>
-        <li><span class='source-tag'>Switchyard</span><a href='https://github.com/NVIDIA-NeMo/Switchyard' target='_blank' rel='noreferrer'>NVIDIA-NeMo / Switchyard</a><small>协议转换、路由能力与成熟度声明。</small></li>
-        <li><span class='source-tag'>Switchyard</span><a href='https://github.com/NVIDIA-NeMo/Switchyard/blob/main/docs/routing_algorithms/stage_router_routing.md' target='_blank' rel='noreferrer'>Stage-Router Routing</a><small>轨迹信号、阈值、决策源、四象限与适用边界。</small></li>
-        <li><span class='source-tag'>Switchyard</span><a href='https://github.com/NVIDIA-NeMo/Switchyard/blob/main/docs/routing_algorithms/llm_classifier_routing.md' target='_blank' rel='noreferrer'>LLM Classifier Routing</a><small>p_solve、capability boundary、Session Trigger 与失败兜底。</small></li>
-        <li><span class='source-tag'>Switchyard</span><a href='https://github.com/NVIDIA-NeMo/Switchyard/blob/main/docs/routing_algorithms/escalation_router_routing.md' target='_blank' rel='noreferrer'>Escalation-Router Routing</a><small>弱模型缓冲、Judge、连续确认、Session latch、成本和延迟。</small></li>
-        <li><span class='source-tag paper'>论文</span><a href='https://arxiv.org/abs/2305.05176' target='_blank' rel='noreferrer'>FrugalGPT</a><small>Prompt adaptation、LLM approximation 与 cascade。</small></li>
-        <li><span class='source-tag paper'>论文</span><a href='https://arxiv.org/abs/2403.12031' target='_blank' rel='noreferrer'>RouterBench</a><small>多模型路由的质量—成本标准化评测。</small></li>
+        <li><span class='source-tag pdf'>附件 PDF</span><b>《Agent 模型路由进入轨迹级决策：何时该用前沿模型》</b><small>第 2～4 页说明 Switchyard 支持 LLM classifier、stage router、escalation router；无效 JSON、Judge 失败和低置信需要 trusted fallback。</small></li>
+        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/docs/architecture.md' target='_blank' rel='noreferrer'>TokenHub Architecture</a><small>现有 Model API、Routing、Adapter、Usage 与 Background Responses 链路。</small></li>
+        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/backend/internal/server/scoped_routing_policy.go' target='_blank' rel='noreferrer'>Scoped Routing Policy</a><small>API Key → Project → Global 优先级、冲突和 fail-closed 语义。</small></li>
+        <li><span class='source-tag'>TokenHub</span><a href='https://github.com/astaxie/TokenHub/blob/main/backend/internal/server/store_route_candidates.go' target='_blank' rel='noreferrer'>SelectRouteCandidates</a><small>当前候选选择以 modelName 为入口，不读取 Prompt 做模型档位判断。</small></li>
+        <li><span class='source-tag'>Switchyard</span><a href='https://github.com/NVIDIA-NeMo/Switchyard/blob/main/docs/routing_algorithms/llm_classifier_routing.md' target='_blank' rel='noreferrer'>LLM Classifier Routing</a><small>p_solve、capability boundary、结构化 Verdict、Session Trigger 与失败回退。</small></li>
+        <li><span class='source-tag'>Switchyard</span><a href='https://github.com/NVIDIA-NeMo/Switchyard/blob/main/docs/routing_algorithms/stage_router_routing.md' target='_blank' rel='noreferrer'>Stage Router</a><small>结构化轨迹信号与可选 Classifier tie-breaker。</small></li>
+        <li><span class='source-tag'>Switchyard</span><a href='https://github.com/NVIDIA-NeMo/Switchyard/blob/main/docs/routing_algorithms/escalation_router_routing.md' target='_blank' rel='noreferrer'>Escalation Router</a><small>弱模型缓冲、Judge、连续确认与 Session latch。</small></li>
         <li><span class='source-tag paper'>论文</span><a href='https://arxiv.org/abs/2406.18665' target='_blank' rel='noreferrer'>RouteLLM</a><small>利用偏好数据训练强弱模型 Router。</small></li>
-        <li><span class='source-tag paper'>论文</span><a href='https://arxiv.org/abs/2605.18859' target='_blank' rel='noreferrer'>TwinRouterBench</a><small>面向长程 Agent 的步骤级静态与动态路由评测。</small></li>
+        <li><span class='source-tag paper'>论文</span><a href='https://arxiv.org/abs/2305.05176' target='_blank' rel='noreferrer'>FrugalGPT</a><small>模型级联与成本质量优化。</small></li>
       </ol>
-      <footer><p>蓝色“事实”来自附件或官方资料；橙色“建议”为结合 TokenHub 当前架构给出的设计推导。示例阈值、端点和数据表是技术方案，不代表当前仓库已实现。</p><a class='back-top' href='#'>返回顶部 ↑</a></footer>
+      <footer><p>“第三方模型可作为 Classifier / Judge”来自附件和 Switchyard 官方设计；“Router System Project、输入模式、成本上限、parent_request_id”等为面向 TokenHub 的工程建议，不代表当前仓库已经实现。</p><a class='back-top' href='#'>返回顶部 ↑</a></footer>
     </section>
   </main>
 </div>
@@ -556,7 +508,7 @@ tokenhub_smart_router_feedback_total{outcome,label_source}</code></pre>
     document.querySelector('#strongCostV').textContent=money(strong);document.querySelector('#efficientCostV').textContent=money(efficient);document.querySelector('#efficientShareV').textContent=pct(share*100,0);document.querySelector('#routerCostV').textContent=money(router);document.querySelector('#fallbackRateV').textContent=pct(fallback*100,0);document.querySelector('#baselineSuccessV').textContent=pct(base*100);document.querySelector('#routedSuccessV').textContent=pct(routed*100);
     const routedCost=router+(1-share)*strong+share*(efficient+fallback*strong);const savings=strong>0?(1-routedCost/strong)*100:0;const retention=base>0?routed/base*100:0;const baseCps=base>0?strong/base:Infinity;const routedCps=routed>0?routedCost/routed:Infinity;const den=strong-efficient-fallback*strong;const breakEven=den>0?router/den*100:Infinity;
     document.querySelector('#baselineCost').textContent=money(strong);document.querySelector('#routedCost').textContent=money(routedCost);document.querySelector('#savings').textContent=pct(savings);document.querySelector('#qualityRetention').textContent=pct(retention);document.querySelector('#baselineCps').textContent=money(baseCps);document.querySelector('#routedCps').textContent=money(routedCps);document.querySelector('#breakEven').textContent=Number.isFinite(breakEven)&&breakEven<=100?'约 '+pct(Math.max(0,breakEven)):'当前参数下无可行区间';
-    let verdict;if(routedCps<baseCps&&retention>=99)verdict='经济性与质量均较优：值得进入 Observe-only / Canary 验证。';else if(routedCps<baseCps)verdict='单位成功任务成本更低，但质量保留不足；需要提高阈值或缩小低风险范围。';else if(savings>0)verdict='账单看似下降，但 Cost per Successful Task 未改善；错误路由代价抵消了节省。';else verdict='当前参数没有净节省；应降低 Router / Fallback 开销或提高安全下放比例。';document.querySelector('#economicVerdict').textContent=verdict;
+    let verdict;if(routedCps<baseCps&&retention>=99)verdict='经济性与质量均较优：值得进入 Observe-only / Canary 验证。';else if(routedCps<baseCps)verdict='单位成功任务成本更低，但质量保留不足；需要提高阈值或缩小低风险范围。';else if(savings>0)verdict='账单下降，但 Cost per Successful Task 未改善；决策模型或错误路由成本抵消节省。';else verdict='当前没有净节省；应减少 Classifier 调用比例、降低成本或提高安全下放率。';document.querySelector('#economicVerdict').textContent=verdict;
   }
   Object.values(f).forEach(x=>x.addEventListener('input',()=>{document.querySelectorAll('.scenario').forEach(b=>b.classList.remove('active'));render()}));
   document.querySelectorAll('.scenario').forEach(b=>b.addEventListener('click',()=>{const s=scenarios[b.dataset.scenario];if(!s)return;Object.entries(s).forEach(([k,v])=>f[k].value=v);document.querySelectorAll('.scenario').forEach(x=>x.classList.toggle('active',x===b));render()}));
