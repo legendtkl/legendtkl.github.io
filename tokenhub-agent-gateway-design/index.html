@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f6f1e8" />
+  <meta name="description" content="TokenHub A2A Agent Gateway 的完整设计思想：控制面、数据面、任务亲和、执行图、预算、安全、协议桥接与后续增强路线。" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="TokenHub Agent Gateway：从模型网关到 Agent 运行治理平台" />
+  <meta property="og:description" content="从第一性原理解释 PR #196 的架构设计、关键机制、权衡与增强路线。" />
+  <meta property="og:url" content="https://legendtkl.github.io/tokenhub-agent-gateway-design/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <title>TokenHub Agent Gateway：完整设计思想</title>
+  <style>
+    :root {
+      --paper: #f6f1e8;
+      --paper-2: #fffdf8;
+      --ink: #25231f;
+      --muted: #706b63;
+      --line: #2f2c27;
+      --accent: #e96b4c;
+      --accent-soft: #ffe0d4;
+      --blue: #477e9e;
+      --blue-soft: #dcecf3;
+      --green: #5a8a67;
+      --green-soft: #dfeee2;
+      --yellow: #d39a30;
+      --yellow-soft: #fff0c9;
+      --red: #b64e49;
+      --red-soft: #f7d8d5;
+      --shadow: 5px 5px 0 rgba(37, 35, 31, .96);
+      --radius: 20px 14px 22px 16px;
+      --max: 1240px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(233,107,76,.08), transparent 28rem),
+        radial-gradient(circle at 95% 18%, rgba(71,126,158,.08), transparent 30rem),
+        var(--paper);
+      font-family: ui-rounded, "SF Pro Rounded", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      line-height: 1.72;
+      letter-spacing: .01em;
+    }
+
+    a { color: inherit; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+    a:hover { color: var(--accent); }
+    code, pre, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .skip {
+      position: fixed;
+      left: 12px;
+      top: -80px;
+      z-index: 100;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: white;
+      border-radius: 10px;
+    }
+    .skip:focus { top: 12px; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      border-bottom: 2px solid var(--line);
+      background: rgba(246, 241, 232, .91);
+      backdrop-filter: blur(14px);
+    }
+    .topbar-inner {
+      max-width: var(--max);
+      margin: auto;
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 22px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    .brand-mark {
+      width: 33px;
+      height: 33px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 12px 8px 13px 9px;
+      background: var(--accent-soft);
+      transform: rotate(-2deg);
+      box-shadow: 2px 2px 0 var(--ink);
+      font-size: 17px;
+    }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .button {
+      appearance: none;
+      border: 2px solid var(--ink);
+      background: var(--paper-2);
+      color: var(--ink);
+      border-radius: 11px 8px 12px 9px;
+      padding: 7px 11px;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--ink);
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    .button:hover { background: var(--accent-soft); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
+    .button:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+
+    .progress {
+      height: 4px;
+      background: transparent;
+    }
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+    }
+
+    .page {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 42px 22px 100px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(28px, 5vw, 62px);
+      border: 2.5px solid var(--ink);
+      border-radius: 34px 22px 38px 24px;
+      background: var(--paper-2);
+      box-shadow: 8px 8px 0 var(--ink);
+    }
+    .hero::before, .hero::after {
+      content: "";
+      position: absolute;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      opacity: .14;
+    }
+    .hero::before { width: 260px; height: 260px; right: -100px; top: -110px; }
+    .hero::after { width: 120px; height: 120px; right: 100px; bottom: -68px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      padding: 5px 12px;
+      background: var(--yellow-soft);
+      font-size: 13px;
+      font-weight: 850;
+      transform: rotate(-1deg);
+    }
+    h1 {
+      max-width: 920px;
+      margin: 22px 0 15px;
+      font-size: clamp(38px, 6.3vw, 78px);
+      line-height: 1.03;
+      letter-spacing: -.045em;
+    }
+    .hero-lead {
+      max-width: 830px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(17px, 2vw, 22px);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin-top: 26px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .hero-meta strong { color: var(--ink); }
+
+    .thesis {
+      margin-top: 30px;
+      padding: 20px 22px;
+      border: 2px dashed var(--ink);
+      border-radius: 18px 11px 20px 12px;
+      background: linear-gradient(135deg, var(--accent-soft), #fff8ef);
+      font-size: clamp(18px, 2.4vw, 25px);
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 34px;
+      margin-top: 56px;
+      align-items: start;
+    }
+    .toc {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 105px);
+      overflow: auto;
+      padding: 18px 16px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: rgba(255,253,248,.88);
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .toc-title {
+      margin: 0 0 10px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+    }
+    .toc a {
+      display: block;
+      margin: 3px 0;
+      padding: 7px 9px;
+      border-radius: 9px 7px 10px 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .toc a:hover, .toc a.active {
+      color: var(--ink);
+      background: var(--accent-soft);
+    }
+
+    main { min-width: 0; }
+    section { scroll-margin-top: 88px; margin-bottom: 74px; }
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 20px;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.15;
+      letter-spacing: -.025em;
+    }
+    h2 .num {
+      min-width: 45px;
+      height: 40px;
+      display: inline-grid;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 14px 9px 15px 10px;
+      background: var(--accent-soft);
+      box-shadow: 3px 3px 0 var(--ink);
+      font-size: 18px;
+      transform: rotate(-2deg);
+    }
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 23px;
+      letter-spacing: -.015em;
+    }
+    .lede { color: var(--muted); font-size: 17px; max-width: 860px; }
+
+    .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      gap: 18px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      position: relative;
+      padding: 20px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      background: var(--paper-2);
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .card.soft-red { background: var(--red-soft); }
+    .card.soft-blue { background: var(--blue-soft); }
+    .card.soft-green { background: var(--green-soft); }
+    .card.soft-yellow { background: var(--yellow-soft); }
+    .card h3, .card h4 { margin-top: 0; }
+    .card p:last-child { margin-bottom: 0; }
+    .card .tag {
+      display: inline-block;
+      padding: 3px 9px;
+      border: 1.5px solid var(--ink);
+      border-radius: 999px;
+      background: white;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .contrast {
+      display: grid;
+      grid-template-columns: 1fr 70px 1fr;
+      gap: 14px;
+      align-items: stretch;
+      margin-top: 22px;
+    }
+    .contrast .arrow {
+      display: grid;
+      place-items: center;
+      font-size: 36px;
+      font-weight: 900;
+    }
+    .stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .stack > div {
+      padding: 9px 12px;
+      border: 1.7px solid var(--ink);
+      border-radius: 10px 7px 12px 8px;
+      background: rgba(255,255,255,.72);
+      font-weight: 720;
+    }
+
+    .diagram {
+      overflow-x: auto;
+      padding: 18px;
+      border: 2px dashed var(--ink);
+      border-radius: 23px 15px 25px 17px;
+      background:
+        linear-gradient(rgba(47,44,39,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(47,44,39,.04) 1px, transparent 1px),
+        var(--paper-2);
+      background-size: 24px 24px;
+    }
+    .diagram svg {
+      display: block;
+      min-width: 760px;
+      width: 100%;
+      height: auto;
+    }
+    .svg-box { fill: #fffdf8; stroke: #2f2c27; stroke-width: 2.2; }
+    .svg-accent { fill: #ffe0d4; }
+    .svg-blue { fill: #dcecf3; }
+    .svg-green { fill: #dfeee2; }
+    .svg-yellow { fill: #fff0c9; }
+    .svg-text { fill: #25231f; font-family: ui-rounded, "PingFang SC", sans-serif; font-weight: 760; }
+    .svg-small { fill: #706b63; font-family: ui-rounded, "PingFang SC", sans-serif; font-size: 12px; }
+    .svg-line { stroke: #2f2c27; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .svg-dash { stroke-dasharray: 7 7; }
+
+    .object-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .object {
+      padding: 18px 15px;
+      text-align: center;
+      border: 2px solid var(--ink);
+      border-radius: 18px 12px 19px 13px;
+      box-shadow: 3px 3px 0 var(--ink);
+      background: var(--paper-2);
+    }
+    .object:nth-child(4n+1) { background: var(--accent-soft); transform: rotate(-.5deg); }
+    .object:nth-child(4n+2) { background: var(--blue-soft); transform: rotate(.4deg); }
+    .object:nth-child(4n+3) { background: var(--green-soft); transform: rotate(-.3deg); }
+    .object:nth-child(4n+4) { background: var(--yellow-soft); transform: rotate(.5deg); }
+    .object strong { display: block; font-size: 18px; }
+    .object span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+
+    .principle {
+      display: grid;
+      grid-template-columns: 58px minmax(0,1fr);
+      gap: 15px;
+      margin: 15px 0;
+      padding: 18px;
+      border-left: 4px solid var(--accent);
+      background: rgba(255,253,248,.67);
+      border-radius: 0 15px 15px 0;
+    }
+    .principle .icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--ink);
+      border-radius: 15px 10px 16px 11px;
+      background: var(--paper-2);
+      box-shadow: 2px 2px 0 var(--ink);
+      font-size: 22px;
+    }
+    .principle h3 { margin: 0 0 5px; }
+    .principle p { margin: 0; color: var(--muted); }
+
+    .formula {
+      margin: 18px 0;
+      padding: 16px 18px;
+      border: 2px solid var(--ink);
+      border-radius: 15px 10px 17px 11px;
+      background: #25231f;
+      color: #fffdf8;
+      overflow-x: auto;
+      font-weight: 700;
+    }
+    .formula .dim { color: #c9c2b7; }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 18px;
+      padding-left: 30px;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 9px;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      border-radius: 3px;
+      background: var(--ink);
+    }
+    .timeline-item {
+      position: relative;
+      padding: 17px 18px;
+      border: 2px solid var(--ink);
+      border-radius: 18px 12px 19px 13px;
+      background: var(--paper-2);
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -29px;
+      top: 22px;
+      width: 15px;
+      height: 15px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .timeline-item strong { display: block; margin-bottom: 4px; font-size: 18px; }
+
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 2px solid var(--ink);
+      border-radius: 18px 12px 20px 14px;
+      overflow: hidden;
+      background: var(--paper-2);
+    }
+    th, td {
+      padding: 13px 14px;
+      text-align: left;
+      vertical-align: top;
+      border-right: 1.5px solid var(--ink);
+      border-bottom: 1.5px solid var(--ink);
+    }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    th { background: var(--yellow-soft); font-size: 14px; }
+    td { font-size: 14px; }
+
+    .callout {
+      margin: 22px 0;
+      padding: 17px 19px;
+      border: 2px dashed var(--ink);
+      border-radius: 18px 11px 19px 12px;
+      background: var(--blue-soft);
+    }
+    .callout strong { display: block; margin-bottom: 4px; }
+
+    .priority {
+      display: inline-grid;
+      min-width: 40px;
+      place-items: center;
+      margin-right: 8px;
+      padding: 2px 7px;
+      border: 1.5px solid var(--ink);
+      border-radius: 8px 6px 9px 7px;
+      background: white;
+      font-weight: 900;
+      font-size: 12px;
+    }
+    .p0 { background: var(--red-soft); }
+    .p1 { background: var(--yellow-soft); }
+    .p2 { background: var(--blue-soft); }
+
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .roadmap .phase {
+      padding: 20px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      box-shadow: 4px 4px 0 var(--ink);
+      background: var(--paper-2);
+    }
+    .phase .phase-no {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 4px 9px;
+      border: 1.5px solid var(--ink);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .phase ul { padding-left: 20px; margin-bottom: 0; }
+
+    .sources {
+      display: grid;
+      gap: 10px;
+    }
+    .source {
+      padding: 14px 16px;
+      border: 1.7px solid var(--ink);
+      border-radius: 13px 9px 14px 10px;
+      background: var(--paper-2);
+      word-break: break-word;
+    }
+
+    footer {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 22px 50px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 80;
+      right: 22px;
+      bottom: 22px;
+      padding: 10px 14px;
+      border: 2px solid var(--ink);
+      border-radius: 12px 8px 13px 9px;
+      background: var(--green-soft);
+      box-shadow: 3px 3px 0 var(--ink);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: .2s ease;
+      font-weight: 800;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc {
+        position: relative;
+        top: 0;
+        max-height: none;
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      .toc-title { display: none; }
+      .toc a { display: inline-block; }
+      .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .object-map { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .roadmap { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 680px) {
+      .page { padding: 24px 14px 70px; }
+      .topbar-inner { padding-inline: 14px; }
+      .brand span:last-child { display: none; }
+      .button .label { display: none; }
+      .hero { padding: 26px 20px; box-shadow: 5px 5px 0 var(--ink); }
+      h1 { font-size: 42px; }
+      .grid-2, .grid-3, .grid-4, .object-map { grid-template-columns: 1fr; }
+      .contrast { grid-template-columns: 1fr; }
+      .contrast .arrow { transform: rotate(90deg); height: 48px; }
+      .principle { grid-template-columns: 45px 1fr; padding: 15px; }
+      .principle .icon { width: 40px; height: 40px; font-size: 18px; }
+    }
+
+    @media print {
+      .topbar, .toc, .toast, .top-actions { display: none !important; }
+      body { background: white; }
+      .page { max-width: none; padding: 0; }
+      .hero, .card, .object, .roadmap .phase { box-shadow: none; }
+      .layout { display: block; margin-top: 34px; }
+      section { break-inside: avoid; margin-bottom: 38px; }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">跳到正文</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">A2A</div>
+        <span>TokenHub Agent Gateway</span>
+      </div>
+      <div class="top-actions">
+        <button class="button" id="copyLink" type="button" aria-label="复制分享链接">🔗 <span class="label">复制链接</span></button>
+        <button class="button" onclick="window.print()" type="button" aria-label="打印或导出 PDF">⤓ <span class="label">导出 PDF</span></button>
+        <a class="button" href="https://github.com/astaxie/TokenHub/pull/196" target="_blank" rel="noreferrer">↗ <span class="label">查看 PR</span></a>
+      </div>
+    </div>
+    <div class="progress"><span id="progressBar"></span></div>
+  </header>
+
+  <div class="page">
+    <header class="hero">
+      <span class="eyebrow">PR #196 · A2A 1.0 · 设计全景</span>
+      <h1>从模型网关，走向 Agent 运行治理平台</h1>
+      <p class="hero-lead">
+        这份页面从第一性原理总结 TokenHub Agent Gateway 的完整设计思想：
+        为什么 Agent 不能按普通 HTTP 请求治理，以及如何用 Agent、Instance、Task、Execution、Delegation 与 Budget
+        构建一个可发现、可授权、可路由、可追踪、可控成本的执行平面。
+      </p>
+      <div class="hero-meta">
+        <span><strong>设计对象：</strong>TokenHub A2A Agent Gateway</span>
+        <span><strong>协议：</strong>A2A 1.0 JSON-RPC / SSE</span>
+        <span><strong>快照日期：</strong>2026-08-23</span>
+      </div>
+      <div class="thesis">
+        核心命题：Agent 网关不是“再加一个转发接口”，而是把无状态 API 网关升级为
+        <u>有状态的任务路由器 + 分布式执行治理器 + 安全委托控制面</u>。
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="toc" aria-label="目录">
+        <p class="toc-title">Contents</p>
+        <a href="#first-principles">01 第一性原理</a>
+        <a href="#architecture">02 整体架构</a>
+        <a href="#domain-model">03 核心对象</a>
+        <a href="#principles">04 七条原则</a>
+        <a href="#runtime">05 运行机制</a>
+        <a href="#security">06 安全模型</a>
+        <a href="#bridge">07 Responses 桥</a>
+        <a href="#tradeoffs">08 权衡边界</a>
+        <a href="#enhancements">09 增强路线</a>
+        <a href="#roadmap">10 演进路线</a>
+        <a href="#sources">11 资料索引</a>
+      </nav>
+
+      <main id="content">
+        <section id="first-principles">
+          <h2><span class="num">01</span>第一性原理：为什么普通网关不够</h2>
+          <p class="lede">
+            模型调用通常是一次性计算；Agent 调用则可能跨分钟、跨服务、跨工具，并产生不可逆副作用。
+            所以治理单元必须从“请求”上移到“任务与执行”。
+          </p>
+
+          <div class="contrast">
+            <div class="card soft-blue">
+              <span class="tag">传统模型网关</span>
+              <h3>单次、无状态、可重试</h3>
+              <div class="stack">
+                <div>请求 → 模型 → 响应</div>
+                <div>路由单位：HTTP Request</div>
+                <div>失败策略：换实例重试</div>
+                <div>成本单位：单次 Token</div>
+              </div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card soft-red">
+              <span class="tag">Agent 网关</span>
+              <h3>长程、有状态、有副作用</h3>
+              <div class="stack">
+                <div>发现 → 授权 → 执行 → 续接</div>
+                <div>路由单位：Task / Execution</div>
+                <div>失败策略：优先避免重复副作用</div>
+                <div>成本单位：完整调用图</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout">
+            <strong>决定架构的关键事实</strong>
+            “请求超时”不等于“上游没有执行”。创建工单、发邮件、修改代码等操作若盲目切换实例重试，可能造成重复副作用。
+          </div>
+        </section>
+
+        <section id="architecture">
+          <h2><span class="num">02</span>整体架构：控制面与数据面分离</h2>
+          <p class="lede">
+            控制面负责定义“谁、可以用什么、部署在哪里”；数据面负责每次调用的身份、授权、路由、状态与预算。
+          </p>
+
+          <div class="diagram" aria-label="TokenHub Agent Gateway 架构图">
+            <svg viewBox="0 0 980 520" role="img">
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f2c27"></path>
+                </marker>
+              </defs>
+
+              <rect class="svg-box svg-yellow" x="280" y="20" width="420" height="150" rx="24"></rect>
+              <text class="svg-text" x="490" y="50" text-anchor="middle" font-size="20">控制面 Control Plane</text>
+              <text class="svg-small" x="490" y="78" text-anchor="middle">Agent / Revision / Skill / Instance</text>
+              <text class="svg-small" x="490" y="101" text-anchor="middle">Access Binding / Access Group / Credentials</text>
+              <text class="svg-small" x="490" y="124" text-anchor="middle">Catalog / Admin UI / Rollback / Audit</text>
+
+              <rect class="svg-box svg-blue" x="20" y="225" width="190" height="115" rx="22"></rect>
+              <text class="svg-text" x="115" y="258" text-anchor="middle" font-size="18">调用方</text>
+              <text class="svg-small" x="115" y="284" text-anchor="middle">A2A Client</text>
+              <text class="svg-small" x="115" y="306" text-anchor="middle">Responses API Client</text>
+
+              <rect class="svg-box svg-accent" x="270" y="205" width="440" height="190" rx="28"></rect>
+              <text class="svg-text" x="490" y="236" text-anchor="middle" font-size="20">数据面 Data Plane</text>
+              <text class="svg-small" x="490" y="268" text-anchor="middle">认证 → Skill 授权 → 输入 Guardrail</text>
+              <text class="svg-small" x="490" y="292" text-anchor="middle">创建/恢复 Execution → 租用 Instance</text>
+              <text class="svg-small" x="490" y="316" text-anchor="middle">注入 Delegation → 调用上游 A2A</text>
+              <text class="svg-small" x="490" y="340" text-anchor="middle">输出 Guardrail → Task ID 改写</text>
+              <text class="svg-small" x="490" y="364" text-anchor="middle">Snapshot/Event 持久化 → JSON/SSE 返回</text>
+
+              <rect class="svg-box svg-green" x="770" y="205" width="190" height="190" rx="24"></rect>
+              <text class="svg-text" x="865" y="237" text-anchor="middle" font-size="18">上游 Agent 池</text>
+              <text class="svg-small" x="865" y="270" text-anchor="middle">Instance A</text>
+              <text class="svg-small" x="865" y="295" text-anchor="middle">Instance B</text>
+              <text class="svg-small" x="865" y="320" text-anchor="middle">Instance C</text>
+              <text class="svg-small" x="865" y="354" text-anchor="middle">优先级 / 权重</text>
+              <text class="svg-small" x="865" y="376" text-anchor="middle">健康 / 并发 / 凭据</text>
+
+              <rect class="svg-box" x="270" y="440" width="440" height="60" rx="18"></rect>
+              <text class="svg-text" x="490" y="476" text-anchor="middle" font-size="17">持久化状态：Task · Event · Execution · Edge · Usage · Lease</text>
+
+              <path class="svg-line" d="M 490 170 L 490 205" marker-end="url(#arrow)"></path>
+              <path class="svg-line" d="M 210 282 L 270 282" marker-end="url(#arrow)"></path>
+              <path class="svg-line" d="M 710 282 L 770 282" marker-end="url(#arrow)"></path>
+              <path class="svg-line svg-dash" d="M 710 330 C 745 410, 750 420, 865 395" marker-end="url(#arrow)"></path>
+              <path class="svg-line" d="M 490 395 L 490 440" marker-end="url(#arrow)"></path>
+            </svg>
+          </div>
+        </section>
+
+        <section id="domain-model">
+          <h2><span class="num">03</span>核心对象：把复杂性放在正确的位置</h2>
+          <p class="lede">
+            设计的关键不是表多，而是让每个对象只回答一个问题，从而避免把服务、部署、任务和执行链混成一团。
+          </p>
+
+          <div class="object-map">
+            <div class="object"><strong>Agent</strong><span>稳定的逻辑服务身份</span></div>
+            <div class="object"><strong>Revision</strong><span>可审计、可回滚的配置版本</span></div>
+            <div class="object"><strong>Skill</strong><span>可发现、可单独授权的能力</span></div>
+            <div class="object"><strong>Instance</strong><span>真实部署、凭据与容量</span></div>
+            <div class="object"><strong>Task</strong><span>一次有状态交互与上游亲和</span></div>
+            <div class="object"><strong>Task Event</strong><span>流式状态和产物增量</span></div>
+            <div class="object"><strong>Execution</strong><span>完整 Agent 调用链沙箱</span></div>
+            <div class="object"><strong>Edge / Step</strong><span>调用图中的单次边</span></div>
+            <div class="object"><strong>Usage</strong><span>模型、MCP、Agent 成本记录</span></div>
+            <div class="object"><strong>Lease</strong><span>跨副本并发占用凭证</span></div>
+            <div class="object"><strong>Access Binding</strong><span>默认拒绝的授权规则</span></div>
+            <div class="object"><strong>Access Group</strong><span>可复用的主体集合</span></div>
+          </div>
+
+          <div class="formula">
+            Agent = “服务是什么” <span class="dim">；</span>
+            Instance = “部署在哪里” <span class="dim">；</span>
+            Task = “这件事进行到哪” <span class="dim">；</span>
+            Execution = “整个调用图发生了什么”
+          </div>
+        </section>
+
+        <section id="principles">
+          <h2><span class="num">04</span>七条核心设计原则</h2>
+
+          <div class="principle">
+            <div class="icon">①</div>
+            <div>
+              <h3>Agent 不是一个 URL</h3>
+              <p>调用方只依赖稳定 Slug；部署地址、静态凭据、权重、优先级与容量属于 Instance。这样才能做多实例、灰度、回滚和故障隔离。</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <div class="icon">②</div>
+            <div>
+              <h3>发现本身就是授权</h3>
+              <p>无权限者不仅不能调用，也不应知道 Agent 或 Skill 是否存在。缺失、未认证和未授权尽量返回同样的非披露结果，阻断能力枚举。</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <div class="icon">③</div>
+            <div>
+              <h3>Task 是有状态路由，不是普通负载均衡</h3>
+              <p>首次请求选择实例；后续 Get、Cancel、Subscribe 与 continuation 必须回到同一实例。Task ID 在网关侧做映射，隐藏真实上游标识。</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <div class="icon">④</div>
+            <div>
+              <h3>Execution 是分布式 Agent 的运行沙箱</h3>
+              <p>它聚合 Agent Hop、模型调用、MCP 调用、Token、成本、并发与 Deadline，使预算约束能够跨进程、跨 Agent 持续生效。</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <div class="icon">⑤</div>
+            <div>
+              <h3>Delegation Token 是“可续接能力”</h3>
+              <p>短期 Token 同时携带身份、Execution、Trace、父 Step、深度、调用链和 Deadline。它不是普通 API Key，而是受限的 continuation capability。</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <div class="icon">⑥</div>
+            <div>
+              <h3>A2A 是主协议，Responses 是兼容层</h3>
+              <p>内部只保留一套 Agent 治理逻辑。Responses 请求先转换为 A2A Message，结果再映射回 Responses，降低现有客户端的接入成本。</p>
+            </div>
+          </div>
+
+          <div class="principle">
+            <div class="icon">⑦</div>
+            <div>
+              <h3>安全不是外围插件，而是执行路径的一部分</h3>
+              <p>身份、Skill 授权、SSRF、防 DNS Rebinding、Header 白名单、输入/输出 Guardrail、任务归属与加密凭据必须串在同一条调用链上。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="runtime">
+          <h2><span class="num">05</span>运行机制：一次请求如何被治理</h2>
+
+          <h3>5.1 首次调用：选择并租用 Instance</h3>
+          <div class="formula">
+            候选实例 = Active ∩ 可用健康状态 ∩ 未超并发<br />
+            选择顺序 = 最高 Priority 组 → 按 Weight 加权随机 → 低优先级兜底
+          </div>
+
+          <div class="grid-3">
+            <div class="card soft-yellow">
+              <h3>优先级</h3>
+              <p>表达主备关系。高优先级未耗尽时，低优先级不参与竞争。</p>
+            </div>
+            <div class="card soft-blue">
+              <h3>权重</h3>
+              <p>表达同等级流量比例，例如 80/20 灰度或异构容量分配。</p>
+            </div>
+            <div class="card soft-green">
+              <h3>Lease</h3>
+              <p>数据库原子占位，进程崩溃后由过期 Lease 回收，避免并发数永久泄漏。</p>
+            </div>
+          </div>
+
+          <h3>5.2 后续调用：Task Affinity</h3>
+          <div class="diagram" aria-label="Task 亲和与 ID 映射图">
+            <svg viewBox="0 0 920 300" role="img">
+              <defs>
+                <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f2c27"></path>
+                </marker>
+              </defs>
+              <rect class="svg-box svg-blue" x="20" y="95" width="170" height="90" rx="20"></rect>
+              <text class="svg-text" x="105" y="130" text-anchor="middle">调用方</text>
+              <text class="svg-small" x="105" y="157" text-anchor="middle">atask_7f…</text>
+
+              <rect class="svg-box svg-accent" x="300" y="55" width="300" height="170" rx="24"></rect>
+              <text class="svg-text" x="450" y="90" text-anchor="middle">TokenHub Task 映射</text>
+              <text class="svg-small" x="450" y="123" text-anchor="middle">Gateway Task ID → Upstream Task ID</text>
+              <text class="svg-small" x="450" y="149" text-anchor="middle">Agent / Instance / Execution / Owner</text>
+              <text class="svg-small" x="450" y="175" text-anchor="middle">Snapshot + Event Sequence</text>
+              <text class="svg-small" x="450" y="201" text-anchor="middle">后续操作固定回原 Instance</text>
+
+              <rect class="svg-box svg-green" x="710" y="95" width="185" height="90" rx="20"></rect>
+              <text class="svg-text" x="802" y="130" text-anchor="middle">Instance B</text>
+              <text class="svg-small" x="802" y="157" text-anchor="middle">upstream-task-123</text>
+
+              <path class="svg-line" d="M 190 140 L 300 140" marker-end="url(#arrow2)"></path>
+              <path class="svg-line" d="M 600 140 L 710 140" marker-end="url(#arrow2)"></path>
+              <path class="svg-line svg-dash" d="M 710 180 C 620 260, 300 260, 190 180" marker-end="url(#arrow2)"></path>
+            </svg>
+          </div>
+
+          <div class="callout">
+            <strong>为什么不自动切换实例？</strong>
+            Agent 可能已执行了有副作用操作。对 continuation 重新负载均衡，无法保证语义一致，也可能造成重复执行。
+          </div>
+
+          <h3>5.3 长任务：Execution 必须保持存活</h3>
+          <div class="timeline">
+            <div class="timeline-item">
+              <strong>SendMessage 返回 SUBMITTED / WORKING</strong>
+              Root Execution 与对应 Step 保持 running，不提前结算。
+            </div>
+            <div class="timeline-item">
+              <strong>上游继续使用 Delegation Token</strong>
+              后续 Agent、模型和 MCP 调用仍进入同一 Trace 与预算域。
+            </div>
+            <div class="timeline-item">
+              <strong>GetTask / SubscribeToTask 恢复上下文</strong>
+              恢复原 Execution、Trace、Deadline、Chain 和父 Step，而不是创建第二个根执行。
+            </div>
+            <div class="timeline-item">
+              <strong>任务进入终态</strong>
+              完成对应 Step，并将 Root Execution 结算为 completed / canceled / failed。
+            </div>
+          </div>
+
+          <h3>5.4 Snapshot + Event：兼顾读性能与完整历史</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Snapshot</h3>
+              <p>提供 List/Get 的快速读取，持续折叠状态消息、历史消息与 Artifact 分片。</p>
+            </div>
+            <div class="card">
+              <h3>Event</h3>
+              <p>保留有序增量，用于审计、调试、SSE 续接与未来的事件重放。</p>
+            </div>
+          </div>
+
+          <h3>5.5 Execution Budget：对完整调用图设边界</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>预算</th><th>约束对象</th><th>目的</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>max_agent_hops</code></td><td>Agent → Agent 深度/总边数</td><td>阻止递归爆炸与复杂度失控</td></tr>
+                <tr><td><code>max_model_calls</code></td><td>委托模型调用</td><td>限制循环规划和隐性成本</td></tr>
+                <tr><td><code>max_mcp_calls</code></td><td>工具调用</td><td>限制副作用与外部系统压力</td></tr>
+                <tr><td><code>max_tokens</code></td><td>模型 + MCP 汇总 Token</td><td>控制计算与上下文消耗</td></tr>
+                <tr><td><code>max_cost_usd</code></td><td>Agent 固定成本 + 模型/MCP 成本</td><td>提供硬成本边界</td></tr>
+                <tr><td><code>max_concurrency</code></td><td>Execution 内运行中的 Edge</td><td>抑制并行扇出</td></tr>
+                <tr><td><code>deadline</code></td><td>完整 Execution</td><td>统一长任务生命周期上限</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="security">
+          <h2><span class="num">06</span>安全模型：零信任式 Agent 调用链</h2>
+          <p class="lede">
+            每一跳都重新验证主体、能力、归属与预算，不能因为请求来自另一个 Agent 就默认可信。
+          </p>
+
+          <div class="diagram" aria-label="安全检查链路">
+            <svg viewBox="0 0 1000 190" role="img">
+              <defs>
+                <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f2c27"></path>
+                </marker>
+              </defs>
+              <g>
+                <rect class="svg-box svg-blue" x="10" y="55" width="115" height="75" rx="17"></rect>
+                <text class="svg-text" x="67" y="87" text-anchor="middle" font-size="15">身份认证</text>
+                <text class="svg-small" x="67" y="109" text-anchor="middle">API Key / Delegation</text>
+
+                <rect class="svg-box svg-yellow" x="155" y="55" width="115" height="75" rx="17"></rect>
+                <text class="svg-text" x="212" y="87" text-anchor="middle" font-size="15">Skill 授权</text>
+                <text class="svg-small" x="212" y="109" text-anchor="middle">Default Deny</text>
+
+                <rect class="svg-box svg-accent" x="300" y="55" width="115" height="75" rx="17"></rect>
+                <text class="svg-text" x="357" y="87" text-anchor="middle" font-size="15">输入审查</text>
+                <text class="svg-small" x="357" y="109" text-anchor="middle">Guardrail</text>
+
+                <rect class="svg-box svg-green" x="445" y="55" width="115" height="75" rx="17"></rect>
+                <text class="svg-text" x="502" y="87" text-anchor="middle" font-size="15">网络边界</text>
+                <text class="svg-small" x="502" y="109" text-anchor="middle">SSRF / DNS</text>
+
+                <rect class="svg-box svg-blue" x="590" y="55" width="115" height="75" rx="17"></rect>
+                <text class="svg-text" x="647" y="87" text-anchor="middle" font-size="15">安全委托</text>
+                <text class="svg-small" x="647" y="109" text-anchor="middle">短期 Token</text>
+
+                <rect class="svg-box svg-accent" x="735" y="55" width="115" height="75" rx="17"></rect>
+                <text class="svg-text" x="792" y="87" text-anchor="middle" font-size="15">输出审查</text>
+                <text class="svg-small" x="792" y="109" text-anchor="middle">Message / Artifact</text>
+
+                <rect class="svg-box svg-yellow" x="880" y="55" width="110" height="75" rx="17"></rect>
+                <text class="svg-text" x="935" y="87" text-anchor="middle" font-size="15">归属校验</text>
+                <text class="svg-small" x="935" y="109" text-anchor="middle">Task Isolation</text>
+
+                <path class="svg-line" d="M 125 92 L 155 92" marker-end="url(#arrow3)"></path>
+                <path class="svg-line" d="M 270 92 L 300 92" marker-end="url(#arrow3)"></path>
+                <path class="svg-line" d="M 415 92 L 445 92" marker-end="url(#arrow3)"></path>
+                <path class="svg-line" d="M 560 92 L 590 92" marker-end="url(#arrow3)"></path>
+                <path class="svg-line" d="M 705 92 L 735 92" marker-end="url(#arrow3)"></path>
+                <path class="svg-line" d="M 850 92 L 880 92" marker-end="url(#arrow3)"></path>
+              </g>
+            </svg>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <h3>授权维度</h3>
+              <p>Global、Team、Project、API Key、End User、Calling Agent、Access Group，并支持 Skill 级规则和 Deny 优先。</p>
+            </div>
+            <div class="card">
+              <h3>凭据隔离</h3>
+              <p>上游静态 Header 加密存储；Agent Card 对外不暴露内部 URL 与凭据；客户端 Header 仅按白名单转发。</p>
+            </div>
+            <div class="card">
+              <h3>网络安全</h3>
+              <p>生产环境要求 HTTPS，注册时和拨号时都检查特殊地址，阻止私网、回环、CGNAT、保留地址与重定向绕过。</p>
+            </div>
+            <div class="card">
+              <h3>循环保护</h3>
+              <p>Delegation Token 携带 Agent Chain 与 Depth；出现 A → B → C → A 或超深调用时立即拒绝并结束 Execution。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="bridge">
+          <h2><span class="num">07</span>Responses 桥：兼容现有生态，但不伪装成完整 A2A</h2>
+          <p class="lede">
+            <code>model: "agent/&lt;slug&gt;"</code> 让只理解 OpenAI Responses API 的客户端也能调用 Agent；
+            但桥接必然是有损映射，因此必须明确输出优先级和非终态语义。
+          </p>
+
+          <div class="diagram" aria-label="Responses 到 A2A 的协议桥接图">
+            <svg viewBox="0 0 940 250" role="img">
+              <defs>
+                <marker id="arrow4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f2c27"></path>
+                </marker>
+              </defs>
+              <rect class="svg-box svg-blue" x="20" y="72" width="190" height="105" rx="20"></rect>
+              <text class="svg-text" x="115" y="108" text-anchor="middle">Responses Request</text>
+              <text class="svg-small" x="115" y="136" text-anchor="middle">model = agent/research</text>
+              <text class="svg-small" x="115" y="158" text-anchor="middle">input / instructions / stream</text>
+
+              <rect class="svg-box svg-yellow" x="280" y="72" width="180" height="105" rx="20"></rect>
+              <text class="svg-text" x="370" y="108" text-anchor="middle">协议适配</text>
+              <text class="svg-small" x="370" y="136" text-anchor="middle">Responses → A2A Message</text>
+              <text class="svg-small" x="370" y="158" text-anchor="middle">复用统一治理链</text>
+
+              <rect class="svg-box svg-accent" x="535" y="45" width="190" height="160" rx="24"></rect>
+              <text class="svg-text" x="630" y="80" text-anchor="middle">A2A Gateway</text>
+              <text class="svg-small" x="630" y="110" text-anchor="middle">Auth / Route / Task</text>
+              <text class="svg-small" x="630" y="134" text-anchor="middle">Execution / Budget</text>
+              <text class="svg-small" x="630" y="158" text-anchor="middle">Guardrail / Persist</text>
+              <text class="svg-small" x="630" y="182" text-anchor="middle">JSON / SSE</text>
+
+              <rect class="svg-box svg-green" x="790" y="72" width="130" height="105" rx="20"></rect>
+              <text class="svg-text" x="855" y="108" text-anchor="middle">Response</text>
+              <text class="svg-small" x="855" y="136" text-anchor="middle">output_text</text>
+              <text class="svg-small" x="855" y="158" text-anchor="middle">usage / events</text>
+
+              <path class="svg-line" d="M 210 124 L 280 124" marker-end="url(#arrow4)"></path>
+              <path class="svg-line" d="M 460 124 L 535 124" marker-end="url(#arrow4)"></path>
+              <path class="svg-line" d="M 725 124 L 790 124" marker-end="url(#arrow4)"></path>
+            </svg>
+          </div>
+
+          <h3>已增强：保留真正的任务产物</h3>
+          <div class="contrast">
+            <div class="card soft-red">
+              <span class="tag">修改前</span>
+              <h3>状态消息可能覆盖结果</h3>
+              <pre class="mono">Status.Message = "completed"
+Artifacts = ["完整报告", "摘要"]
+
+Responses output:
+"completed"</pre>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card soft-green">
+              <span class="tag">修改后</span>
+              <h3>Artifact 优先且全部保留</h3>
+              <pre class="mono">Responses output:
+"完整报告
+摘要"</pre>
+            </div>
+          </div>
+
+          <div class="formula">
+            Task 文本映射优先级：全部文本 Artifacts → 当前 Status.Message → 最新 Agent History → 空文本
+          </div>
+
+          <p>
+            该增强已提交为
+            <a href="https://github.com/legendtkl/TokenHub/commit/deff10fc36b148efd471fb35e1c7915f1ad3a89e" target="_blank" rel="noreferrer"><code>deff10f</code></a>，
+            并增加 Artifact 聚合、状态优先级、历史回退与空任务测试。
+          </p>
+        </section>
+
+        <section id="tradeoffs">
+          <h2><span class="num">08</span>关键权衡与能力边界</h2>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>设计选择</th><th>获得</th><th>代价 / 边界</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Task 固定实例，不盲目 Failover</td>
+                  <td>避免重复副作用，保持上游状态一致</td>
+                  <td>实例彻底丢失时恢复能力较弱，需要上游持久化或业务补偿</td>
+                </tr>
+                <tr>
+                  <td>A2A 1.0 单协议</td>
+                  <td>实现边界清楚，减少兼容分支</td>
+                  <td>不满足旧版 A2A 0.3 客户端，需要独立兼容层</td>
+                </tr>
+                <tr>
+                  <td>Responses 作为薄桥</td>
+                  <td>现有 SDK 几乎零改造接入</td>
+                  <td>复杂 Artifact、交互状态和异步生命周期无法完整表达</td>
+                </tr>
+                <tr>
+                  <td>MCP 由 Agent 主动上报</td>
+                  <td>无需代理所有工具协议，接入简单</td>
+                  <td>属于协作式治理，不能强制观测 Agent 内部全部调用</td>
+                </tr>
+                <tr>
+                  <td>Snapshot + Event 双写</td>
+                  <td>读取快，同时保留增量历史</td>
+                  <td>必须保证折叠逻辑、序列号和事务一致性</td>
+                </tr>
+                <tr>
+                  <td>数据库承载预算与 Lease</td>
+                  <td>跨副本一致，崩溃后可恢复</td>
+                  <td>高并发时数据库成为关键协调点，需要索引与竞争治理</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="enhancements">
+          <h2><span class="num">09</span>当前可增强的地方</h2>
+          <p class="lede">
+            下面按“合并阻塞 → 正确性 → 生命周期 → 产品语义”排序。先解决结构性问题，再扩展能力。
+          </p>
+
+          <div class="timeline">
+            <div class="timeline-item">
+              <strong><span class="priority p0">P0</span>同步最新 main，并适配正式 Migration Framework</strong>
+              PR 与主干已长期分叉。数据库模型、路由与 CI 继续变化前，应先完成重基或合并，避免在旧 AutoMigrate 体系上叠加新表结构。
+            </div>
+            <div class="timeline-item">
+              <strong><span class="priority p1">P1</span>将 Usage Step 唯一性改为 <code>(execution_id, step_id)</code></strong>
+              <code>step_id</code> 应在一个 Execution 内唯一，而非全局唯一；否则不同执行复用 <code>mcp-step-1</code> 会产生冲突。
+            </div>
+            <div class="timeline-item">
+              <strong><span class="priority p1">P1</span>MCP 计量接口复用完整 Delegation 校验</strong>
+              除签名与过期时间外，还应校验 API Key、Project、Execution 状态、Caller Agent、Task 归属与 End User 隔离。
+            </div>
+            <div class="timeline-item">
+              <strong><span class="priority p1">P1</span>补齐 Task / Event / Execution 保留与清理策略</strong>
+              为过期任务设置 TTL，增加批量清理与 Deadline Reconciler；审计数据可分层保留，避免运行表无限增长。
+            </div>
+            <div class="timeline-item">
+              <strong><span class="priority p2">P2</span>明确非终态 Task 到 Responses 的语义</strong>
+              可选择同步等待终态、返回 incomplete 并暴露查询 ID，或明确拒绝非终态；不能把 SUBMITTED / INPUT_REQUIRED 统一标记为 completed。
+            </div>
+            <div class="timeline-item">
+              <strong><span class="priority p2">P2</span>将被动健康冷却演进为可配置熔断策略</strong>
+              区分协议错误、业务错误、超时和网络错误；增加半开探测、窗口失败率与实例级可观测指标。
+            </div>
+          </div>
+        </section>
+
+        <section id="roadmap">
+          <h2><span class="num">10</span>建议的演进路线</h2>
+
+          <div class="roadmap">
+            <div class="phase">
+              <span class="phase-no" style="background:var(--accent-soft)">Phase 1 · 可用</span>
+              <h3>统一 Agent 接入</h3>
+              <ul>
+                <li>A2A 1.0 JSON-RPC / SSE</li>
+                <li>Agent Registry 与 Card</li>
+                <li>默认拒绝授权</li>
+                <li>Task Affinity 与多实例路由</li>
+                <li>Responses 兼容桥</li>
+              </ul>
+            </div>
+            <div class="phase">
+              <span class="phase-no" style="background:var(--yellow-soft)">Phase 2 · 可靠</span>
+              <h3>生命周期与一致性</h3>
+              <ul>
+                <li>正式数据库迁移</li>
+                <li>复合 Step 唯一性</li>
+                <li>Task / Execution Reconciler</li>
+                <li>完整委托鉴权</li>
+                <li>事件续接与幂等策略</li>
+              </ul>
+            </div>
+            <div class="phase">
+              <span class="phase-no" style="background:var(--green-soft)">Phase 3 · 平台化</span>
+              <h3>可运营的 Agent 控制面</h3>
+              <ul>
+                <li>策略化预算与租户配额</li>
+                <li>主动健康探测与熔断</li>
+                <li>执行图检索与成本归因</li>
+                <li>审批、风险分级与补偿流程</li>
+                <li>更完整的协议与异步桥接</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="thesis" style="margin-top:24px">
+            最终形态不是一个“A2A 代理”，而是：
+            Agent Registry + Stateful Gateway + Execution Governance + Security Delegation + Cost Control。
+          </div>
+        </section>
+
+        <section id="sources">
+          <h2><span class="num">11</span>资料索引</h2>
+          <div class="sources">
+            <div class="source">
+              <strong>TokenHub PR #196</strong><br />
+              <a href="https://github.com/astaxie/TokenHub/pull/196" target="_blank" rel="noreferrer">feat(a2a): add 1.0 agent gateway</a>
+            </div>
+            <div class="source">
+              <strong>本次 Responses 桥增强提交</strong><br />
+              <a href="https://github.com/legendtkl/TokenHub/commit/deff10fc36b148efd471fb35e1c7915f1ad3a89e" target="_blank" rel="noreferrer">deff10f · preserve task artifacts in Responses bridge</a>
+            </div>
+            <div class="source">
+              <strong>A2A Protocol</strong><br />
+              <a href="https://github.com/a2aproject/A2A" target="_blank" rel="noreferrer">Agent2Agent Protocol specification and concepts</a>
+            </div>
+            <div class="source">
+              <strong>TokenHub 项目</strong><br />
+              <a href="https://github.com/astaxie/TokenHub" target="_blank" rel="noreferrer">astaxie/TokenHub</a>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <footer>
+    由 Legendtkl 发布 · 本页为独立静态 HTML，无外部脚本依赖，可直接分享、打印或导出 PDF。
+  </footer>
+
+  <div class="toast" id="toast">链接已复制</div>
+
+  <script>
+    const progressBar = document.getElementById('progressBar');
+    const tocLinks = [...document.querySelectorAll('.toc a')];
+    const sections = tocLinks
+      .map(link => document.querySelector(link.getAttribute('href')))
+      .filter(Boolean);
+
+    function updateProgress() {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      const pct = max > 0 ? (doc.scrollTop / max) * 100 : 0;
+      progressBar.style.width = pct + '%';
+    }
+    updateProgress();
+    addEventListener('scroll', updateProgress, { passive: true });
+
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (!visible) return;
+      tocLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + visible.target.id);
+      });
+    }, { rootMargin: '-18% 0px -68% 0px', threshold: 0 });
+
+    sections.forEach(section => observer.observe(section));
+
+    const toast = document.getElementById('toast');
+    document.getElementById('copyLink').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        toast.textContent = '链接已复制';
+      } catch {
+        const input = document.createElement('input');
+        input.value = location.href;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+        toast.textContent = '链接已复制';
+      }
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1500);
+    });
+  </script>
+</body>
+</html>
